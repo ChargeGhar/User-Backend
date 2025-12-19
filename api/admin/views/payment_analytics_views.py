@@ -3,64 +3,40 @@ Payment Analytics Views
 """
 from drf_spectacular.utils import extend_schema
 from rest_framework.generics import GenericAPIView
-from rest_framework.request import Request
-from rest_framework.response import Response
 
-from api.admin.services.payment_analytics_service import PaymentAnalyticsService
-from api.admin.serializers.payment_analytics_serializers import PaymentAnalyticsResponseSerializer
-from api.common.decorators import log_api_call
 from api.common.mixins import BaseAPIView
-from api.common.routers import CustomViewRouter
 from api.users.permissions import IsStaffPermission
+from api.common.serializers import BaseResponseSerializer
+from api.admin.services.payment_analytics_service import PaymentAnalyticsService
+from api.admin.serializers.analytics_serializers import PaymentAnalyticsResponseSerializer
+from api.common.routers import CustomViewRouter
 
 payment_analytics_router = CustomViewRouter()
 
 
-@payment_analytics_router.register(r"admin/analytics/payments", name="admin-payments-analytics")
+@payment_analytics_router.register("admin/analytics/payments", name="admin-payment-analytics")
 class PaymentAnalyticsView(GenericAPIView, BaseAPIView):
-    """Payment analytics endpoint"""
+    """
+    Get comprehensive payment analytics
+    
+    Returns revenue breakdown, payment methods, gateway usage, and top performers
+    """
     permission_classes = [IsStaffPermission]
-    serializer_class = PaymentAnalyticsResponseSerializer
     
     @extend_schema(
         tags=["Admin - Analytics"],
-        summary="Payment Analytics",
-        description="""
-        Get comprehensive payment analytics for dashboard visualization.
-        
-        **Features**:
-        - Total transactions and revenue statistics
-        - Payment method distribution (wallet, gateway, points, combination)
-        - Revenue breakdown by type (top-ups, rentals, fines)
-        - Top 10 users by spending
-        - Wallet analytics overview
-        - Transaction breakdown with averages
-        - Chart-ready data format for frontend
-        
-        **Chart Data Included**:
-        - Pie chart: Payment method distribution
-        - Bar chart: Revenue by transaction type
-        - Bar chart: Top 10 users by spending
-        
-        **Use Cases**:
-        - Financial dashboard
-        - Revenue analysis
-        - User behavior insights
-        - Payment method preferences
-        - Business intelligence
-        """,
-        responses={200: PaymentAnalyticsResponseSerializer}
+        summary="Get Payment Analytics",
+        description="Retrieve revenue analytics including payment methods, gateway usage, and top users by transaction amount",
+        responses={
+            200: PaymentAnalyticsResponseSerializer,
+            400: BaseResponseSerializer
+        }
     )
-    @log_api_call()
-    def get(self, request: Request) -> Response:
+    def get(self, request):
         """Get payment analytics"""
-        def operation():
-            service = PaymentAnalyticsService()
-            analytics = service.get_payment_analytics()
-            return analytics
+        analytics_data = PaymentAnalyticsService.get_payment_analytics()
         
-        return self.handle_service_operation(
-            operation,
-            success_message="Payment analytics retrieved successfully",
-            error_message="Failed to retrieve payment analytics"
+        return self.success_response(
+            data=analytics_data,
+            message="Payment analytics retrieved successfully"
         )

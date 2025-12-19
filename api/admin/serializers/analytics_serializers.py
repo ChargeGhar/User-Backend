@@ -28,3 +28,22 @@ class DashboardAnalyticsSerializer(serializers.Serializer):
     recent_issues = serializers.ListField()
 
 
+class UserAnalyticsResponseSerializer(serializers.Serializer):
+    """Response serializer for user analytics endpoint"""
+    data = serializers.DictField()
+
+
+class RentalAnalyticsResponseSerializer(serializers.Serializer):
+    """Response serializer for rental analytics endpoint"""
+    data = serializers.DictField()
+
+
+class PaymentAnalyticsResponseSerializer(serializers.Serializer):
+    """Response serializer for payment analytics endpoint"""
+    data = serializers.DictField()
+
+
+class StationAnalyticsResponseSerializer(serializers.Serializer):
+    """Response serializer for station analytics endpoint"""
+    data = serializers.DictField()
+

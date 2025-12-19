@@ -1,145 +1,207 @@
 """
-PowerBank Rental Analytics Service
+Rental Analytics Service
+Provides analytics data for PowerBank rentals including status, payment methods, and trends
 """
-from __future__ import annotations
-from typing import Dict, Any
-from django.db.models import Count, Q
-from api.common.services.base import BaseService
+from decimal import Decimal
+from datetime import timedelta
+from django.db.models import Count, Sum, Avg, Q, F
+from django.db.models.functions import TruncWeek
+from django.utils import timezone
+
 from api.rentals.models import Rental
-from api.stations.models import PowerBank
+from api.payments.models import Transaction
 
 
-class RentalAnalyticsService(BaseService):
-    """Service for powerbank rental analytics"""
+class RentalAnalyticsService:
+    """Service for rental analytics operations"""
     
-    def get_powerbank_rental_analytics(self) -> Dict[str, Any]:
-        """Get PowerBank rental analytics for chart visualization"""
-        try:
-            # Summary statistics
-            total_powerbanks = PowerBank.objects.count()
-            total_rentals = Rental.objects.exclude(power_bank__isnull=True).count()
-            active_rentals_count = Rental.objects.filter(
-                status__in=['ACTIVE', 'OVERDUE']
+    @staticmethod
+    def get_rental_analytics():
+        """
+        Get comprehensive rental analytics data
+        
+        Returns:
+            dict: Rental analytics data including status, payment methods, and trends
+        """
+        # Rental status counts
+        total_rentals = Rental.objects.count()
+        active_rentals = Rental.objects.filter(status='ACTIVE').count()
+        overdue_rentals = Rental.objects.filter(status='OVERDUE').count()
+        completed_rentals = Rental.objects.filter(status='COMPLETED').count()
+        cancelled_rentals = Rental.objects.filter(status='CANCELLED').count()
+        
+        # Payment methods for rentals
+        rental_payment_methods = Transaction.objects.filter(
+            status='SUCCESS',
+            related_rental__isnull=False
+        ).values('payment_method_type').annotate(
+            total=Sum('amount'),
+            count=Count('id')
+        )
+        
+        # Build payment method dict
+        payment_method_data = {pm['payment_method_type']: pm for pm in rental_payment_methods}
+        
+        pm_labels = []
+        pm_values = []
+        pm_total = Decimal('0')
+        
+        for method in ['WALLET', 'GATEWAY', 'POINTS', 'COMBINATION']:
+            data = payment_method_data.get(method, {'total': Decimal('0'), 'count': 0})
+            amount = data['total'] or Decimal('0')
+            pm_labels.append(method.title())
+            pm_values.append(float(amount))
+            pm_total += amount
+        
+        # Calculate percentages
+        pm_percentages = []
+        for i, value in enumerate(pm_values):
+            if i == len(pm_values) - 1:
+                # Last item ensures sum = 100%
+                pct = round(100 - sum(pm_percentages), 2) if pm_total > 0 else 0
+            else:
+                pct = round((value / float(pm_total) * 100), 2) if pm_total > 0 else 0
+            pm_percentages.append(pct)
+        
+        # Gateway breakdown for rentals
+        gateway_transactions = Transaction.objects.filter(
+            status='SUCCESS',
+            related_rental__isnull=False,
+            payment_method_type='GATEWAY'
+        ).exclude(
+            Q(gateway_reference__isnull=True) | Q(gateway_reference='')
+        ).values('gateway_reference', 'amount')
+        
+        # Aggregate by gateway type
+        gateway_summary = {}
+        for txn in gateway_transactions:
+            ref = (txn['gateway_reference'] or '').lower()
+            gateway = None
+            
+            if 'khalti' in ref:
+                gateway = 'Khalti'
+            elif 'esewa' in ref:
+                gateway = 'eSewa'
+            elif 'stripe' in ref:
+                gateway = 'Stripe'
+            else:
+                # Skip unrecognized patterns
+                continue
+            
+            if gateway not in gateway_summary:
+                gateway_summary[gateway] = {'count': 0, 'amount': Decimal('0')}
+            
+            gateway_summary[gateway]['count'] += 1
+            gateway_summary[gateway]['amount'] += txn['amount']
+        
+        # Format gateway breakdown
+        gateway_labels = []
+        gateway_values = []
+        gateway_counts = []
+        gateway_total = sum(data['amount'] for data in gateway_summary.values())
+        
+        for gateway in ['Khalti', 'eSewa', 'Stripe']:
+            if gateway in gateway_summary:
+                gateway_labels.append(gateway)
+                gateway_values.append(float(gateway_summary[gateway]['amount']))
+                gateway_counts.append(gateway_summary[gateway]['count'])
+        
+        # Calculate gateway percentages
+        gateway_percentages = []
+        for i, value in enumerate(gateway_values):
+            if i == len(gateway_values) - 1:
+                pct = round(100 - sum(gateway_percentages), 2) if gateway_total > 0 else 0
+            else:
+                pct = round((value / float(gateway_total) * 100), 2) if gateway_total > 0 else 0
+            gateway_percentages.append(pct)
+        
+        # Rental cycles (completed rentals only)
+        completed = Rental.objects.filter(status='COMPLETED').exclude(
+            Q(started_at__isnull=True) | Q(ended_at__isnull=True)
+        )
+        
+        durations = []
+        for rental in completed:
+            duration_seconds = (rental.ended_at - rental.started_at).total_seconds()
+            duration_minutes = duration_seconds / 60
+            if duration_minutes > 0:
+                durations.append(duration_minutes)
+        
+        if durations:
+            average_duration = sum(durations) / len(durations)
+            longest_duration = max(durations)
+            shortest_duration = min(durations)
+        else:
+            average_duration = 0
+            longest_duration = 0
+            shortest_duration = 0
+        
+        # Format duration display
+        def format_duration(minutes):
+            hours = int(minutes // 60)
+            mins = int(minutes % 60)
+            if hours > 0:
+                return f"{hours}h {mins}m"
+            return f"{mins}m"
+        
+        # Rental trend - last 4 weeks
+        now = timezone.now()
+        weeks = []
+        week_labels = []
+        week_data = []
+        
+        for i in range(3, -1, -1):  # 4 weeks ago to current week
+            week_start = now - timedelta(days=(i + 1) * 7)
+            week_end = now - timedelta(days=i * 7)
+            
+            week_count = Rental.objects.filter(
+                created_at__gte=week_start,
+                created_at__lt=week_end
             ).count()
             
-            # Calculate average cycles per powerbank
-            avg_cycles = total_rentals / total_powerbanks if total_powerbanks > 0 else 0
-            
-            # Rental status distribution - single query
-            status_counts = Rental.objects.aggregate(
-                completed=Count('id', filter=Q(status='COMPLETED')),
-                active=Count('id', filter=Q(status='ACTIVE')),
-                overdue=Count('id', filter=Q(status='OVERDUE')),
-                cancelled=Count('id', filter=Q(status='CANCELLED'))
-            )
-            
-            # Completion stats (only COMPLETED rentals)
-            completion_stats = Rental.objects.filter(
-                status='COMPLETED'
-            ).aggregate(
-                on_time=Count('id', filter=Q(is_returned_on_time=True)),
-                late=Count('id', filter=Q(is_returned_on_time=False))
-            )
-            
-            on_time_count = completion_stats['on_time'] or 0
-            late_count = completion_stats['late'] or 0
-            total_completed = on_time_count + late_count
-            on_time_percentage = (on_time_count / total_completed * 100) if total_completed > 0 else 0
-            
-            # PowerBank rental cycles (top 10)
-            powerbank_cycles = Rental.objects.filter(
-                power_bank__isnull=False
-            ).values(
-                'power_bank__serial_number',
-                'power_bank__status',
-                'power_bank__current_station__station_name'
-            ).annotate(
-                total_cycles=Count('id')
-            ).order_by('-total_cycles')[:10]
-            
-            # Format powerbank cycles for chart
-            pb_cycles_labels = []
-            pb_cycles_data = []
-            pb_details = []
-            
-            for pb in powerbank_cycles:
-                serial = pb['power_bank__serial_number']
-                pb_cycles_labels.append(serial)
-                pb_cycles_data.append(pb['total_cycles'])
-                pb_details.append({
-                    'serial_number': serial,
-                    'status': pb['power_bank__status'],
-                    'total_cycles': pb['total_cycles'],
-                    'current_station': pb['power_bank__current_station__station_name'] or 'N/A'
-                })
-            
-            # Find most and least rented powerbanks
-            most_rented = pb_details[0]['serial_number'] if pb_details else 'N/A'
-            least_rented = pb_details[-1]['serial_number'] if pb_details else 'N/A'
-            
-            # Rental package usage
-            package_usage = Rental.objects.filter(
-                package__isnull=False
-            ).values(
-                'package__name',
-                'package__duration_minutes',
-                'package__price'
-            ).annotate(
-                total_rentals=Count('id')
-            ).order_by('-total_rentals')
-            
-            popular_packages = []
-            for pkg in package_usage:
-                popular_packages.append({
-                    'package_name': pkg['package__name'],
-                    'duration_minutes': pkg['package__duration_minutes'],
-                    'price': float(pkg['package__price']),
-                    'rental_count': pkg['total_rentals']
-                })
-            
-            return {
-                'summary': {
-                    'total_powerbanks': total_powerbanks,
-                    'total_rentals': total_rentals,
-                    'active_rentals': active_rentals_count,
-                    'average_cycles_per_powerbank': round(avg_cycles, 2)
-                },
-                'rental_status_chart': {
-                    'labels': ['Completed', 'Active', 'Overdue', 'Cancelled'],
-                    'values': [
-                        status_counts['completed'],
-                        status_counts['active'],
-                        status_counts['overdue'],
-                        status_counts['cancelled']
-                    ]
-                },
-                'powerbank_cycles_chart': {
-                    'labels': pb_cycles_labels,
-                    'datasets': [{
-                        'label': 'Total Rentals',
-                        'data': pb_cycles_data
-                    }]
-                },
-                'completion_chart': {
-                    'labels': ['On Time', 'Late'],
-                    'values': [on_time_count, late_count],
-                    'percentages': [round(on_time_percentage, 2), round(100 - on_time_percentage, 2)]
-                },
-                'powerbank_details': pb_details,
-                'popular_packages': popular_packages,
-                'stats': {
-                    'rented': status_counts['active'] + status_counts['overdue'],
-                    'completed': status_counts['completed'],
-                    'cancelled': status_counts['cancelled'],
-                    'due': status_counts['overdue'],
-                    'incomplete': status_counts['active'],
-                    'on_time_returns': on_time_count,
-                    'late_returns': late_count,
-                    'on_time_percentage': round(on_time_percentage, 2),
-                    'most_rented_powerbank': most_rented,
-                    'least_rented_powerbank': least_rented
-                }
+            label = f"{week_start.strftime('%b %d')}-{week_end.strftime('%d')}"
+            week_labels.append(label)
+            week_data.append(week_count)
+        
+        return {
+            'summary': {
+                'total_rentals': total_rentals,
+                'active_rentals': active_rentals,
+                'overdue_rentals': overdue_rentals,
+                'completed_rentals': completed_rentals,
+                'cancelled_rentals': cancelled_rentals
+            },
+            'rental_status_chart': {
+                'labels': ['Active', 'Overdue', 'Completed', 'Cancelled'],
+                'values': [active_rentals, overdue_rentals, completed_rentals, cancelled_rentals]
+            },
+            'payment_methods_for_rentals': {
+                'labels': pm_labels,
+                'values': pm_values,
+                'percentages': pm_percentages
+            },
+            'gateway_breakdown_for_rentals': {
+                'labels': gateway_labels,
+                'values': gateway_values,
+                'counts': gateway_counts,
+                'percentages': gateway_percentages
+            },
+            'rental_cycles': {
+                'total_completed': len(durations),
+                'duration_unit': 'minutes',
+                'average_duration': round(average_duration, 2),
+                'longest_duration': round(longest_duration, 2),
+                'shortest_duration': round(shortest_duration, 2),
+                'average_display': format_duration(average_duration),
+                'longest_display': format_duration(longest_duration),
+                'shortest_display': format_duration(shortest_duration)
+            },
+            'rental_trend_chart': {
+                'labels': week_labels,
+                'period': 'Last 4 weeks',
+                'datasets': [{
+                    'label': 'Rentals',
+                    'data': week_data
+                }]
             }
-            
-        except Exception as e:
-            self.handle_service_error(e, "Failed to get powerbank rental analytics")
+        }
