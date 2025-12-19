@@ -28,6 +28,8 @@ from .late_fee_views import late_fee_admin_router
 from .points_admin_views import points_admin_router
 from .achievement_admin_views import achievement_admin_router
 from .referral_admin_views import referral_admin_router
+from .rental_analytics_views import rental_analytics_router
+from .payment_analytics_views import payment_analytics_router
 
 # Merge all sub-routers
 # IMPORTANT: Order matters! More specific routes must come before generic ones
@@ -53,6 +55,8 @@ for sub_router in [
     kyc_router, 
     amenity_admin_router,
     analytics_router,
+    rental_analytics_router,
+    payment_analytics_router,
     late_fee_admin_router,
     points_admin_router,
     achievement_admin_router
