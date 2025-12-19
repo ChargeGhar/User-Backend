@@ -136,6 +136,13 @@ class PaymentIntentService(CRUDService):
             payment_verified = verification_result.get('success', False)
 
             if payment_verified:
+                # Get gateway name from intent metadata
+                gateway_name = intent.intent_metadata.get('gateway', 'unknown') if intent.intent_metadata else 'unknown'
+                txn_id = verification_result.get('transaction_id', '')
+                
+                # Format gateway_reference with gateway name prefix
+                gateway_reference = f"{gateway_name}_{txn_id}" if txn_id else gateway_name
+                
                 # Create transaction record
                 transaction_obj = Transaction.objects.create(
                     user=intent.user,
@@ -144,7 +151,7 @@ class PaymentIntentService(CRUDService):
                     amount=intent.amount,
                     status='SUCCESS',
                     payment_method_type='GATEWAY',
-                    gateway_reference=verification_result.get('transaction_id'),
+                    gateway_reference=gateway_reference,
                     gateway_response=verification_result.get('gateway_response', {})
                 )
 
