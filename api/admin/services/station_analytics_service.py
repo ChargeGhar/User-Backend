@@ -30,9 +30,9 @@ class StationAnalyticsService:
         offline_stations = Station.objects.filter(status='OFFLINE', is_deleted=False).count()
         maintenance_stations = Station.objects.filter(status='MAINTENANCE', is_deleted=False).count()
         
-        total_slots = Station.objects.filter(is_deleted=False).aggregate(
-            total=Sum('total_slots')
-        )['total'] or 0
+        # Use actual StationSlot count instead of Station.total_slots field
+        # This ensures accuracy when slots haven't been created yet
+        total_slots = StationSlot.objects.filter(station__is_deleted=False).count()
         
         occupied_slots = StationSlot.objects.filter(
             status='OCCUPIED',
@@ -89,10 +89,13 @@ class StationAnalyticsService:
         for station_data in top_stations_list:
             station = station_data['station']
             
+            # Get actual slot count for this station
+            actual_slot_count = station.slots.count()
+            
             # Calculate utilization rate
             utilization = round(
-                (station_data['occupied_slot_count'] / station.total_slots * 100), 2
-            ) if station.total_slots > 0 else 0
+                (station_data['occupied_slot_count'] / actual_slot_count * 100), 2
+            ) if actual_slot_count > 0 else 0
             
             # Convert avg duration to minutes
             if station_data['avg_duration_seconds']:
@@ -125,7 +128,7 @@ class StationAnalyticsService:
                 'serial_number': station.serial_number,
                 'total_rentals': station_data['total_rentals'],
                 'total_revenue': float(station_data['total_revenue']),
-                'total_slots': station.total_slots,
+                'total_slots': actual_slot_count,
                 'occupied_slots': station_data['occupied_slot_count'],
                 'utilization_rate': utilization,
                 'average_rental_duration': round(avg_duration, 2),
@@ -157,9 +160,9 @@ class StationAnalyticsService:
             week_end = now - timedelta(days=i * 7)
             
             # Get average utilization for the week
-            week_total_slots = Station.objects.filter(
-                is_deleted=False
-            ).aggregate(total=Sum('total_slots'))['total'] or 0
+            week_total_slots = StationSlot.objects.filter(
+                station__is_deleted=False
+            ).count()
             
             # Approximate occupied slots (using rental counts as proxy)
             week_occupied = Rental.objects.filter(
