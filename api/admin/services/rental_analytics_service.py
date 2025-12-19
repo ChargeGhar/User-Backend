@@ -77,6 +77,26 @@ class RentalAnalyticsService(BaseService):
             most_rented = pb_details[0]['serial_number'] if pb_details else 'N/A'
             least_rented = pb_details[-1]['serial_number'] if pb_details else 'N/A'
             
+            # Rental package usage
+            package_usage = Rental.objects.filter(
+                package__isnull=False
+            ).values(
+                'package__name',
+                'package__duration_minutes',
+                'package__price'
+            ).annotate(
+                total_rentals=Count('id')
+            ).order_by('-total_rentals')
+            
+            popular_packages = []
+            for pkg in package_usage:
+                popular_packages.append({
+                    'package_name': pkg['package__name'],
+                    'duration_minutes': pkg['package__duration_minutes'],
+                    'price': float(pkg['package__price']),
+                    'rental_count': pkg['total_rentals']
+                })
+            
             return {
                 'summary': {
                     'total_powerbanks': total_powerbanks,
@@ -106,6 +126,7 @@ class RentalAnalyticsService(BaseService):
                     'percentages': [round(on_time_percentage, 2), round(100 - on_time_percentage, 2)]
                 },
                 'powerbank_details': pb_details,
+                'popular_packages': popular_packages,
                 'stats': {
                     'rented': status_counts['active'] + status_counts['overdue'],
                     'completed': status_counts['completed'],

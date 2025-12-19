@@ -61,6 +61,33 @@ class PaymentAnalyticsService(BaseService):
                 pm_counts.append(data['count'])
                 pm_percentages.append(round(percentage, 2))
             
+            # Specific gateway usage (Khalti, eSewa, etc.)
+            gateway_transactions = Transaction.objects.filter(
+                status='SUCCESS',
+                payment_method_type='GATEWAY',
+                gateway_reference__isnull=False
+            ).values('gateway_reference').annotate(
+                count=Count('id'),
+                amount=Sum('amount')
+            )
+            
+            gateway_usage = []
+            for gt in gateway_transactions:
+                ref = gt['gateway_reference']
+                gateway_name = 'Unknown'
+                if 'khalti' in ref.lower():
+                    gateway_name = 'Khalti'
+                elif 'esewa' in ref.lower():
+                    gateway_name = 'eSewa'
+                elif 'stripe' in ref.lower():
+                    gateway_name = 'Stripe'
+                
+                gateway_usage.append({
+                    'gateway': gateway_name,
+                    'count': gt['count'],
+                    'amount': float(gt['amount'])
+                })
+            
             # Transaction types breakdown
             transaction_types = Transaction.objects.filter(
                 status='SUCCESS'
@@ -80,7 +107,7 @@ class PaymentAnalyticsService(BaseService):
                 float(tt_data.get('FINE', {}).get('amount', Decimal('0')))
             ]
             
-            # Top 10 users by spending
+            # Top 10 users by spending with payment method breakdown
             top_users = User.objects.annotate(
                 rental_count=Count('rentals'),
                 total_spent=Sum('transactions__amount', filter=Q(
@@ -90,6 +117,22 @@ class PaymentAnalyticsService(BaseService):
                 total_topups=Sum('transactions__amount', filter=Q(
                     transactions__status='SUCCESS',
                     transactions__transaction_type='TOPUP'
+                )),
+                wallet_payments=Count('transactions', filter=Q(
+                    transactions__status='SUCCESS',
+                    transactions__payment_method_type='WALLET'
+                )),
+                gateway_payments=Count('transactions', filter=Q(
+                    transactions__status='SUCCESS',
+                    transactions__payment_method_type='GATEWAY'
+                )),
+                points_payments=Count('transactions', filter=Q(
+                    transactions__status='SUCCESS',
+                    transactions__payment_method_type='POINTS'
+                )),
+                combination_payments=Count('transactions', filter=Q(
+                    transactions__status='SUCCESS',
+                    transactions__payment_method_type='COMBINATION'
                 ))
             ).filter(
                 total_spent__isnull=False
@@ -103,6 +146,15 @@ class PaymentAnalyticsService(BaseService):
             for user in top_users:
                 wallet_balance = user.wallet.balance if hasattr(user, 'wallet') else Decimal('0')
                 
+                # Determine preferred payment method
+                payment_counts = {
+                    'wallet': user.wallet_payments,
+                    'gateway': user.gateway_payments,
+                    'points': user.points_payments,
+                    'combination': user.combination_payments
+                }
+                preferred_method = max(payment_counts, key=payment_counts.get) if sum(payment_counts.values()) > 0 else 'none'
+                
                 top_users_data.append({
                     'user_id': str(user.id),
                     'username': user.username or 'N/A',
@@ -110,7 +162,8 @@ class PaymentAnalyticsService(BaseService):
                     'total_rentals': user.rental_count,
                     'total_spent': float(user.total_spent or Decimal('0')),
                     'total_topups': float(user.total_topups or Decimal('0')),
-                    'wallet_balance': float(wallet_balance)
+                    'wallet_balance': float(wallet_balance),
+                    'preferred_payment_method': preferred_method
                 })
                 
                 top_users_labels.append(user.username or f'User {str(user.id)[:8]}')
@@ -161,6 +214,7 @@ class PaymentAnalyticsService(BaseService):
                     'counts': pm_counts,
                     'percentages': pm_percentages
                 },
+                'gateway_usage': gateway_usage,
                 'revenue_by_type_chart': {
                     'labels': revenue_labels,
                     'datasets': [{
