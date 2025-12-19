@@ -61,20 +61,20 @@ class PaymentAnalyticsService(BaseService):
                 pm_counts.append(data['count'])
                 pm_percentages.append(round(percentage, 2))
             
-            # Specific gateway usage (Khalti, eSewa, etc.)
+            # Specific gateway usage (Khalti, eSewa, etc.) - aggregated by gateway type
             gateway_transactions = Transaction.objects.filter(
                 status='SUCCESS',
-                payment_method_type='GATEWAY',
-                gateway_reference__isnull=False
-            ).values('gateway_reference').annotate(
-                count=Count('id'),
-                amount=Sum('amount')
-            )
+                payment_method_type='GATEWAY'
+            ).exclude(
+                Q(gateway_reference__isnull=True) | Q(gateway_reference='')
+            ).values('gateway_reference', 'amount')
             
-            gateway_usage = []
+            # Aggregate by gateway type
+            gateway_summary = {}
             for gt in gateway_transactions:
-                ref = gt['gateway_reference']
+                ref = gt['gateway_reference'] or ''
                 gateway_name = 'Unknown'
+                
                 if 'khalti' in ref.lower():
                     gateway_name = 'Khalti'
                 elif 'esewa' in ref.lower():
@@ -82,11 +82,21 @@ class PaymentAnalyticsService(BaseService):
                 elif 'stripe' in ref.lower():
                     gateway_name = 'Stripe'
                 
-                gateway_usage.append({
-                    'gateway': gateway_name,
-                    'count': gt['count'],
-                    'amount': float(gt['amount'])
-                })
+                if gateway_name not in gateway_summary:
+                    gateway_summary[gateway_name] = {'count': 0, 'amount': Decimal('0')}
+                
+                gateway_summary[gateway_name]['count'] += 1
+                gateway_summary[gateway_name]['amount'] += gt['amount']
+            
+            # Convert to list
+            gateway_usage = [
+                {
+                    'gateway': gateway,
+                    'count': data['count'],
+                    'amount': float(data['amount'])
+                }
+                for gateway, data in gateway_summary.items()
+            ]
             
             # Transaction types breakdown
             transaction_types = Transaction.objects.filter(
