@@ -11,12 +11,12 @@ from __future__ import annotations
 import logging
 
 from drf_spectacular.utils import extend_schema
-from rest_framework import status
+from rest_framework import status, serializers as drf_serializers
 from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from api.admin import serializers
+from api.admin import serializers as admin_serializers
 from api.admin.services import AdminReferralService, AdminLeaderboardService
 from api.common.decorators import log_api_call
 from api.common.mixins import BaseAPIView
@@ -42,12 +42,12 @@ logger = logging.getLogger(__name__)
     tags=["Admin - Referrals"],
     summary="Referral Analytics",
     description="Get comprehensive referral analytics including conversion rates and top referrers (Staff only)",
-    parameters=[serializers.ReferralAnalyticsFiltersSerializer],
+    parameters=[admin_serializers.ReferralAnalyticsFiltersSerializer],
     responses={200: BaseResponseSerializer}
 )
 class AdminReferralAnalyticsView(GenericAPIView, BaseAPIView):
     """Admin referral analytics"""
-    serializer_class = serializers.ReferralAnalyticsFiltersSerializer
+    serializer_class = admin_serializers.ReferralAnalyticsFiltersSerializer
     permission_classes = [IsStaffPermission]
 
     @log_api_call()
@@ -55,7 +55,7 @@ class AdminReferralAnalyticsView(GenericAPIView, BaseAPIView):
         """Get referral analytics"""
         def operation():
             # Parse filters
-            filter_serializer = serializers.ReferralAnalyticsFiltersSerializer(
+            filter_serializer = admin_serializers.ReferralAnalyticsFiltersSerializer(
                 data=request.query_params
             )
             filter_serializer.is_valid(raise_exception=True)
@@ -84,12 +84,12 @@ class AdminReferralAnalyticsView(GenericAPIView, BaseAPIView):
     tags=["Admin - Referrals"],
     summary="User Referrals",
     description="Get paginated referrals for a specific user (Staff only)",
-    parameters=[serializers.UserReferralsFiltersSerializer],
+    parameters=[admin_serializers.UserReferralsFiltersSerializer],
     responses={200: BaseResponseSerializer}
 )
 class AdminUserReferralsView(GenericAPIView, BaseAPIView):
     """Admin user referrals"""
-    serializer_class = serializers.UserReferralsFiltersSerializer
+    serializer_class = admin_serializers.UserReferralsFiltersSerializer
     permission_classes = [IsStaffPermission]
 
     @log_api_call()
@@ -97,7 +97,7 @@ class AdminUserReferralsView(GenericAPIView, BaseAPIView):
         """Get user referrals"""
         def operation():
             # Parse filters
-            filter_serializer = serializers.UserReferralsFiltersSerializer(
+            filter_serializer = admin_serializers.UserReferralsFiltersSerializer(
                 data=request.query_params
             )
             filter_serializer.is_valid(raise_exception=True)
@@ -138,6 +138,7 @@ class AdminUserReferralsView(GenericAPIView, BaseAPIView):
 )
 class AdminCompleteReferralView(GenericAPIView, BaseAPIView):
     """Admin complete referral"""
+    serializer_class = drf_serializers.Serializer
     permission_classes = [IsStaffPermission]
 
     @log_api_call()
@@ -172,12 +173,12 @@ class AdminCompleteReferralView(GenericAPIView, BaseAPIView):
     tags=["Admin - Leaderboard"],
     summary="User Leaderboard",
     description="Get user leaderboard with various categories and time periods (Staff only)",
-    parameters=[serializers.LeaderboardFiltersSerializer],
+    parameters=[admin_serializers.LeaderboardFiltersSerializer],
     responses={200: BaseResponseSerializer}
 )
 class AdminLeaderboardView(GenericAPIView, BaseAPIView):
     """Admin leaderboard"""
-    serializer_class = serializers.LeaderboardFiltersSerializer
+    serializer_class = admin_serializers.LeaderboardFiltersSerializer
     permission_classes = [IsStaffPermission]
 
     @log_api_call()
@@ -185,7 +186,7 @@ class AdminLeaderboardView(GenericAPIView, BaseAPIView):
         """Get leaderboard"""
         def operation():
             # Parse filters
-            filter_serializer = serializers.LeaderboardFiltersSerializer(
+            filter_serializer = admin_serializers.LeaderboardFiltersSerializer(
                 data=request.query_params
             )
             filter_serializer.is_valid(raise_exception=True)

@@ -67,18 +67,22 @@ class Rental(BaseModel):
             return Decimal('0')
         
         # Calculate REALTIME late fee using current time
-        from api.common.utils.helpers import (
-            calculate_late_fee_amount, 
-            get_package_rate_per_minute
-        )
+        from api.rentals.services.late_fee_service import LateFeeService
         
         # Use current time as hypothetical end time
         hypothetical_end = timezone.now()
         overdue_duration = hypothetical_end - self.due_at
         overdue_minutes = int(overdue_duration.total_seconds() / 60)
         
-        package_rate = get_package_rate_per_minute(self.package)
-        return calculate_late_fee_amount(package_rate, overdue_minutes)
+        # Get active config or default
+        config = LateFeeConfiguration.objects.filter(is_active=True).first()
+        if not config:
+            # Fallback to old helper logic if no config
+            from api.common.utils.helpers import get_package_rate_per_minute
+            package_rate = get_package_rate_per_minute(self.package)
+            return LateFeeService.calculate_late_fee(None, package_rate, overdue_minutes)
+            
+        return LateFeeService.calculate_late_fee(config, self.package.price / (self.package.duration_minutes or 1), overdue_minutes)
     
     @property
     def estimated_total_cost(self):
@@ -110,7 +114,6 @@ class Rental(BaseModel):
 
     def __str__(self):
         return f"{self.rental_code} - {self.user.username}"
-
 
 
 class RentalExtension(BaseModel):

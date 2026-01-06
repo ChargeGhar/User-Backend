@@ -1,8 +1,7 @@
-from __future__ import annotations
-
-from .base import BaseService, CRUDService
+from .base import BaseService, CRUDService, ServiceException
 
 __all__ = [
     'BaseService',
     'CRUDService',
+    'ServiceException',
 ]

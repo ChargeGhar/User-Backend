@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 
 from api.common.tasks.base import BaseTask, NotificationTask
-from api.users.models import UserAuditLog
+from api.system.models.audit import AuditLog as UserAuditLog
 
 User = get_user_model()
 

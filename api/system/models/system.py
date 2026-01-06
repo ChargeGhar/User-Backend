@@ -1,10 +1,8 @@
-from __future__ import annotations
-
 from django.db import models
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.core.cache import cache
-from api.common.models import BaseModel
+from api.common.models.base import BaseModel
 
 
 class Country(BaseModel):
@@ -18,7 +16,7 @@ class Country(BaseModel):
     is_active = models.BooleanField(default=True)
 
     class Meta:
-        db_table = "countries"  # ⚠️ CRITICAL: Keep same table name for zero-downtime migration
+        db_table = "countries"
         verbose_name = "Country"
         verbose_name_plural = "Countries"
         ordering = ['name']
@@ -37,7 +35,7 @@ class AppConfig(BaseModel):
     is_active = models.BooleanField(default=True)
 
     class Meta:
-        db_table = "app_configs"  # ⚠️ CRITICAL: Keep same table name
+        db_table = "app_configs"
         verbose_name = "App Config"
         verbose_name_plural = "App Configs"
 
@@ -62,7 +60,7 @@ class AppVersion(BaseModel):
     released_at = models.DateTimeField()
     
     class Meta:
-        db_table = "app_versions"  # ⚠️ CRITICAL: Keep same table name
+        db_table = "app_versions"
         verbose_name = "App Version"
         verbose_name_plural = "App Versions"
         ordering = ['-released_at']
@@ -83,7 +81,7 @@ class AppUpdate(BaseModel):
     released_at = models.DateTimeField()
     
     class Meta:
-        db_table = "app_updates"  # ⚠️ CRITICAL: Keep same table name
+        db_table = "app_updates"
         verbose_name = "App Update"
         verbose_name_plural = "App Updates"
         ordering = ['-released_at']
@@ -92,25 +90,13 @@ class AppUpdate(BaseModel):
         return f"{self.title} - v{self.version}"
 
 
-# ============================================================
-# Signal Handlers for Automatic Cache Invalidation
-# ============================================================
-
 @receiver(post_save, sender=AppConfig)
 def clear_appconfig_cache_on_save(sender, instance, **kwargs):
-    """
-    Automatically clear cache when AppConfig is created or updated.
-    This ensures cache is always in sync, regardless of how the config is modified
-    (via service, Django admin, direct SQL, etc.)
-    """
     cache_key = f"app_config_{instance.key}"
     cache.delete(cache_key)
 
 
 @receiver(post_delete, sender=AppConfig)
 def clear_appconfig_cache_on_delete(sender, instance, **kwargs):
-    """
-    Automatically clear cache when AppConfig is deleted.
-    """
     cache_key = f"app_config_{instance.key}"
     cache.delete(cache_key)

@@ -11,7 +11,8 @@ from __future__ import annotations
 from typing import Dict, Any
 from django.db import transaction
 from api.common.services.base import BaseService
-from api.users.models import User, UserProfile, UserPoints
+from api.users.models import User, UserProfile
+from api.points.models import UserPoints
 
 class UserProfileService(BaseService):
     """Service for user profile operations"""

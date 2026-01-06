@@ -8,7 +8,7 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from api.admin import serializers
+from api.admin import serializers as admin_serializers
 from api.admin.services import AdminUserService
 from api.common.decorators import log_api_call
 from api.common.mixins import BaseAPIView
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
     tags=["Admin - Users"],
     summary="User Management",
     description="Manage users (list with filters) (Staff only)",
-    request=serializers.AdminUserListSerializer,
+    request=admin_serializers.AdminUserListSerializer,
     responses={200: BaseResponseSerializer}
 )
 class AdminUserListView(GenericAPIView, BaseAPIView):
@@ -36,7 +36,7 @@ class AdminUserListView(GenericAPIView, BaseAPIView):
     def get(self, request: Request) -> Response:
         """Get users list with filters"""
         def operation():
-            filter_serializer = serializers.AdminUserListSerializer(data=request.query_params)
+            filter_serializer = admin_serializers.AdminUserListSerializer(data=request.query_params)
             filter_serializer.is_valid(raise_exception=True)
             
             service = AdminUserService()
@@ -89,12 +89,12 @@ class AdminUserDetailView(GenericAPIView, BaseAPIView):
     tags=["Admin - Users"],
     summary="Update User Status",
     description="Update user status (ACTIVE/BANNED/INACTIVE) (Staff only)",
-    request=serializers.UpdateUserStatusSerializer,
+    request=admin_serializers.UpdateUserStatusSerializer,
     responses={200: BaseResponseSerializer}
 )
 class UpdateUserStatusView(GenericAPIView, BaseAPIView):
     """Update user status"""
-    serializer_class = serializers.UpdateUserStatusSerializer
+    serializer_class = admin_serializers.UpdateUserStatusSerializer
     permission_classes = [IsStaffPermission]
 
     @log_api_call()
@@ -129,12 +129,12 @@ class UpdateUserStatusView(GenericAPIView, BaseAPIView):
     tags=["Admin - Users"],
     summary="Add User Balance",
     description="Add balance to user wallet (Staff only)",
-    request=serializers.AddUserBalanceSerializer,
+    request=admin_serializers.AddUserBalanceSerializer,
     responses={200: BaseResponseSerializer}
 )
 class AddUserBalanceView(GenericAPIView, BaseAPIView):
     """Add balance to user wallet"""
-    serializer_class = serializers.AddUserBalanceSerializer
+    serializer_class = admin_serializers.AddUserBalanceSerializer
     permission_classes = [IsStaffPermission]
 
     @log_api_call()

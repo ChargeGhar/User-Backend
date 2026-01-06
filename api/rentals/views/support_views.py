@@ -5,7 +5,7 @@ Support operations - issues, location tracking, and payments
 import logging
 
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiParameter
-from rest_framework import status
+from rest_framework import status, serializers as drf_serializers
 from rest_framework.request import Request
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
@@ -15,7 +15,7 @@ from api.common.routers import CustomViewRouter
 from api.common.mixins import BaseAPIView
 from api.common.decorators import log_api_call
 from api.common.serializers import BaseResponseSerializer
-from api.rentals import serializers
+from api.rentals.serializers import core_serializers as serializers
 from api.rentals.models import Rental
 from api.rentals.services import RentalIssueService, RentalLocationService
 
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
     responses={200: BaseResponseSerializer}
 )
 class RentalPayDueView(GenericAPIView, BaseAPIView):
-    # serializer_class = serializers.RentalPayDueSerializer  # Not needed since no request body
+    serializer_class = drf_serializers.Serializer
     permission_classes = [IsAuthenticated]
     
     @extend_schema(

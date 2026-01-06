@@ -4,7 +4,7 @@ from typing import Any
 
 from django.contrib import admin
 
-from api.users.models import User, UserProfile, UserKYC, UserDevice, UserPoints, UserAuditLog
+from api.users.models import User, UserProfile, UserKYC, UserDevice
 
 
 @admin.register(User)
@@ -35,8 +35,6 @@ class UserAdmin(admin.ModelAdmin):
     search_fields = ("username", "email", "phone_number", "referral_code")
     readonly_fields = ("date_joined", "last_login")
 
-    # Removed password handling - OTP-based authentication only
-
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
@@ -60,18 +58,3 @@ class UserDeviceAdmin(admin.ModelAdmin):
     list_filter = ['device_type', 'is_active', 'last_used']
     search_fields = ['user__username', 'device_name', 'device_id']
     readonly_fields = ['created_at', 'last_used']
-
-
-@admin.register(UserAuditLog)
-class UserAuditLogAdmin(admin.ModelAdmin):
-    list_display = ['user', 'admin', 'action', 'entity_type', 'entity_id', 'created_at']
-    list_filter = ['action', 'entity_type', 'created_at']
-    search_fields = ['user__username', 'admin__username', 'entity_id']
-    readonly_fields = ['created_at']
-
-@admin.register(UserPoints)
-class UserPointsAdmin(admin.ModelAdmin):
-    list_display = ['user', 'current_points', 'total_points', 'last_updated']
-    list_filter = ['last_updated']
-    search_fields = ['user__username']
-    readonly_fields = ['created_at', 'updated_at', 'last_updated']

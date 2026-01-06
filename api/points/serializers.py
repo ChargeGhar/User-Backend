@@ -4,8 +4,8 @@ from rest_framework import serializers
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema_field
 
-from api.points.models import PointsTransaction, Referral
-from api.users.models import UserPoints, User
+from api.points.models import PointsTransaction, Referral, UserPoints
+from api.users.models import User
 from api.common.utils.helpers import convert_points_to_amount
 from api.common.serializers import BaseResponseSerializer
 

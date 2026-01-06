@@ -1,266 +1,53 @@
+"""
+Common utility helpers module.
+
+This module re-exports utilities from domain-specific files for backward compatibility.
+For new code, prefer importing from specific modules:
+    - codes.py: Code generation (generate_random_code, generate_transaction_id, etc.)
+    - pagination.py: Pagination utilities (paginate_queryset)
+    - validation.py: Validation helpers (validate_phone_number, mask_sensitive_data)
+    - geo.py: Geographic calculations (calculate_distance)
+    - currency.py: Currency/points utilities (format_currency, calculate_points_from_amount)
+    - response.py: Response helpers (create_success_response, create_error_response)
+    - late_fee.py: Late fee calculations (calculate_late_fee_amount, calculate_overdue_minutes)
+"""
 from __future__ import annotations
 
-import random
-import string
-import uuid
-from typing import Any, Dict, Optional
-from decimal import Decimal
-from django.utils import timezone
-from django.core.paginator import Paginator
-from rest_framework.response import Response
-from rest_framework import status
+from .codes import (
+    generate_random_code,
+    generate_unique_code,
+    generate_transaction_id,
+    generate_rental_code,
+)
+from .pagination import paginate_queryset
+from .validation import validate_phone_number, mask_sensitive_data
+from .geo import calculate_distance
+from .currency import format_currency, calculate_points_from_amount, convert_points_to_amount
+from .response import create_success_response, create_error_response, get_client_ip
+from .late_fee import (
+    get_late_fee_configuration,
+    calculate_late_fee_amount,
+    calculate_overdue_minutes,
+    get_package_rate_per_minute,
+)
 
-
-def generate_random_code(length: int = 6, include_letters: bool = True, include_numbers: bool = True) -> str:
-    """Generate random alphanumeric code"""
-    chars = ""
-    if include_letters:
-        chars += string.ascii_uppercase
-    if include_numbers:
-        chars += string.digits
-    
-    if not chars:
-        raise ValueError("At least one character type must be included")
-    
-    return ''.join(random.choices(chars, k=length))
-
-
-def generate_unique_code(prefix: str = "", length: int = 8) -> str:
-    """Generate unique code with optional prefix"""
-    code = generate_random_code(length)
-    return f"{prefix}{code}" if prefix else code
-
-
-def generate_transaction_id() -> str:
-    """Generate unique transaction ID"""
-    timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
-    random_part = generate_random_code(6)
-    return f"TXN{timestamp}{random_part}"
-
-
-def generate_rental_code() -> str:
-    """Generate unique rental code"""
-    return generate_random_code(8, include_letters=True, include_numbers=True)
-
-
-def calculate_points_from_amount(amount: Decimal, points_per_unit: int = 10, unit_amount: Decimal = Decimal('100')) -> int:
-    """Calculate points based on amount (default: 10 points per NPR 100)"""
-    if amount <= 0:
-        return 0
-    return int((amount / unit_amount) * points_per_unit)
-
-
-def convert_points_to_amount(points: int, points_per_unit: int = 10, unit_amount: Decimal = Decimal('1')) -> Decimal:
-    """Convert points to monetary amount (default: 10 points = NPR 1)"""
-    if points <= 0:
-        return Decimal('0')
-    return Decimal(points / points_per_unit) * unit_amount
-
-
-def paginate_queryset(queryset, page: int = 1, page_size: int = 20) -> Dict[str, Any]:
-    """Paginate queryset and return pagination info"""
-    # Ensure queryset is ordered to avoid pagination warnings
-    if not queryset.ordered:
-        queryset = queryset.order_by('id')
-    
-    paginator = Paginator(queryset, page_size)
-    page_obj = paginator.get_page(page)
-    
-    return {
-        'results': page_obj.object_list,
-        'pagination': {
-            'current_page': page_obj.number,
-            'total_pages': paginator.num_pages,
-            'total_count': paginator.count,
-            'page_size': page_size,
-            'has_next': page_obj.has_next(),
-            'has_previous': page_obj.has_previous(),
-        }
-    }
-
-
-def create_success_response(data: Any = None, message: str = "Success", status_code: int = status.HTTP_200_OK) -> Response:
-    """Create standardized success response"""
-    response_data = {
-        'success': True,
-        'message': message,
-    }
-    if data is not None:
-        response_data['data'] = data
-    
-    return Response(response_data, status=status_code)
-
-
-def create_error_response(message: str = "Error", errors: Optional[Dict[str, Any]] = None, status_code: int = status.HTTP_400_BAD_REQUEST) -> Response:
-    """Create standardized error response"""
-    response_data = {
-        'success': False,
-        'message': message,
-    }
-    if errors:
-        response_data['errors'] = errors
-    
-    return Response(response_data, status=status_code)
-
-
-def validate_phone_number(phone: str) -> bool:
-    """Basic phone number validation for Nepal"""
-    # Remove any spaces or special characters
-    clean_phone = ''.join(filter(str.isdigit, phone))
-
-    # Nepal mobile numbers are typically 10 digits starting with 98 or 97
-    if len(clean_phone) == 10 and (clean_phone.startswith('98') or clean_phone.startswith('97')):
-        return True
-
-    # International format +977-98XXXXXXXX or +977-97XXXXXXXX
-    if len(clean_phone) == 13 and (clean_phone.startswith('97798') or clean_phone.startswith('97797')):
-        return True
-
-    return False
-
-
-def format_currency(amount: Decimal, currency: str = "NPR") -> str:
-    """Format currency amount"""
-    return f"{currency} {amount:,.2f}"
-
-
-def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """Calculate distance between two coordinates in kilometers using Haversine formula"""
-    import math
-    
-    # Convert latitude and longitude from degrees to radians
-    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
-    
-    # Haversine formula
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
-    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
-    c = 2 * math.asin(math.sqrt(a))
-    
-    # Radius of earth in kilometers
-    r = 6371
-    
-    return c * r
-
-
-def mask_sensitive_data(data: str, mask_char: str = "*", visible_chars: int = 4) -> str:
-    """Mask sensitive data like phone numbers, emails"""
-    if len(data) <= visible_chars:
-        return mask_char * len(data)
-    
-    return data[:visible_chars] + mask_char * (len(data) - visible_chars)
-
-
-def get_client_ip(request) -> str:
-    """Get client IP address from request"""
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
-    else:
-        ip = request.META.get('REMOTE_ADDR')
-    return ip or '127.0.0.1'
-
-
-def get_late_fee_configuration():
-    """Get the currently active late fee configuration"""
-    from api.common.models import LateFeeConfiguration
-    try:
-        return LateFeeConfiguration.objects.filter(is_active=True).first()
-    except Exception:
-        # Fallback to default 2x multiplier if configuration not found
-        return None
-
-
-def calculate_late_fee_amount(normal_rate_per_minute: Decimal, overdue_minutes: int,
-                             package_type: str = None) -> Decimal:
-    """Calculate late fee amount using active configuration
-
-    Args:
-        normal_rate_per_minute: The normal package rate per minute
-        overdue_minutes: Total minutes the rental was overdue
-        package_type: Package type (optional, for future package-specific rules)
-
-    Returns:
-        Decimal: The calculated late fee amount
-    """
-    from decimal import Decimal
-    from django.core.cache import cache
-
-    # Try cache first for better performance
-    cache_key = f"late_fee_config_{package_type or 'default'}"
-    config = cache.get(cache_key)
-
-    if config is None:
-        # Get active configuration from database
-        config = get_late_fee_configuration()
-
-        if config is None:
-            # Fallback to default 2x multiplier if no configuration exists
-            return normal_rate_per_minute * Decimal('2') * Decimal(str(overdue_minutes))
-
-        # Cache configuration for 1 hour
-        cache.set(cache_key, config, timeout=3600)
-
-    # Calculate using the configuration
-    return config.calculate_late_fee(normal_rate_per_minute, overdue_minutes)
-
-
-def calculate_overdue_minutes(rental) -> int:
-    """Calculate overdue minutes for a rental
-
-    Args:
-        rental: Rental instance with ended_at and due_at fields
-
-    Returns:
-        int: Minutes overdue, or 0 if not overdue
-    """
-    if not rental.ended_at or not rental.due_at:
-        return 0
-
-    if rental.ended_at <= rental.due_at:
-        return 0
-
-    # Calculate overdue duration
-    overdue_duration = rental.ended_at - rental.due_at
-    overdue_minutes = int(overdue_duration.total_seconds() / 60)
-
-    return max(0, overdue_minutes)
-
-
-def get_package_rate_per_minute(package) -> Decimal:
-    """Get package rate per minute
-
-    Args:
-        package: RentalPackage instance
-
-    Returns:
-        Decimal: Rate per minute
-    """
-    from decimal import Decimal
-    return package.price / Decimal(str(package.duration_minutes))
-
-
-def paginate_queryset(queryset, page: int = 1, page_size: int = 20) -> Dict[str, Any]:
-    """Paginate queryset and return pagination info (moved from common/pagination.py)"""
-    from django.core.paginator import Paginator
-    
-    # Ensure queryset is ordered to avoid pagination warnings
-    if not queryset.ordered:
-        queryset = queryset.order_by('-created_at')
-    
-    paginator = Paginator(queryset, page_size)
-    page_obj = paginator.get_page(page)
-    
-    return {
-        'results': list(page_obj.object_list),
-        'pagination': {
-            'current_page': page_obj.number,
-            'total_pages': paginator.num_pages,
-            'total_count': paginator.count,
-            'page_size': page_size,
-            'has_next': page_obj.has_next(),
-            'has_previous': page_obj.has_previous(),
-            'next_page': page_obj.next_page_number() if page_obj.has_next() else None,
-            'previous_page': page_obj.previous_page_number() if page_obj.has_previous() else None,
-        }
-    }
+__all__ = [
+    'generate_random_code',
+    'generate_unique_code',
+    'generate_transaction_id',
+    'generate_rental_code',
+    'paginate_queryset',
+    'validate_phone_number',
+    'mask_sensitive_data',
+    'calculate_distance',
+    'format_currency',
+    'calculate_points_from_amount',
+    'convert_points_to_amount',
+    'create_success_response',
+    'create_error_response',
+    'get_client_ip',
+    'get_late_fee_configuration',
+    'calculate_late_fee_amount',
+    'calculate_overdue_minutes',
+    'get_package_rate_per_minute',
+]

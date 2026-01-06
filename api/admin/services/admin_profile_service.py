@@ -15,7 +15,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from api.common.services.base import CRUDService, ServiceException
 from api.admin.models import AdminProfile, AdminActionLog
-from api.users.models import User, UserProfile, UserPoints
+from api.users.models import User, UserProfile
+from api.points.models import UserPoints
 from api.payments.models import Wallet
 
 

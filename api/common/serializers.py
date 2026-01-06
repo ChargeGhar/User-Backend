@@ -19,10 +19,6 @@ from __future__ import annotations
 from rest_framework import serializers
 
 
-# ============================================================================
-# Common Base Serializers (Used Across All Apps)
-# ============================================================================
-
 class BaseResponseSerializer(serializers.Serializer):
     """Standard response format for all API endpoints"""
     success = serializers.BooleanField()
@@ -37,14 +33,6 @@ class PaginatedResponseSerializer(serializers.Serializer):
     message = serializers.CharField()
     data = serializers.JSONField()
     pagination = serializers.DictField()
-    timestamp = serializers.DateTimeField()
-
-
-class HealthCheckSerializer(serializers.Serializer):
-    """Health check response serializer"""
-    status = serializers.CharField()
-    database = serializers.CharField()
-    cache = serializers.CharField()
     timestamp = serializers.DateTimeField()
 
 

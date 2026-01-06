@@ -19,10 +19,6 @@ from .analytics_serializers import (
 
 # From common_serializers.py
 from .common_serializers import (
-    ActivateLateFeeConfigurationSerializer,
-    CreateLateFeeConfigurationSerializer,
-    LateFeeCalculationTestSerializer,
-    LateFeeConfigurationSerializer,
     RemoteCommandSerializer,
     RevenueChartDataSerializer,
     RevenueOverTimeQuerySerializer,
@@ -32,6 +28,14 @@ from .common_serializers import (
     SystemLogFiltersSerializer,
     SystemLogSerializer,
     ToggleMaintenanceSerializer,
+)
+
+# From late_fee_serializers.py
+from .late_fee_serializers import (
+    ActivateLateFeeConfigurationSerializer,
+    CreateLateFeeConfigurationSerializer,
+    LateFeeCalculationTestSerializer,
+    LateFeeConfigurationSerializer,
     UpdateLateFeeConfigurationSerializer,
 )
 

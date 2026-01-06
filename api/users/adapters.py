@@ -117,7 +117,8 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         # Fallback: Save user and create related objects manually
         user.save()
         
-        from api.users.models import UserProfile, UserPoints
+        from api.users.models import UserProfile
+        from api.points.models import UserPoints
         from api.payments.models import Wallet
         
         try:

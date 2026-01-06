@@ -5,7 +5,8 @@ from rest_framework import serializers
 # Removed password-related imports for OTP-based authentication
 from drf_spectacular.utils import extend_schema_field
 
-from api.users.models import User, UserProfile, UserKYC, UserDevice, UserPoints
+from api.users.models import User, UserProfile, UserKYC, UserDevice
+from api.points.models import UserPoints
 from api.common.utils.helpers import validate_phone_number, mask_sensitive_data
 
 class OTPRequestSerializer(serializers.Serializer):

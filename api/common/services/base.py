@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any, Dict, Optional
-from django.db import transaction, IntegrityError, DataError
+from django.db import IntegrityError, DataError
 from django.core.exceptions import ValidationError
 from rest_framework import status
 from rest_framework.exceptions import APIException
@@ -19,11 +19,9 @@ class ServiceException(APIException):
     
     def __init__(self, detail=None, code=None, status_code=None, 
                  context=None, user_message=None):
-        # New additions for enhanced error handling
         self.context = context or {}
         self.user_message = user_message or detail
         
-        # Keep existing behavior
         if status_code:
             self.status_code = status_code
         if code:
@@ -59,21 +57,6 @@ class BaseService:
     def log_warning(self, message: str, extra: Optional[Dict[str, Any]] = None) -> None:
         """Log warning message with optional extra data"""
         self.logger.warning(message, extra=extra or {})
-    
-    @transaction.atomic
-    def execute_with_transaction(self, func, *args, **kwargs):
-        """Execute function within database transaction"""
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            self.log_error(f"Transaction failed: {str(e)}")
-            raise
-    
-    def validate_required_fields(self, data: Dict[str, Any], required_fields: list[str]) -> None:
-        """Validate that all required fields are present"""
-        missing_fields = [field for field in required_fields if not data.get(field)]
-        if missing_fields:
-            raise ValidationError(f"Missing required fields: {', '.join(missing_fields)}")
     
     def handle_service_error(self, error: Exception, context: str = "") -> None:
         """Handle and log service errors"""

@@ -15,7 +15,9 @@ from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 from api.common.services.base import BaseService, ServiceException
 from api.common.utils.helpers import generate_unique_code, get_client_ip
-from api.users.models import User, UserProfile, UserPoints, UserAuditLog
+from api.users.models import User, UserProfile
+from api.points.models import UserPoints
+from api.system.models.audit import AuditLog as UserAuditLog
 from api.payments.models import Wallet
 from api.notifications.services import notify
 from api.users.utils.otp_handler import OTPHandler

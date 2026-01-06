@@ -62,7 +62,7 @@ except Exception as e:
 print("\n[TEST 2] Late Fee Configuration System")
 print("-" * 80)
 
-from api.common.models import LateFeeConfiguration
+from api.rentals.models.late_fee import LateFeeConfiguration
 
 try:
     # Check active configuration

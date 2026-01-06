@@ -54,9 +54,11 @@ class UserManager(BaseUserManager):
         # Create related objects for admin user (same as regular user registration)
         from api.payments.models import Wallet
         from api.admin.models import AdminProfile
+        from api.points.models import UserPoints
         
         UserProfile.objects.get_or_create(user=user, defaults={'is_profile_complete': False})
         UserPoints.objects.get_or_create(user=user, defaults={'current_points': 0, 'total_points': 0})
+
         Wallet.objects.get_or_create(user=user, defaults={'balance': 0, 'currency': 'NPR', 'is_active': True})
         AdminProfile.objects.get_or_create(
             user=user, 
@@ -275,62 +277,3 @@ class UserDevice(BaseModel):
 
     def __str__(self):
         return f"{self.user.username} - {self.device_type}"
-
-
-class UserAuditLog(BaseModel):
-    """
-    UserAuditLog - Audit trail for user actions
-    """
-    ACTION_CHOICES = [
-        ('CREATE', 'Create'), 
-        ('UPDATE', 'Update'),
-        ('DELETE', 'Delete'),
-        ('LOGIN', 'Login'),
-        ('LOGOUT', 'Logout'),
-    ]
-
-    ENTITY_TYPE_CHOICES = [
-        ('USER', 'User'),
-        ('STATION', 'Station'),
-        ('RENTAL', 'Rental'),
-        ('TRANSACTION', 'Transaction'),
-    ]
-
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='audit_logs')
-    admin = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='admin_audit_logs')
-    action = models.CharField(max_length=50, choices=ACTION_CHOICES)
-    entity_type = models.CharField(max_length=50, choices=ENTITY_TYPE_CHOICES)
-    entity_id = models.CharField(max_length=255)
-    old_values = models.JSONField(default=dict, null=True, blank=True)
-    new_values = models.JSONField(default=dict, null=True, blank=True)
-    ip_address = models.GenericIPAddressField()
-    user_agent = models.TextField()
-    session_id = models.CharField(max_length=255, null=True, blank=True)
-
-    class Meta:
-        db_table = "user_audit_logs"
-        verbose_name = "User Audit Log"
-        verbose_name_plural = "User Audit Logs"
-        ordering = ['-created_at']
-
-    def __str__(self):
-        return f"{self.action} - {self.entity_type} by {self.user or self.admin}"
-
-
-        
-class UserPoints(BaseModel):
-    """
-    UserPoints - User's points balance
-    """
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='points')
-    current_points = models.IntegerField(default=0)
-    total_points = models.IntegerField(default=0)
-    last_updated = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = "user_points"
-        verbose_name = "User Points"
-        verbose_name_plural = "User Points"
-
-    def __str__(self):
-        return f"{self.user.username} - {self.current_points} points"

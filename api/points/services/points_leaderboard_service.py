@@ -14,8 +14,7 @@ from django.utils import timezone
 from django.db.models import Sum, Count
 from django.contrib.auth import get_user_model
 from api.common.services.base import BaseService
-from api.points.models import PointsTransaction, Referral
-from api.users.models import UserPoints
+from api.points.models import PointsTransaction, Referral, UserPoints
 
 if TYPE_CHECKING:
     from api.users.models import User

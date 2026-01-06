@@ -1,0 +1,48 @@
+══════════════════════════════════════════════════════════════════════
+📦 APP: common
+══════════════════════════════════════════════════════════════════════
+
+📄 VIEWS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+api/common/views/
+└── ✗ No views found
+
+
+⚙️  SERVICES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+api/common/services/
+├── __init__.py                    # Exports
+└── base.py                        # Service operations
+    ├── ServiceException
+    │   ├── __init__()
+    │   └── get_context_data()
+    ├── BaseService
+    │   ├── __init__()
+    │   ├── log_info()
+    │   ├── log_error()
+    │   ├── log_warning()
+    │   ├── execute_with_transaction()
+    │   ├── validate_required_fields()
+    │   └── handle_service_error()
+    └── CRUDService
+        ├── __init__()
+        ├── get_by_id()
+        ├── get_queryset()
+        ├── create()
+        ├── update()
+        └── delete()
+
+Total: 1 files, 3 service classes, 15 methods
+
+📋 SERIALIZERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+api/common/serializers.py          # Single file (52 lines)
+├── Utility Serializers
+│   ├── BaseResponseSerializer
+│   └── PaginatedResponseSerializer
+└── Other Serializers
+    ├── HealthCheckSerializer
+    └── AppVersionSerializer
+
+Total: 1 file, 4 serializers (2 categories)
+

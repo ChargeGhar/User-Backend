@@ -8,7 +8,7 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from api.admin import serializers
+from api.admin import serializers as admin_serializers
 from api.admin.services import AdminWithdrawalService
 from api.common.decorators import log_api_call
 from api.common.mixins import BaseAPIView
@@ -55,7 +55,7 @@ class AdminWithdrawalAnalyticsView(GenericAPIView, BaseAPIView):
     summary="All Withdrawals",
     description="Get list of all withdrawal requests with filters (Staff only)",
     parameters=[
-        serializers.WithdrawalFiltersSerializer
+        admin_serializers.WithdrawalFiltersSerializer
     ],
     responses={200: BaseResponseSerializer}
 )
@@ -67,7 +67,7 @@ class AdminWithdrawalsView(GenericAPIView, BaseAPIView):
     def get(self, request: Request) -> Response:
         """Get all withdrawals"""
         def operation():
-            filter_serializer = serializers.WithdrawalFiltersSerializer(data=request.query_params)
+            filter_serializer = admin_serializers.WithdrawalFiltersSerializer(data=request.query_params)
             filter_serializer.is_valid(raise_exception=True)
             
             service = AdminWithdrawalService()
@@ -92,12 +92,12 @@ class AdminWithdrawalsView(GenericAPIView, BaseAPIView):
     tags=["Admin - Withdrawals"],
     summary="Process Withdrawal",
     description="Approve or reject withdrawal request (Staff only)",
-    request=serializers.ProcessWithdrawalSerializer,
+    request=admin_serializers.ProcessWithdrawalSerializer,
     responses={200: BaseResponseSerializer}
 )
 class ProcessWithdrawalView(GenericAPIView, BaseAPIView):
     """Process withdrawal (approve/reject)"""
-    serializer_class = serializers.ProcessWithdrawalSerializer
+    serializer_class = admin_serializers.ProcessWithdrawalSerializer
     permission_classes = [IsStaffPermission]
 
     @log_api_call()

@@ -229,13 +229,13 @@ class UserWalletView(GenericAPIView, BaseAPIView):
             
             # Get fresh points from DB
             try:
-                from api.users.models import UserPoints
+                from api.points.models import UserPoints
                 points = UserPoints.objects.get(user=user)
                 current_points = points.current_points
                 total_points = points.total_points
             except UserPoints.DoesNotExist:
                 # Create points if doesn't exist
-                from api.users.models import UserPoints
+                from api.points.models import UserPoints
                 points = UserPoints.objects.create(user=user)
                 current_points = 0
                 total_points = 0

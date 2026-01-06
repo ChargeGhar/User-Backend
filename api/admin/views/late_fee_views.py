@@ -19,8 +19,8 @@ from api.common.mixins import BaseAPIView
 from api.common.decorators import log_api_call
 from api.common.serializers import BaseResponseSerializer
 from api.users.permissions import IsStaffPermission
-from api.admin.services import LateFeeConfigurationService
-from api.admin.serializers import (
+from api.admin.services.late_fee_service import LateFeeConfigurationService
+from api.admin.serializers.late_fee_serializers import (
     LateFeeConfigurationSerializer,
     CreateLateFeeConfigurationSerializer,
     UpdateLateFeeConfigurationSerializer,
@@ -358,8 +358,6 @@ class LateFeeConfigurationDeactivateView(GenericAPIView, BaseAPIView):
     """Deactivate a late fee configuration"""
     
     permission_classes = [IsStaffPermission]
-    # No request body is expected for deactivate — keep serializer_class None so
-    # the OpenAPI schema doesn't show a full configuration request body in Swagger UI.
     serializer_class = None
     
     @extend_schema(
