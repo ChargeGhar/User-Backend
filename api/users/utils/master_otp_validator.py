@@ -25,7 +25,24 @@ def is_master_number(identifier: str) -> bool:
     """Check if identifier is in master OTP numbers list"""
     if not is_master_otp_enabled():
         return False
-    return identifier in get_master_otp_numbers()
+    
+    master_numbers = get_master_otp_numbers()
+    if identifier in master_numbers:
+        return True
+    
+    # Check for partial matches or normalized matches (e.g. without +977)
+    normalized_identifier = identifier.replace('+', '')
+    if normalized_identifier.startswith('977'):
+        normalized_identifier = normalized_identifier[3:]
+        
+    for num in master_numbers:
+        normalized_num = num.replace('+', '')
+        if normalized_num.startswith('977'):
+            normalized_num = normalized_num[3:]
+        if normalized_identifier == normalized_num:
+            return True
+            
+    return False
 
 
 def validate_master_otp(identifier: str, otp: str) -> bool:

@@ -31,8 +31,8 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
                 user = User.objects.get(email=email)
                 
                 # Use service method to link social account
-                from api.users.services import AuthService
-                auth_service = AuthService()
+                from api.users.services import SocialAuthService
+                auth_service = SocialAuthService()
                 linked_user = auth_service.link_social_account(user, extra_data, provider)
                 
                 sociallogin.user = linked_user
@@ -60,16 +60,16 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
                 existing_user = User.objects.get(email=email)
                 logger.info(f"Found existing user during populate: {existing_user.email}")
                 # Link social account to existing user
-                from api.users.services import AuthService
-                auth_service = AuthService()
+                from api.users.services import SocialAuthService
+                auth_service = SocialAuthService()
                 return auth_service.link_social_account(existing_user, extra_data, provider)
             except User.DoesNotExist:
                 pass  # User doesn't exist, proceed with creation
         
         # Use service method to create social user
         try:
-            from api.users.services import AuthService
-            auth_service = AuthService()
+            from api.users.services import SocialAuthService
+            auth_service = SocialAuthService()
             user = auth_service.create_social_user(extra_data, provider)
             
             logger.info(f"Created new user from {provider}: {user.email}")
