@@ -6,7 +6,7 @@ from django.db import transaction
 
 from api.common.services.base import BaseService
 from api.common.utils.helpers import generate_transaction_id
-from api.payments.models import Transaction
+from api.payments.repositories.transaction_repository import TransactionRepository
 from api.payments.services.wallet import WalletService
 
 class RentalPaymentService(BaseService):
@@ -25,14 +25,14 @@ class RentalPaymentService(BaseService):
             total_amount = points_amount + wallet_amount
 
             # Create transaction record
-            transaction_obj = Transaction.objects.create(
+            transaction_obj = TransactionRepository.create(
                 user=user,
-                related_rental=rental,
                 transaction_id=generate_transaction_id(),
                 transaction_type='RENTAL',
                 amount=total_amount,
                 status='SUCCESS',
-                payment_method_type='COMBINATION' if points_to_use > 0 and wallet_amount > 0 else 'POINTS' if points_to_use > 0 else 'WALLET'
+                payment_method_type='COMBINATION' if points_to_use > 0 and wallet_amount > 0 else 'POINTS' if points_to_use > 0 else 'WALLET',
+                related_rental=rental
             )
 
             # Get rental code or use a placeholder if rental is None
@@ -79,14 +79,14 @@ class RentalPaymentService(BaseService):
             total_amount = points_amount + wallet_amount
             payment_type = 'COMBINATION' if points_to_use > 0 and wallet_amount > 0 else 'POINTS' if points_to_use > 0 else 'WALLET'
 
-            transaction_obj = Transaction.objects.create(
+            transaction_obj = TransactionRepository.create(
                 user=user,
-                related_rental=rental,
                 transaction_id=generate_transaction_id(),
                 transaction_type='RENTAL_DUE',
                 amount=total_amount,
                 status='SUCCESS',
-                payment_method_type=payment_type
+                payment_method_type=payment_type,
+                related_rental=rental
             )
 
             # Deduct points if used

@@ -63,12 +63,12 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserDetailedProfileSerializer(serializers.Serializer):
     """Comprehensive serializer for /me endpoint with all user-related data"""
-    id = serializers.IntegerField()
+    id = serializers.CharField()
     username = serializers.CharField()
     email = serializers.EmailField(allow_null=True)
     phone_number = serializers.CharField(allow_null=True)
     profile_picture = serializers.URLField(allow_null=True)
-    referral_code = serializers.CharField()
+    referral_code = serializers.CharField(allow_null=True)
     status = serializers.CharField()
     social_provider = serializers.CharField()
     date_joined = serializers.DateTimeField()

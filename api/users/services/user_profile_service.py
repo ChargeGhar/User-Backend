@@ -64,7 +64,7 @@ class UserProfileService(BaseService):
                 profile = self.profile_repo.create_profile(user=user)
                 
             return {
-                'id': user.id,
+                'id': str(user.id),
                 'username': user.username,
                 'email': user.email,
                 'phone_number': user.phone_number,
@@ -74,12 +74,11 @@ class UserProfileService(BaseService):
                 'social_provider': user.social_provider,
                 'date_joined': user.date_joined,
                 'profile': {
-                    'id': profile.id,
                     'full_name': profile.full_name,
                     'date_of_birth': profile.date_of_birth,
                     'address': profile.address,
                     'avatar_url': profile.avatar_url,
-                    'is_profile_complete': profile.is_profile_complete
+                    'completed': profile.is_profile_complete
                 },
                 'kyc': self.get_kyc_summary(user),
                 'wallet': wallet_summary,
@@ -94,13 +93,26 @@ class UserProfileService(BaseService):
         try:
             kyc = getattr(user, 'kyc', None)
             if not kyc:
-                return {'status': 'NOT_SUBMITTED', 'verified': False}
+                return {
+                    'status': 'NOT_SUBMITTED',
+                    'verified': False,
+                    'document_number': None,
+                    'document_front_url': None,
+                    'document_back_url': None,
+                    'document_type': None,
+                    'verified_at': None,
+                    'rejection_reason': None
+                }
             
             return {
-                'status': kyc.status,
-                'verified': kyc.status == 'APPROVED',
+                'document_number': kyc.document_number,
+                'document_front_url': kyc.document_front_url,
+                'document_back_url': kyc.document_back_url,
                 'document_type': kyc.document_type,
-                'rejection_reason': kyc.rejection_reason if kyc.status == 'REJECTED' else None
+                'status': kyc.status,
+                'verified_at': kyc.verified_at,
+                'rejection_reason': kyc.rejection_reason if kyc.status == 'REJECTED' else None,
+                'verified': kyc.status == 'APPROVED'
             }
         except Exception:
             return {'status': 'NOT_SUBMITTED', 'verified': False}

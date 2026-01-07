@@ -18,6 +18,7 @@ class Refund(BaseModel):
     requested_by = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='requested_refunds')
     approved_by = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_refunds')
     
+    refund_id = models.CharField(max_length=50, unique=True, null=True, blank=True, help_text='Unique refund identifier')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     reason = models.CharField(max_length=255)
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='REQUESTED')

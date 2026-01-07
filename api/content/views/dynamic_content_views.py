@@ -100,20 +100,10 @@ class FAQView(GenericAPIView, BaseAPIView):
                     'pagination': paginated_data['pagination']
                 }
             else:
-                # Get FAQs by category
-                faqs_by_category = service.get_faqs_by_category()
-                
-                # Format response
-                categories_data = []
-                for category, faqs in faqs_by_category.items():
-                    faq_serializer = serializers.FAQPublicSerializer(faqs, many=True)
-                    categories_data.append({
-                        'category': category,
-                        'faq_count': len(faqs),
-                        'faqs': faq_serializer.data
-                    })
-
-                return categories_data
+                # Get FAQs by category - formatting is now handled in the service
+                return service.get_faqs_by_category(
+                    serializer_class=serializers.FAQPublicSerializer
+                )
 
         return self.handle_service_operation(
             operation,

@@ -5,7 +5,7 @@
     "fields": {
       "page_type": "terms-of-service",
       "title": "Terms of Service",
-      "content": "Welcome to PowerBank Charging Station service. By using our service, you agree to these terms...",
+      "content": "Welcome to ChargeGhar Charging Station service. By using our service, you agree to these terms...",
       "is_active": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
@@ -24,31 +24,37 @@
     }
   },
   {
-    "model": "content.faq",
-    "pk": "550e8400-e29b-41d4-a716-446655441101",
+    "model": "content.contentpage",
+    "pk": "550e8400-e29b-41d4-a716-446655441003",
     "fields": {
-      "question": "How do I rent a power bank?",
-      "answer": "Simply scan the QR code on any station, select your rental package, and make payment. The power bank will be dispensed automatically.",
-      "category": "Rental",
-      "sort_order": 1,
+      "page_type": "about",
+      "title": "About ChargeGhar",
+      "content": "ChargeGhar is Nepal's leading power bank sharing network, providing convenient charging solutions on the go.",
       "is_active": true,
-      "created_by": 2,
-      "updated_by": 2,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
-    "model": "content.faq",
-    "pk": "550e8400-e29b-41d4-a716-446655441102",
+    "model": "content.contentpage",
+    "pk": "550e8400-e29b-41d4-a716-446655441004",
     "fields": {
-      "question": "What happens if I don't return the power bank on time?",
-      "answer": "Late fees will be charged according to our pricing policy. After 24 hours, the power bank will be considered lost and full replacement cost will be charged.",
-      "category": "Rental",
-      "sort_order": 2,
+      "page_type": "contact",
+      "title": "Contact Us",
+      "content": "Get in touch with us at support@chargeghar.com or call us at +977-1-XXXXXXX.",
       "is_active": true,
-      "created_by": 2,
-      "updated_by": 2,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "content.contentpage",
+    "pk": "550e8400-e29b-41d4-a716-446655441005",
+    "fields": {
+      "page_type": "faq",
+      "title": "Frequently Asked Questions",
+      "content": "Find answers to commonly asked questions about ChargeGhar services.",
+      "is_active": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }

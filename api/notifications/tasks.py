@@ -76,12 +76,16 @@ def send_notification_task(
     except Exception as e:
         logger.error(f"Failed to send notification async: {str(e)}", exc_info=True)
 
-        # Retry task on failure
+        error_str = str(e)
+        if 'ServiceException' in error_str or 'Template not found' in error_str:
+            logger.error(f"Non-retryable error for notification: {template_slug} - {error_str}")
+            return {"status": "failed", "error": error_str, "retryable": False}
+
         try:
             raise self.retry(exc=e)
         except self.MaxRetriesExceededError:
             logger.error(f"Max retries exceeded for notification: {template_slug}")
-            return {"status": "failed", "error": str(e)}
+            return {"status": "failed", "error": error_str}
 
 
 @shared_task(name="notifications.send_bulk_notifications", bind=True, max_retries=2)

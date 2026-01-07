@@ -74,9 +74,9 @@ class AdminProfileService(CRUDService):
         
         # Log authentication
         if request:
-            from api.users.services import AuthService
-            auth_service = AuthService()
-            auth_service._log_user_audit(user, 'LOGIN', 'USER', str(user.id), request)
+            from api.users.services.account_service import AccountService
+            account_service = AccountService()
+            account_service.log_auth_action(user, 'LOGIN', request)
         
         self.log_info(f"Admin logged in: {user.email}")
         

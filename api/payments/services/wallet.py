@@ -4,25 +4,27 @@ from decimal import Decimal
 from django.db import transaction
 
 from api.common.services.base import CRUDService, ServiceException
-from api.payments.models import Wallet, WalletTransaction, Transaction
+from api.payments.models import Wallet, Transaction
+from api.payments.repositories import WalletRepository
 
 class WalletService(CRUDService):
     """Service for wallet operations"""
     model = Wallet
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.repository = WalletRepository()
+
     def get_or_create_wallet(self, user) -> Wallet:
         """Get or create user wallet"""
         try:
-            wallet, created = Wallet.objects.get_or_create(
-                user=user,
-                defaults={'balance': Decimal('0'), 'currency': 'NPR'}
-            )
+            wallet, created = self.repository.get_or_create(user)
             return wallet
         except Exception as e:
             self.handle_service_error(e, "Failed to get or create wallet")
 
     @transaction.atomic
-    def add_balance(self, user, amount: Decimal, description: str, transaction_obj: Transaction = None) -> WalletTransaction:
+    def add_balance(self, user, amount: Decimal, description: str, transaction_obj: Transaction = None):
         """Add balance to user wallet"""
         try:
             wallet = self.get_or_create_wallet(user)
@@ -31,10 +33,10 @@ class WalletService(CRUDService):
             wallet.balance += amount
             wallet.save(update_fields=['balance', 'updated_at'])
 
-            # Create wallet transaction record
-            wallet_transaction = WalletTransaction.objects.create(
+            # Create wallet transaction record using repository
+            wallet_transaction = self.repository.create_wallet_transaction(
                 wallet=wallet,
-                transaction=transaction_obj,
+                transaction_obj=transaction_obj,
                 transaction_type='CREDIT',
                 amount=amount,
                 balance_before=balance_before,
@@ -49,7 +51,7 @@ class WalletService(CRUDService):
             self.handle_service_error(e, "Failed to add wallet balance")
 
     @transaction.atomic
-    def deduct_balance(self, user, amount: Decimal, description: str, transaction_obj: Transaction = None) -> WalletTransaction:
+    def deduct_balance(self, user, amount: Decimal, description: str, transaction_obj: Transaction = None):
         """Deduct balance from user wallet"""
         try:
             wallet = self.get_or_create_wallet(user)
@@ -64,10 +66,10 @@ class WalletService(CRUDService):
             wallet.balance -= amount
             wallet.save(update_fields=['balance', 'updated_at'])
 
-            # Create wallet transaction record
-            wallet_transaction = WalletTransaction.objects.create(
+            # Create wallet transaction record using repository
+            wallet_transaction = self.repository.create_wallet_transaction(
                 wallet=wallet,
-                transaction=transaction_obj,
+                transaction_obj=transaction_obj,
                 transaction_type='DEBIT',
                 amount=amount,
                 balance_before=balance_before,
@@ -81,23 +83,13 @@ class WalletService(CRUDService):
         except Exception as e:
             self.handle_service_error(e, "Failed to deduct wallet balance")
 
-    def get_wallet_balance(self, user) -> Decimal:
-        """Get user wallet balance"""
-        try:
-            wallet = self.get_or_create_wallet(user)
-            return wallet.balance
-        except Exception as e:
-            self.handle_service_error(e, "Failed to get wallet balance")   
-            
     def get_wallet_balance(self, user) -> dict:
         """Get user wallet balance with recent transactions"""
         try:
             wallet = self.get_or_create_wallet(user)
             
-            # Get recent wallet transactions
-            recent_transactions = WalletTransaction.objects.filter(
-                wallet=wallet
-            ).order_by('-created_at')[:5]
+            # Get recent wallet transactions using repository
+            recent_transactions = self.repository.get_recent_transactions(wallet)
             
             from api.payments.serializers import WalletTransactionSerializer
             transaction_serializer = WalletTransactionSerializer(recent_transactions, many=True)

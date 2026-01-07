@@ -147,6 +147,8 @@ class RentalPackageListView(GenericAPIView, BaseAPIView):
 
 # done the testing for fetching the payment method
 
+from api.payments.repositories import PaymentMethodRepository
+
 @core_router.register(r"payments/methods", name="payment-methods")
 @extend_schema(
     tags=["Payments"],
@@ -166,7 +168,8 @@ class PaymentMethodListView(GenericAPIView, BaseAPIView):
     def get(self, request: Request) -> Response:
         """Get available payment methods"""
         def operation():
-            methods = PaymentMethod.objects.filter(is_active=True).order_by('name')
+            repository = PaymentMethodRepository()
+            methods = repository.get_active_methods()
             serializer = self.get_serializer(methods, many=True)
             return {
                 'payment_methods': serializer.data,
@@ -221,6 +224,3 @@ class CalculatePaymentOptionsView(GenericAPIView, BaseAPIView):
             "Payment options calculated successfully",
             "Failed to calculate payment options"
         )
-
-
-# REMOVED: PaymentStatusView - Status available through payment-form endpoint

@@ -10,14 +10,33 @@ objects to existing fixture files and want to load only the new ones.
 """
 import os
 import json
-
+import socket
 import django
-from django.apps import apps
-from django.db import transaction, IntegrityError
 
+# Handle host machine vs docker network hostnames
+db_host = os.getenv("POSTGRES_HOST")
+if db_host == "pgbouncer":
+    try:
+        socket.gethostbyname("pgbouncer")
+    except socket.gaierror:
+        # pgbouncer is not resolvable, likely running on host machine
+        os.environ["POSTGRES_HOST"] = "localhost"
+        # Update DATABASE_URL if it exists and contains pgbouncer
+        db_url = os.getenv("DATABASE_URL")
+        if db_url and "@pgbouncer" in db_url:
+            os.environ["DATABASE_URL"] = db_url.replace("@pgbouncer", "@localhost")
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "api.config.settings")
-django.setup()
+try:
+    django.setup()
+except Exception as e:
+    print(f"❌ Failed to setup Django: {e}")
+    print("\n💡 TIP: If you are running this on your host machine, ensure Docker is running and ports are mapped.")
+    print("   Or run it inside the container: docker exec powerbank_local-api-1 python load_fixtures_safe.py")
+    exit(1)
+
+from django.apps import apps
+from django.db import transaction, IntegrityError
 
 
 APPS_IN_ORDER = [
@@ -37,26 +56,26 @@ APPS_IN_ORDER = [
 
 
 def load_fixture_file_safe(path: str) -> None:
-    print(f"\n📦 Safely loading fixture: {path}")
+    print(f"Safely loading fixture: {path}")
 
     try:
         with open(path, "r", encoding="utf-8") as f:
             objects = json.load(f)
     except Exception as e:
-        print(f"  ⚠️  Failed to read fixture {path}: {e}")
+        print(f"  Failed to read fixture {path}: {e}")
         return
 
     for obj in objects:
         model_label = obj.get("model")
         if not model_label:
-            print("  ⚠️  Skipping entry without model")
+            print("  Skipping entry without model")
             continue
 
         try:
             app_label, model_name = model_label.split(".", 1)
             model = apps.get_model(app_label, model_name)
         except Exception as e:
-            print(f"  ⚠️  Skipping unknown model '{model_label}': {e}")
+            print(f"  Skipping unknown model '{model_label}': {e}")
             continue
 
         pk = obj.get("pk")
@@ -75,7 +94,20 @@ def load_fixture_file_safe(path: str) -> None:
                 m2m_data[name] = fields.pop(name)
 
         # Build instance and assign primary key explicitly
-        instance = model(**fields)
+        processed_fields = {}
+        for field_name, value in fields.items():
+            try:
+                field = model._meta.get_field(field_name)
+                # If it's a foreign key and we have an ID (int, str, etc. but not a model instance),
+                # use the _id suffix so Django's constructor doesn't complain.
+                if field.is_relation and not field.many_to_many and value is not None:
+                    processed_fields[f"{field.name}_id"] = value
+                else:
+                    processed_fields[field_name] = value
+            except Exception:
+                processed_fields[field_name] = value
+
+        instance = model(**processed_fields)
         if pk is not None:
             setattr(instance, model._meta.pk.attname, pk)
 
@@ -84,22 +116,22 @@ def load_fixture_file_safe(path: str) -> None:
                 instance.save(force_insert=True)
                 for name, value in m2m_data.items():
                     getattr(instance, name).set(value)
-                print(f"  ✅ Created {model_label} pk={instance.pk}")
+                print(f"  Created {model_label} pk={instance.pk}")
         except IntegrityError as e:
             msg = str(e)
             # Treat unique/duplicate key errors as "already exists" and continue
             if "duplicate key value violates unique constraint" in msg or "UNIQUE constraint failed" in msg:
                 print(f"  • Skipping existing (unique constraint) {model_label} pk={pk}: {e}")
             else:
-                print(f"  ⚠️  Integrity error for {model_label} pk={pk}: {e}")
+                print(f"  Failed to create {model_label} pk={pk}: {e}")
         except Exception as e:
-            print(f"  ⚠️  Failed to create {model_label} pk={pk}: {e}")
+            print(f"  Failed to create {model_label} pk={pk}: {e}")
 
 
 def main() -> None:
     env = os.getenv("ENVIRONMENT", "local").lower()
 
-    print("🚀 Starting safe fixture loading (idempotent)...")
+    print("Starting safe fixture loading (idempotent)...")
     print(f"ENVIRONMENT={env}")
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -109,7 +141,7 @@ def main() -> None:
         if not os.path.isdir(fixtures_dir):
             continue
 
-        print(f"\n==== App: {app_label} ====")
+        print(f"==== App: {app_label} ====")
 
         # Load all JSON fixtures in deterministic order
         fixture_files = sorted(
@@ -126,7 +158,7 @@ def main() -> None:
             path = os.path.join(fixtures_dir, filename)
             load_fixture_file_safe(path)
 
-    print("\n🎉 Safe fixtures loading completed!")
+    print("Safe fixtures loading completed!")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,7 @@
 from typing import Optional, Tuple
-from api.payments.models import Wallet, Transaction
+from decimal import Decimal
+from django.db.models import QuerySet
+from api.payments.models import Wallet, Transaction, WalletTransaction
 from django.db.models import Sum
 
 class WalletRepository:
@@ -14,7 +16,38 @@ class WalletRepository:
 
     @staticmethod
     def get_or_create(user) -> Tuple[Wallet, bool]:
-        return Wallet.objects.get_or_create(user=user)
+        return Wallet.objects.get_or_create(
+            user=user,
+            defaults={'balance': Decimal('0'), 'currency': 'NPR'}
+        )
+
+    @staticmethod
+    def create_wallet_transaction(
+        wallet,
+        transaction_type: str,
+        amount: Decimal,
+        balance_before: Decimal,
+        balance_after: Decimal,
+        description: str,
+        transaction_obj = None
+    ) -> WalletTransaction:
+        from api.payments.models import WalletTransaction
+        return WalletTransaction.objects.create(
+            wallet=wallet,
+            transaction=transaction_obj,
+            transaction_type=transaction_type,
+            amount=amount,
+            balance_before=balance_before,
+            balance_after=balance_after,
+            description=description
+        )
+
+    @staticmethod
+    def get_recent_transactions(wallet, limit: int = 5) -> QuerySet:
+        from api.payments.models import WalletTransaction
+        return WalletTransaction.objects.filter(
+            wallet=wallet
+        ).order_by('-created_at')[:limit]
 
     @staticmethod
     def create_wallet(user, currency: str = 'NPR') -> Wallet:

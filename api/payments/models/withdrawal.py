@@ -8,6 +8,7 @@ class WithdrawalRequest(BaseModel):
     WithdrawalRequest - User withdrawal requests
     """
     STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
         ('REQUESTED', 'Requested'),
         ('APPROVED', 'Approved'),
         ('PROCESSING', 'Processing'),
@@ -18,6 +19,12 @@ class WithdrawalRequest(BaseModel):
 
     user = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='withdrawal_requests')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    # Account details (denormalized for easier reporting/filtering)
+    bank_name = models.CharField(max_length=255, null=True, blank=True)
+    account_number = models.CharField(max_length=255, null=True, blank=True)
+    account_holder_name = models.CharField(max_length=255, null=True, blank=True)
+    
     processing_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     net_amount = models.DecimalField(max_digits=10, decimal_places=2)
     

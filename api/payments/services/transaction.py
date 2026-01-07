@@ -5,10 +5,15 @@ from typing import Dict, Any
 from api.common.services.base import CRUDService
 from api.common.utils.helpers import paginate_queryset
 from api.payments.models import Transaction
+from api.payments.repositories import TransactionRepository
 
 class TransactionService(CRUDService):
     """Service for transaction operations"""
     model = Transaction
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.repository = TransactionRepository()
 
     def get_user_transactions(self, user, filters: Dict[str, Any] = None) -> Dict[str, Any]:
         """Get user's transaction history with filters"""
@@ -40,4 +45,4 @@ class TransactionService(CRUDService):
     
     def get_user_transactions_queryset(self, user):
         """Get base queryset for user transactions"""
-        return Transaction.objects.filter(user=user).select_related('related_rental').order_by('-created_at')
+        return self.repository.get_user_transactions(user).select_related('related_rental')

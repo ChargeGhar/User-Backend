@@ -59,9 +59,12 @@ class PaymentCallbackMixin:
         Returns None if payment should be processed.
         """
         try:
-            from api.payments.models import PaymentIntent
-            intent = PaymentIntent.objects.get(intent_id=intent_id)
+            from api.payments.repositories.payment_intent_repository import PaymentIntentRepository
+            intent = PaymentIntentRepository.get_by_intent_id(intent_id)
             
+            if not intent:
+                return None
+
             if intent.status == 'COMPLETED':
                 logger.info(f"{provider} payment already processed: {intent_id}")
                 return PaymentCallbackMixin.build_payment_redirect(
@@ -134,12 +137,12 @@ class PaymentCallbackMixin:
     def mark_payment_failed(intent_id: str, reason: str) -> None:
         """Mark payment intent as failed with reason"""
         try:
-            from api.payments.models import PaymentIntent
-            intent = PaymentIntent.objects.get(intent_id=intent_id, status='PENDING')
-            intent.status = 'FAILED'
-            intent.intent_metadata['failure_reason'] = reason
-            intent.save(update_fields=['status', 'intent_metadata'])
-            logger.info(f"Payment intent {intent_id} marked as failed")
+            from api.payments.repositories.payment_intent_repository import PaymentIntentRepository
+            intent = PaymentIntentRepository.get_by_intent_id(intent_id)
+            if intent and intent.status == 'PENDING':
+                intent.intent_metadata['failure_reason'] = reason
+                PaymentIntentRepository.update_status(intent, 'FAILED')
+                logger.info(f"Payment intent {intent_id} marked as failed")
         except Exception as e:
             logger.error(f"Failed to update payment intent {intent_id}: {str(e)}")
 

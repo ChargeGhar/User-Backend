@@ -67,8 +67,8 @@
       "updated_at": "2024-02-01T10:30:00Z"
     }
   },
-  {
-    "model": "users.userpoints",
+    {
+      "model": "points.userpoints",
     "pk": "550e8400-e29b-41d4-a716-446655440201",
     "fields": {
       "user": 2,
@@ -79,8 +79,8 @@
       "updated_at": "2024-09-06T10:00:00Z"
     }
   },
-  {
-    "model": "users.userpoints",
+    {
+      "model": "points.userpoints",
     "pk": "550e8400-e29b-41d4-a716-446655440202",
     "fields": {
       "user": 3,

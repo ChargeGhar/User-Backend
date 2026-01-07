@@ -1,6 +1,6 @@
 [
-  {
-    "model": "common.latefeeconfiguration",
+    {
+      "model": "rentals.latefeeconfiguration",
     "pk": "0191e624-d6f8-75f7-9c8e-f3c3a2a1b0d9",
     "fields": {
       "name": "Standard Double Rate (Active)",
@@ -25,8 +25,8 @@
       "updated_at": "2025-01-01T00:00:00Z"
     }
   },
-  {
-    "model": "common.latefeeconfiguration",
+    {
+      "model": "rentals.latefeeconfiguration",
     "pk": "0191e624-d6f8-75f7-9c8e-f3c3a2a1b0da",
     "fields": {
       "name": "Flat Rate Example (NPR 50/hour)",
@@ -50,8 +50,8 @@
       "updated_at": "2025-01-02T00:00:00Z"
     }
   },
-  {
-    "model": "common.latefeeconfiguration",
+    {
+      "model": "rentals.latefeeconfiguration",
     "pk": "0191e624-d6f8-75f7-9c8e-f3c3a2a1b0db",
     "fields": {
       "name": "Holiday Triple Rate Example",

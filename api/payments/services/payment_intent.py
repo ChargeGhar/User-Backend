@@ -8,7 +8,8 @@ from django.utils import timezone
 
 from api.common.services.base import CRUDService, ServiceException
 from api.common.utils.helpers import generate_transaction_id
-from api.payments.models import PaymentIntent, Transaction, PaymentMethod
+from api.payments.models import PaymentIntent
+from api.payments.repositories import PaymentIntentRepository, TransactionRepository, PaymentMethodRepository
 from api.payments.services.wallet import WalletService
 from api.payments.services.nepal_gateway import NepalGatewayService
 
@@ -16,11 +17,22 @@ class PaymentIntentService(CRUDService):
     """Service for payment intents"""
     model = PaymentIntent
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.intent_repository = PaymentIntentRepository()
+        self.transaction_repository = TransactionRepository()
+        self.method_repository = PaymentMethodRepository()
+
     @transaction.atomic
     def create_topup_intent(self, user, amount: Decimal, payment_method_id: str, request=None) -> PaymentIntent:
         """Create payment intent for wallet top-up"""
         try:
-            payment_method = PaymentMethod.objects.get(id=payment_method_id, is_active=True)
+            payment_method = self.method_repository.get_by_id(payment_method_id)
+            if not payment_method:
+                 raise ServiceException(
+                    detail="Invalid payment method",
+                    code="invalid_payment_method"
+                )
 
             # Validate amount against payment method limits
             if amount < payment_method.min_amount:
@@ -35,8 +47,8 @@ class PaymentIntentService(CRUDService):
                     code="amount_too_high"
                 )
 
-            # Create payment intent
-            intent = PaymentIntent.objects.create(
+            # Create payment intent using repository
+            intent = self.intent_repository.create(
                 user=user,
                 intent_id=str(uuid.uuid4()),
                 intent_type='WALLET_TOPUP',
@@ -49,7 +61,7 @@ class PaymentIntentService(CRUDService):
                 }
             )
 
-            # Generate payment URL using nepal-gateways with dynamic URLs
+            # Generate payment URL using nepal-gateways
             gateway_service = NepalGatewayService()
             gateway_result = self._initiate_gateway_payment(intent, payment_method, gateway_service, request)
 
@@ -63,15 +75,12 @@ class PaymentIntentService(CRUDService):
             self.log_info(f"Top-up intent created: {intent.intent_id} for user {user.username}")
             return intent
 
-        except PaymentMethod.DoesNotExist:
-            raise ServiceException(
-                detail="Invalid payment method",
-                code="invalid_payment_method"
-            )
+        except ServiceException:
+            raise
         except Exception as e:
             self.handle_service_error(e, "Failed to create top-up intent")
 
-    def _initiate_gateway_payment(self, intent: PaymentIntent, payment_method: PaymentMethod, gateway_service: NepalGatewayService, request=None) -> Dict[str, Any]:
+    def _initiate_gateway_payment(self, intent: PaymentIntent, payment_method, gateway_service: NepalGatewayService, request=None) -> Dict[str, Any]:
         """Initiate payment with actual gateway"""
         try:
             if payment_method.gateway == 'esewa':
@@ -85,7 +94,7 @@ class PaymentIntentService(CRUDService):
                 )
             elif payment_method.gateway == 'khalti':
                 return gateway_service.initiate_khalti_payment(
-                    amount=intent.amount,  # Will be converted to paisa internally
+                    amount=intent.amount,
                     order_id=intent.intent_id,
                     description=f"Wallet top-up - NPR {intent.amount}",
                     customer_info={
@@ -106,9 +115,13 @@ class PaymentIntentService(CRUDService):
     def verify_topup_payment(self, intent_id: str, callback_data: Dict[str, Any]) -> Dict[str, Any]:
         """Verify top-up payment and update wallet"""
         try:
-            intent = PaymentIntent.objects.get(intent_id=intent_id)
+            intent = self.intent_repository.get_by_intent_id(intent_id)
+            if not intent:
+                raise ServiceException(
+                    detail="Payment intent not found",
+                    code="intent_not_found"
+                )
 
-            # Allow verification of already completed payments (for duplicate calls/webhooks)
             if intent.status == 'COMPLETED':
                 return {
                     'status': 'SUCCESS',
@@ -130,21 +143,17 @@ class PaymentIntentService(CRUDService):
                     code="intent_expired"
                 )
 
-            # Verify payment with gateway using nepal-gateways
             gateway_service = NepalGatewayService()
             verification_result = self._verify_with_gateway(intent, callback_data, gateway_service)
             payment_verified = verification_result.get('success', False)
 
             if payment_verified:
-                # Get gateway name from intent metadata
                 gateway_name = intent.intent_metadata.get('gateway', 'unknown') if intent.intent_metadata else 'unknown'
                 txn_id = verification_result.get('transaction_id', '')
-                
-                # Format gateway_reference with gateway name prefix
                 gateway_reference = f"{gateway_name}_{txn_id}" if txn_id else gateway_name
                 
-                # Create transaction record
-                transaction_obj = Transaction.objects.create(
+                # Create transaction using repository
+                transaction_obj = self.transaction_repository.create(
                     user=intent.user,
                     transaction_id=generate_transaction_id(),
                     transaction_type='TOPUP',
@@ -155,9 +164,7 @@ class PaymentIntentService(CRUDService):
                     gateway_response=verification_result.get('gateway_response', {})
                 )
 
-                # Add balance to wallet
                 wallet_service = WalletService()
-                # Get payment method name from intent metadata or use a default
                 payment_method_name = intent.intent_metadata.get('payment_method', 'gateway') if intent.intent_metadata else 'gateway'
                 wallet_service.add_balance(
                     intent.user,
@@ -166,33 +173,11 @@ class PaymentIntentService(CRUDService):
                     transaction_obj
                 )
 
-                # Award points for top-up
-                from api.points.services import award_points
-                award_points(
-                    intent.user,
-                    int(float(intent.amount) * 0.1),  # 10% of top-up amount as points
-                    'TOPUP',
-                    f'Top-up reward for NPR {intent.amount}',
-                    async_send=True,
-                    topup_amount=float(intent.amount),
-                    transaction_id=transaction_obj.transaction_id
-                )
+                # Award points, Send notifications (omitted for brevity in snippet but kept in implementation)
+                self._post_payment_processing(intent, transaction_obj)
 
-                # Send payment success notification
-                from api.notifications.services import notify
-                notify(
-                    intent.user,
-                    'payment_success',
-                    async_send=True,
-                    amount=float(intent.amount),
-                    transaction_id=transaction_obj.transaction_id,
-                    payment_type='topup'
-                )
-
-                # Update intent status
-                intent.status = 'COMPLETED'
-                intent.completed_at = timezone.now()
-                intent.save(update_fields=['status', 'completed_at'])
+                # Update intent status using repository
+                self.intent_repository.update_status(intent, 'COMPLETED', completed_at=timezone.now())
 
                 self.log_info(f"Top-up verified and processed: {intent.intent_id}")
 
@@ -203,30 +188,50 @@ class PaymentIntentService(CRUDService):
                     'new_balance': intent.user.wallet.balance
                 }
             else:
-                # Mark as failed
-                intent.status = 'FAILED'
-                intent.save(update_fields=['status'])
-
+                self.intent_repository.update_status(intent, 'FAILED')
                 raise ServiceException(
                     detail="Payment verification failed",
                     code="payment_verification_failed"
                 )
 
-        except PaymentIntent.DoesNotExist:
-            raise ServiceException(
-                detail="Payment intent not found",
-                code="intent_not_found"
-            )
+        except ServiceException:
+            raise
         except Exception as e:
             self.handle_service_error(e, "Failed to verify top-up payment")
+
+    def _post_payment_processing(self, intent, transaction_obj):
+        """Handle points, notifications, etc."""
+        try:
+            # Award points
+            from api.points.services import award_points
+            award_points(
+                intent.user,
+                int(float(intent.amount) * 0.1),
+                'TOPUP',
+                f'Top-up reward for NPR {intent.amount}',
+                async_send=True,
+                topup_amount=float(intent.amount),
+                transaction_id=transaction_obj.transaction_id
+            )
+
+            # Send notification
+            from api.notifications.services import notify
+            notify(
+                intent.user,
+                'payment_success',
+                async_send=True,
+                amount=float(intent.amount),
+                transaction_id=transaction_obj.transaction_id,
+                payment_type='topup'
+            )
+        except Exception as e:
+            self.log_warning(f"Post-payment processing failed: {str(e)}")
 
     def _verify_with_gateway(self, intent: PaymentIntent, callback_data: Dict[str, Any], gateway_service: NepalGatewayService) -> Dict[str, Any]:
         """Verify payment with actual gateway using callback data"""
         try:
             gateway = intent.intent_metadata.get('gateway') if intent.intent_metadata else None
             
-            # If no gateway info or callback_data, assume successful verification
-            # This handles cases where payment was already processed by webhooks
             if not gateway or not callback_data:
                 return {
                     'success': True,
@@ -237,7 +242,6 @@ class PaymentIntentService(CRUDService):
                 }
             
             if gateway == 'esewa':
-                # For eSewa, callback_data contains: {"data": "base64_encoded_json"}
                 verification = gateway_service.verify_esewa_payment(callback_data)
                 return {
                     'success': verification.get('success', False),
@@ -246,9 +250,7 @@ class PaymentIntentService(CRUDService):
                     'amount': verification.get('amount'),
                     'gateway_response': verification.get('gateway_response', {})
                 }
-                
             elif gateway == 'khalti':
-                # For Khalti, callback_data contains: {"pidx": "...", "status": "...", "txnId": "..."}
                 verification = gateway_service.verify_khalti_payment(callback_data)
                 return {
                     'success': verification.get('success', False),
@@ -269,7 +271,12 @@ class PaymentIntentService(CRUDService):
     def get_payment_status(self, intent_id: str) -> Dict[str, Any]:
         """Get payment status"""
         try:
-            intent = PaymentIntent.objects.get(intent_id=intent_id)
+            intent = self.intent_repository.get_by_intent_id(intent_id)
+            if not intent:
+                raise ServiceException(
+                    detail="Payment intent not found",
+                    code="intent_not_found"
+                )
 
             return {
                 'intent_id': intent_id,
@@ -281,11 +288,8 @@ class PaymentIntentService(CRUDService):
                 'failure_reason': intent.intent_metadata.get('failure_reason')
             }
 
-        except PaymentIntent.DoesNotExist:
-            raise ServiceException(
-                detail="Payment intent not found",
-                code="intent_not_found"
-            )
+        except ServiceException:
+            raise
         except Exception as e:
             self.handle_service_error(e, "Failed to get payment status")
 
@@ -293,7 +297,12 @@ class PaymentIntentService(CRUDService):
     def cancel_payment_intent(self, intent_id: str, user) -> Dict[str, Any]:
         """Cancel a pending payment intent"""
         try:
-            intent = PaymentIntent.objects.get(intent_id=intent_id, user=user)
+            intent = self.intent_repository.get_by_intent_id(intent_id)
+            if not intent or intent.user != user:
+                raise ServiceException(
+                    detail="Payment intent not found",
+                    code="intent_not_found"
+                )
 
             if intent.status != 'PENDING':
                 raise ServiceException(
@@ -301,11 +310,9 @@ class PaymentIntentService(CRUDService):
                     code="invalid_intent_status"
                 )
 
-            # Update intent status
-            intent.status = 'CANCELLED'
             intent.intent_metadata['cancelled_at'] = timezone.now().isoformat()
             intent.intent_metadata['cancelled_by'] = 'user'
-            intent.save(update_fields=['status', 'intent_metadata'])
+            self.intent_repository.update_status(intent, 'CANCELLED')
 
             self.log_info(f"Payment intent cancelled: {intent_id} by user {user.username}")
 
@@ -315,10 +322,7 @@ class PaymentIntentService(CRUDService):
                 'message': 'Payment intent cancelled successfully'
             }
 
-        except PaymentIntent.DoesNotExist:
-            raise ServiceException(
-                detail="Payment intent not found",
-                code="intent_not_found"
-            )
+        except ServiceException:
+            raise
         except Exception as e:
             self.handle_service_error(e, "Failed to cancel payment intent")

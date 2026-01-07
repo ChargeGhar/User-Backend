@@ -3,32 +3,32 @@
     "model": "content.banner",
     "pk": "00000000-0000-0000-0000-000000000001",
     "fields": {
-      "title": "Summer Sale",
-      "description": "Get up to 50% off on selected items!",
-      "image_url": "https://example.com/images/summer-sale.jpg",
-      "redirect_url": "https://example.com/sale",
+      "title": "Welcome to ChargeGhar",
+      "description": "Nepal's first power bank sharing network!",
+      "image_url": "https://images.unsplash.com/photo-1586046200021-f2f2f3d517c2",
+      "redirect_url": "/about",
       "display_order": 1,
       "is_active": true,
-      "valid_from": "2025-09-01T00:00:00Z",
-      "valid_until": "2025-09-30T23:59:59Z",
-      "created_at": "2025-09-01T00:00:00Z",
-      "updated_at": "2025-09-01T00:00:00Z"
+      "valid_from": "2024-01-01T00:00:00Z",
+      "valid_until": "2027-12-31T23:59:59Z",
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "content.banner",
     "pk": "00000000-0000-0000-0000-000000000002",
     "fields": {
-      "title": "New Arrivals",
-      "description": "Check out the latest products in our store.",
-      "image_url": "https://example.com/images/new-arrivals.jpg",
-      "redirect_url": null,
+      "title": "Special Offer",
+      "description": "Get your first 30 minutes free today.",
+      "image_url": "https://images.unsplash.com/photo-1592833159155-c62df1b3562a",
+      "redirect_url": "/promotions",
       "display_order": 2,
       "is_active": true,
-      "valid_from": "2025-09-10T00:00:00Z",
-      "valid_until": "2025-12-31T23:59:59Z",
-      "created_at": "2025-09-10T00:00:00Z",
-      "updated_at": "2025-09-10T00:00:00Z"
+      "valid_from": "2024-01-01T00:00:00Z",
+      "valid_until": "2027-12-31T23:59:59Z",
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
     }
   }
 ]
