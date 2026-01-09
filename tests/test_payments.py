@@ -20,9 +20,9 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'api.config.settings')
 django.setup()
 
 from django.contrib.auth import get_user_model
-from api.payments.models import PaymentMethod, Transaction, Wallet
-from api.payments.services import WalletService, PaymentIntentService
-from api.payments.serializers import PaymentMethodSerializer, TransactionSerializer
+from api.user.payments.models import PaymentMethod, Transaction, Wallet
+from api.user.payments.services import WalletService, PaymentIntentService
+from api.user.payments.serializers import PaymentMethodSerializer, TransactionSerializer
 
 User = get_user_model()
 

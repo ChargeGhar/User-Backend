@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import Dict, Any
 
 from api.common.services.base import CRUDService
-from api.social.models import UserLeaderboard
+from api.user.social.models import UserLeaderboard
 
 
 class AdminLeaderboardService(CRUDService):
@@ -21,7 +21,7 @@ class AdminLeaderboardService(CRUDService):
     
     def __init__(self):
         super().__init__()
-        from api.social.services import LeaderboardService
+        from api.user.social.services import LeaderboardService
         self.leaderboard_service = LeaderboardService()
     
     def get_leaderboard(

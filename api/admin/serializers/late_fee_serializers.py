@@ -1,7 +1,7 @@
 from __future__ import annotations
 from decimal import Decimal
 from rest_framework import serializers
-from api.rentals.models.late_fee import LateFeeConfiguration
+from api.user.rentals.models.late_fee import LateFeeConfiguration
 
 class LateFeeConfigurationSerializer(serializers.ModelSerializer):
     """Serializer for Late Fee Configuration listing and detail"""

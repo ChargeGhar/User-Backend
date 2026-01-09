@@ -17,11 +17,11 @@ from django.db import transaction
 from datetime import timedelta
 from decimal import Decimal
 
-from api.rentals.models import Rental, RentalExtension, RentalPackage
-from api.stations.models import Station, StationSlot, PowerBank
-from api.users.models import User
-from api.payments.models import Transaction
-from api.system.models import AppConfig
+from api.user.rentals.models import Rental, RentalExtension, RentalPackage
+from api.user.stations.models import Station, StationSlot, PowerBank
+from api.user.auth.models import User
+from api.user.payments.models import Transaction
+from api.user.system.models import AppConfig
 
 # Color codes for output
 GREEN = '\033[92m'
@@ -152,7 +152,7 @@ def test_race_condition_protection():
     print_section("TEST 3: CRITICAL - Race Condition Protection")
     
     # Check if slot selection uses select_for_update
-    from api.rentals.services.rental_service import RentalService
+    from api.user.rentals.services.rental_service import RentalService
     import inspect
     
     service = RentalService()
@@ -180,7 +180,7 @@ def test_points_refund():
     print_section("TEST 4: HIGH - Points Refund on Cancellation")
     
     # Check if cancel_rental has points refund logic
-    from api.rentals.services.rental_service import RentalService
+    from api.user.rentals.services.rental_service import RentalService
     import inspect
     
     service = RentalService()
@@ -215,7 +215,7 @@ def test_auto_collection():
     print_info(f"Found {pending_rentals} completed rentals with pending payment")
     
     # Check if return logic has auto-collection
-    from api.stations.services.power_bank_service import PowerBankService
+    from api.user.stations.services.power_bank_service import PowerBankService
     import inspect
     
     service = PowerBankService()
@@ -287,7 +287,7 @@ def test_timely_return_bonus():
     ).count()
     
     # Check if bonus logic exists in return code
-    from api.stations.services.power_bank_service import PowerBankService
+    from api.user.stations.services.power_bank_service import PowerBankService
     import inspect
     
     service = PowerBankService()
@@ -322,7 +322,7 @@ def test_appconfig_integration():
         print_info(f"Active: {config.is_active}")
         
         # Check if it's used in code
-        from api.rentals.services.rental_service import RentalService
+        from api.user.rentals.services.rental_service import RentalService
         import inspect
         
         service = RentalService()

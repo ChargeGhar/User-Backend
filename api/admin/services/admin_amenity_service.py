@@ -10,7 +10,7 @@ from django.db import transaction
 from django.db.models import Q, Count
 from api.common.services.base import CRUDService, ServiceException
 from api.common.utils.helpers import paginate_queryset
-from api.stations.models import StationAmenity
+from api.user.stations.models import StationAmenity
 
 
 class AdminAmenityService(CRUDService):
@@ -188,7 +188,7 @@ class AdminAmenityService(CRUDService):
             Success message dict
         """
         try:
-            from api.stations.models import StationAmenityMapping
+            from api.user.stations.models import StationAmenityMapping
             
             amenity = StationAmenity.objects.get(id=amenity_id)
             

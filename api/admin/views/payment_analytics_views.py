@@ -5,7 +5,7 @@ from drf_spectacular.utils import extend_schema
 from rest_framework.generics import GenericAPIView
 
 from api.common.mixins import BaseAPIView
-from api.users.permissions import IsStaffPermission
+from api.user.auth.permissions import IsStaffPermission
 from api.common.serializers import BaseResponseSerializer
 from api.admin.services.payment_analytics_service import PaymentAnalyticsService
 from api.admin.serializers.analytics_serializers import PaymentAnalyticsResponseSerializer

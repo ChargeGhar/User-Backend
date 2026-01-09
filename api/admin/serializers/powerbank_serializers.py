@@ -5,7 +5,7 @@ Auto-generated for admin powerbank management
 
 from __future__ import annotations
 from rest_framework import serializers
-from api.stations.models import PowerBank
+from api.user.stations.models import PowerBank
 
 
 class AdminPowerBankListSerializer(serializers.Serializer):

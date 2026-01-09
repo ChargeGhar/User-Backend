@@ -6,7 +6,7 @@ from django.core.cache import cache
 
 def get_late_fee_configuration():
     """Get the currently active late fee configuration"""
-    from api.rentals.models.late_fee import LateFeeConfiguration
+    from api.user.rentals.models.late_fee import LateFeeConfiguration
     try:
         return LateFeeConfiguration.objects.filter(is_active=True).first()
     except Exception:

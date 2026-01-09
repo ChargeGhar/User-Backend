@@ -22,7 +22,7 @@ print("="*80)
 print("\n[TEST 1] AppConfig - RENTAL_CANCELLATION_WINDOW_MINUTES")
 print("-" * 80)
 
-from api.system.models import AppConfig
+from api.user.system.models import AppConfig
 
 try:
     # Check if config exists
@@ -62,7 +62,7 @@ except Exception as e:
 print("\n[TEST 2] Late Fee Configuration System")
 print("-" * 80)
 
-from api.rentals.models.late_fee import LateFeeConfiguration
+from api.user.rentals.models.late_fee import LateFeeConfiguration
 
 try:
     # Check active configuration
@@ -97,7 +97,7 @@ except Exception as e:
 print("\n[TEST 3] Rental Model - Realtime Properties")
 print("-" * 80)
 
-from api.rentals.models import Rental
+from api.user.rentals.models import Rental
 
 try:
     # Find an overdue rental (not returned yet)
@@ -151,7 +151,7 @@ from api.common.utils.helpers import (
 
 try:
     # Test with a real rental package
-    from api.rentals.models import RentalPackage
+    from api.user.rentals.models import RentalPackage
     package = RentalPackage.objects.filter(is_active=True).first()
     
     if package:
@@ -255,7 +255,7 @@ print("\n[TEST 6] Serializer - Realtime Fields Exposure")
 print("-" * 80)
 
 try:
-    from api.rentals.serializers import RentalDetailSerializer
+    from api.user.rentals.serializers import RentalDetailSerializer
     
     rental = Rental.objects.filter(status__in=['ACTIVE', 'OVERDUE']).first()
     

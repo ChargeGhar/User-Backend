@@ -12,7 +12,7 @@ from typing import Dict, Any, List
 from django.utils import timezone
 from api.common.services.base import BaseService
 from api.admin.models import AdminActionLog
-from api.users.models import User
+from api.user.auth.models import User
 
 class AdminNotificationService(BaseService):
     """Service for admin notifications"""
@@ -25,7 +25,7 @@ class AdminNotificationService(BaseService):
             users = self._get_target_users(target_audience)
             
             # Send bulk notification
-            from api.notifications.services import notify_bulk
+            from api.user.notifications.services import notify_bulk
             
             # Send notifications asynchronously
             notify_bulk(

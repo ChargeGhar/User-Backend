@@ -132,7 +132,7 @@ class AdminStationSlotSerializer(serializers.Serializer):
         """Get powerbank details if slot is occupied"""
         if obj.status == 'OCCUPIED':
             # Find powerbank in this slot
-            from api.stations.models import PowerBank
+            from api.user.stations.models import PowerBank
             try:
                 powerbank = PowerBank.objects.filter(current_slot=obj).first()
                 if powerbank:
@@ -217,12 +217,12 @@ class AdminStationSerializer(serializers.Serializer):
     
     def get_total_powerbanks(self, obj):
         """Count total powerbanks at this station"""
-        from api.stations.models import PowerBank
+        from api.user.stations.models import PowerBank
         return PowerBank.objects.filter(current_station=obj).count()
     
     def get_available_powerbanks(self, obj):
         """Count available powerbanks at this station"""
-        from api.stations.models import PowerBank
+        from api.user.stations.models import PowerBank
         return PowerBank.objects.filter(
             current_station=obj,
             status='AVAILABLE'
@@ -272,7 +272,7 @@ class AdminStationDetailSerializer(serializers.Serializer):
     
     def get_media(self, obj):
         """Get all media/images for this station"""
-        from api.stations.models import StationMedia
+        from api.user.stations.models import StationMedia
         station_media = StationMedia.objects.filter(
             station=obj
         ).select_related('media_upload').order_by('-is_primary', 'created_at')
@@ -299,7 +299,7 @@ class AdminStationDetailSerializer(serializers.Serializer):
     
     def get_powerbanks(self, obj):
         """Get powerbanks at this station"""
-        from api.stations.models import PowerBank
+        from api.user.stations.models import PowerBank
         powerbanks = PowerBank.objects.filter(current_station=obj).select_related('current_slot')
         
         result = []
@@ -374,14 +374,14 @@ class CreateStationSerializer(serializers.Serializer):
     
     def validate_serial_number(self, value):
         """Check if serial number is unique"""
-        from api.stations.models import Station
+        from api.user.stations.models import Station
         if Station.objects.filter(serial_number=value).exists():
             raise serializers.ValidationError("Station with this serial number already exists")
         return value
     
     def validate_imei(self, value):
         """Check if IMEI is unique"""
-        from api.stations.models import Station
+        from api.user.stations.models import Station
         if Station.objects.filter(imei=value).exists():
             raise serializers.ValidationError("Station with this IMEI already exists")
         return value
@@ -389,7 +389,7 @@ class CreateStationSerializer(serializers.Serializer):
     def validate_amenity_ids(self, value):
         """Validate amenity IDs exist"""
         if value:
-            from api.stations.models import StationAmenity
+            from api.user.stations.models import StationAmenity
             existing_ids = set(StationAmenity.objects.filter(
                 id__in=value, 
                 is_active=True
@@ -405,7 +405,7 @@ class CreateStationSerializer(serializers.Serializer):
     def validate_media_uploads(self, value):
         """Validate media upload objects"""
         if value:
-            from api.media.models import MediaUpload
+            from api.user.media.models import MediaUpload
             
             for idx, media_obj in enumerate(value):
                 # Validate required fields
@@ -438,7 +438,7 @@ class CreateStationSerializer(serializers.Serializer):
     def validate_powerbank_assignments(self, value):
         """Validate powerbank assignment objects"""
         if value:
-            from api.stations.models import PowerBank
+            from api.user.stations.models import PowerBank
             
             # Validate unique slot assignments
             slot_numbers = []
@@ -543,7 +543,7 @@ class UpdateStationSerializer(serializers.Serializer):
     def validate_amenity_ids(self, value):
         """Validate amenity IDs exist"""
         if value:
-            from api.stations.models import StationAmenity
+            from api.user.stations.models import StationAmenity
             existing_ids = set(StationAmenity.objects.filter(
                 id__in=value, 
                 is_active=True
@@ -559,7 +559,7 @@ class UpdateStationSerializer(serializers.Serializer):
     def validate_media_uploads(self, value):
         """Validate media upload objects"""
         if value:
-            from api.media.models import MediaUpload
+            from api.user.media.models import MediaUpload
             
             for idx, media_obj in enumerate(value):
                 # Validate required fields
@@ -592,7 +592,7 @@ class UpdateStationSerializer(serializers.Serializer):
     def validate_powerbank_assignments(self, value):
         """Validate powerbank assignment objects"""
         if value:
-            from api.stations.models import PowerBank
+            from api.user.stations.models import PowerBank
             
             # Validate unique slot assignments
             slot_numbers = []
@@ -664,7 +664,7 @@ class CreateStationAmenitySerializer(serializers.Serializer):
     
     def validate_name(self, value):
         """Validate name is unique"""
-        from api.stations.models import StationAmenity
+        from api.user.stations.models import StationAmenity
         if StationAmenity.objects.filter(name=value).exists():
             raise serializers.ValidationError("Amenity with this name already exists")
         return value
@@ -680,7 +680,7 @@ class UpdateStationAmenitySerializer(serializers.Serializer):
     
     def validate_name(self, value):
         """Validate name is unique (excluding current instance)"""
-        from api.stations.models import StationAmenity
+        from api.user.stations.models import StationAmenity
         amenity_id = self.context.get('amenity_id')
         if StationAmenity.objects.filter(name=value).exclude(id=amenity_id).exists():
             raise serializers.ValidationError("Amenity with this name already exists")

@@ -8,8 +8,8 @@ from django.db.models import Count, Sum, Avg, Q, F
 from django.db.models.functions import TruncWeek
 from django.utils import timezone
 
-from api.rentals.models import Rental
-from api.payments.models import Transaction
+from api.user.rentals.models import Rental
+from api.user.payments.models import Transaction
 
 
 class RentalAnalyticsService:

@@ -1,0 +1,1 @@
+# Vendor apps namespace (future)

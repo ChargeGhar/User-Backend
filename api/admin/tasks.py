@@ -145,7 +145,7 @@ def monitor_system_health(self):
 
         # Send alerts if any issues found
         if alerts:
-            from api.notifications.services import notify_bulk
+            from api.user.notifications.services import notify_bulk
             from django.contrib.auth import get_user_model
 
             User = get_user_model()
@@ -192,8 +192,8 @@ def generate_revenue_report(self, date_range: tuple = None):
                 day=1, hour=0, minute=0, second=0, microsecond=0
             )
 
-        from api.payments.models import Transaction
-        from api.rentals.models import Rental
+        from api.user.payments.models import Transaction
+        from api.user.rentals.models import Rental
 
         # Get successful transactions in date range
         transactions = Transaction.objects.filter(
@@ -366,7 +366,7 @@ System Status: All systems operational
 
         # Send to admin users
         from django.contrib.auth import get_user_model
-        from api.notifications.services import notify_bulk
+        from api.user.notifications.services import notify_bulk
 
         User = get_user_model()
         admin_users = User.objects.filter(is_staff=True, is_active=True)

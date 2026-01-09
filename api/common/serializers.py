@@ -8,8 +8,8 @@ Model-specific serializers have been migrated to specialized apps:
 - AppConfig/Version serializers → api/system/serializers.py
 
 Please update your imports:
-    from api.system.serializers import CountrySerializer, AppConfigSerializer
-    from api.media.serializers import MediaUploadSerializer
+    from api.user.system.serializers import CountrySerializer, AppConfigSerializer
+    from api.user.media.serializers import MediaUploadSerializer
 
 This file now contains only common/base serializers used across all apps.
 """

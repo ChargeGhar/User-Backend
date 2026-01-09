@@ -14,9 +14,9 @@ from django.db import transaction
 from api.common.services import BaseService
 from api.common.services.base import ServiceException
 from api.common.utils.helpers import paginate_queryset
-from api.payments.models import PaymentMethod, Transaction, WalletTransaction
-from api.points.models import PointsTransaction
-from api.rentals.models import RentalPackage
+from api.user.payments.models import PaymentMethod, Transaction, WalletTransaction
+from api.user.points.models import PointsTransaction
+from api.user.rentals.models import RentalPackage
 
 
 class AdminPaymentService(BaseService):

@@ -17,8 +17,8 @@ from api.common.decorators import log_api_call, cached_response
 from api.common.mixins import BaseAPIView
 from api.common.routers import CustomViewRouter
 from api.common.serializers import BaseResponseSerializer
-from api.content import serializers
-from api.users.permissions import IsStaffPermission
+from api.user.content import serializers
+from api.user.auth.permissions import IsStaffPermission
 
 content_admin_router = CustomViewRouter()
 logger = logging.getLogger(__name__)

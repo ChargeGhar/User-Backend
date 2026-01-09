@@ -14,8 +14,8 @@ from django.db import transaction
 
 from api.common.services.base import CRUDService, ServiceException
 from api.admin.models import AdminActionLog
-from api.points.models import Referral
-from api.users.models import User
+from api.user.points.models import Referral
+from api.user.auth.models import User
 
 
 class AdminReferralService(CRUDService):
@@ -24,7 +24,7 @@ class AdminReferralService(CRUDService):
     
     def __init__(self):
         super().__init__()
-        from api.points.services import ReferralService
+        from api.user.points.services import ReferralService
         self.referral_service = ReferralService()
     
     def get_referral_analytics(

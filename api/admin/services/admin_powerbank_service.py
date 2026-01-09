@@ -12,8 +12,8 @@ from django.utils import timezone
 from api.common.services.base import CRUDService, ServiceException
 from api.common.utils.helpers import paginate_queryset
 from api.admin.models import AdminActionLog
-from api.stations.models import PowerBank, Station, StationSlot
-from api.rentals.models import Rental
+from api.user.stations.models import PowerBank, Station, StationSlot
+from api.user.rentals.models import Rental
 
 
 class AdminPowerBankService(CRUDService):

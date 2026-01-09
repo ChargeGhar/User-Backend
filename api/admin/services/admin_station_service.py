@@ -15,7 +15,7 @@ from django.db.models import Q
 from api.common.services.base import CRUDService, ServiceException
 from api.common.utils.helpers import paginate_queryset
 from api.admin.models import AdminActionLog
-from api.stations.models import (
+from api.user.stations.models import (
     Station, StationAmenity, StationAmenityMapping, 
     StationMedia
 )
@@ -196,8 +196,8 @@ class AdminStationService(CRUDService):
         """
         try:
             # Create station with slots using existing service
-            from api.stations.services import StationService
-            from api.stations.models import PowerBank
+            from api.user.stations.services import StationService
+            from api.user.stations.models import PowerBank
             
             station_service = StationService()
             station = station_service.create_station(station_data)
@@ -224,7 +224,7 @@ class AdminStationService(CRUDService):
             
             # Add media if provided
             if media_uploads:
-                from api.media.models import MediaUpload
+                from api.user.media.models import MediaUpload
                 
                 media_objects = []
                 for media_data in media_uploads:
@@ -245,7 +245,7 @@ class AdminStationService(CRUDService):
             
             # Assign powerbanks to slots if provided
             if powerbank_assignments:
-                from api.stations.models import StationSlot
+                from api.user.stations.models import StationSlot
                 
                 assigned_count = 0
                 for assignment in powerbank_assignments:
@@ -456,8 +456,8 @@ class AdminStationService(CRUDService):
             Updated Station instance with all relationships
         """
         try:
-            from api.stations.models import PowerBank, StationSlot
-            from api.media.models import MediaUpload
+            from api.user.stations.models import PowerBank, StationSlot
+            from api.user.media.models import MediaUpload
             
             station = Station.objects.get(serial_number=station_sn, is_deleted=False)
             
@@ -648,7 +648,7 @@ class AdminStationService(CRUDService):
             Success message dict
         """
         try:
-            from api.rentals.models import Rental
+            from api.user.rentals.models import Rental
             
             station = Station.objects.get(serial_number=station_sn, is_deleted=False)
             
@@ -718,7 +718,7 @@ class AdminStationService(CRUDService):
         Returns:
             Queryset of station issues
         """
-        from api.stations.models import StationIssue
+        from api.user.stations.models import StationIssue
         
         queryset = StationIssue.objects.select_related(
             'station',
@@ -757,7 +757,7 @@ class AdminStationService(CRUDService):
         Raises:
             ServiceException: If issue not found
         """
-        from api.stations.models import StationIssue
+        from api.user.stations.models import StationIssue
         
         try:
             return StationIssue.objects.select_related(
@@ -947,7 +947,7 @@ class AdminStationService(CRUDService):
     def _send_issue_resolved_notification(self, issue, notes: str = None):
         """Send notification to user when station issue is resolved"""
         try:
-            from api.notifications.services import notify
+            from api.user.notifications.services import notify
             
             notify(
                 issue.reported_by,

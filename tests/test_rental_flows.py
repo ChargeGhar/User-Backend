@@ -29,11 +29,11 @@ django.setup()
 
 from django.utils import timezone
 from django.db import transaction
-from api.users.models import User
-from api.rentals.models import Rental, RentalPackage
-from api.stations.models import Station, PowerBank, StationSlot
-from api.rentals.services import RentalService
-from api.payments.services import PaymentCalculationService, RentalPaymentService
+from api.user.auth.models import User
+from api.user.rentals.models import Rental, RentalPackage
+from api.user.stations.models import Station, PowerBank, StationSlot
+from api.user.rentals.services import RentalService
+from api.user.payments.services import PaymentCalculationService, RentalPaymentService
 
 
 class Colors:

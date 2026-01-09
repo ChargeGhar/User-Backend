@@ -16,10 +16,10 @@ from django.utils import timezone
 from django.db.models import Sum, Count, Q
 from django.db.models.functions import TruncDate, TruncWeek, TruncMonth
 from api.common.services.base import BaseService, ServiceException
-from api.users.models import User
-from api.stations.models import Station, StationIssue
-from api.payments.models import Transaction
-from api.rentals.models import Rental
+from api.user.auth.models import User
+from api.user.stations.models import Station, StationIssue
+from api.user.payments.models import Transaction
+from api.user.rentals.models import Rental
 
 class AdminAnalyticsService(BaseService):
     """Service for admin analytics"""

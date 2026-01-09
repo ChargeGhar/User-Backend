@@ -11,7 +11,7 @@ from decimal import Decimal
 from django.db import transaction
 
 from api.common.services.base import CRUDService, ServiceException
-from api.rentals.models.late_fee import LateFeeConfiguration
+from api.user.rentals.models.late_fee import LateFeeConfiguration
 from api.common.utils.helpers import paginate_queryset
 
 

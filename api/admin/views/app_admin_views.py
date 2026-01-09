@@ -15,9 +15,9 @@ from api.common.routers import CustomViewRouter
 from api.common.mixins import BaseAPIView
 from api.common.decorators import log_api_call
 from api.common.serializers import BaseResponseSerializer, PaginatedResponseSerializer
-from api.users.permissions import IsStaffPermission
-from api.system.services import AppVersionService
-from api.system.serializers import AppVersionSerializer, AppUpdateSerializer
+from api.user.auth.permissions import IsStaffPermission
+from api.user.system.services import AppVersionService
+from api.user.system.serializers import AppVersionSerializer, AppUpdateSerializer
 
 app_admin_router = CustomViewRouter()
 logger = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ class AdminAppVersionsView(GenericAPIView, BaseAPIView):
             page = int(request.query_params.get('page', 1))
             page_size = int(request.query_params.get('page_size', 20))
             
-            from api.system.models import AppVersion
+            from api.user.system.models import AppVersion
             from api.common.utils.helpers import paginate_queryset
             
             queryset = AppVersion.objects.all()
@@ -128,7 +128,7 @@ class AdminAppVersionDetailView(GenericAPIView, BaseAPIView):
     def get(self, request: Request, version_id: str) -> Response:
         """Get specific app version details"""
         def operation():
-            from api.system.models import AppVersion
+            from api.user.system.models import AppVersion
             
             try:
                 version = AppVersion.objects.get(id=version_id)
@@ -177,7 +177,7 @@ class AdminAppVersionDetailView(GenericAPIView, BaseAPIView):
     def delete(self, request: Request, version_id: str) -> Response:
         """Delete app version"""
         def operation():
-            from api.system.models import AppVersion
+            from api.user.system.models import AppVersion
             
             try:
                 version = AppVersion.objects.get(id=version_id)
@@ -242,7 +242,7 @@ class AdminAppUpdatesView(GenericAPIView, BaseAPIView):
             page = int(request.query_params.get('page', 1))
             page_size = int(request.query_params.get('page_size', 20))
             
-            from api.system.models import AppUpdate
+            from api.user.system.models import AppUpdate
             from api.common.utils.helpers import paginate_queryset
             
             queryset = AppUpdate.objects.all()
@@ -279,7 +279,7 @@ class AdminAppUpdatesView(GenericAPIView, BaseAPIView):
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             
-            from api.system.models import AppUpdate
+            from api.user.system.models import AppUpdate
             
             update = AppUpdate.objects.create(**serializer.validated_data)
             

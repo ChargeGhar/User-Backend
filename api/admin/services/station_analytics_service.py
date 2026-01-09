@@ -8,9 +8,9 @@ from django.db.models import Count, Sum, Avg, Q, F, Case, When, FloatField
 from django.db.models.functions import TruncWeek
 from django.utils import timezone
 
-from api.stations.models import Station, StationSlot
-from api.rentals.models import Rental
-from api.payments.models import Transaction
+from api.user.stations.models import Station, StationSlot
+from api.user.rentals.models import Rental
+from api.user.payments.models import Transaction
 
 
 class StationAnalyticsService:
@@ -44,7 +44,7 @@ class StationAnalyticsService:
         # Top 10 stations by revenue
         # Note: Transaction has 'related_rental' FK, not reverse 'related_transactions'
         # We need to aggregate revenue from Transaction model filtering by station rentals
-        from api.payments.models import Transaction
+        from api.user.payments.models import Transaction
         
         top_stations = Station.objects.filter(
             is_deleted=False

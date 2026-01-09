@@ -49,19 +49,19 @@ INSTALLED_APPS = [
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
     "allauth.socialaccount.providers.apple",
-    # PowerBank Apps
-    "api.system",  # NEW: System configuration and country data
-    "api.media",   # NEW: Media management
+    # PowerBank Apps - User Namespace
+    "api.user.system",
+    "api.user.media",
     "api.common.apps.CommonConfig",
-    "api.users.apps.UserConfig",
-    "api.stations.apps.StationsConfig",
-    "api.rentals.apps.RentalsConfig",
-    "api.payments.apps.PaymentsConfig",
-    "api.points.apps.PointsConfig",
-    "api.notifications.apps.NotificationsConfig",
-    "api.social.apps.SocialConfig",
-    "api.promotions.apps.PromotionsConfig",
-    "api.content.apps.ContentConfig",
+    "api.user.auth.apps.AuthConfig",
+    "api.user.stations.apps.StationsConfig",
+    "api.user.rentals.apps.RentalsConfig",
+    "api.user.payments.apps.PaymentsConfig",
+    "api.user.points.apps.PointsConfig",
+    "api.user.notifications.apps.NotificationsConfig",
+    "api.user.social.apps.SocialConfig",
+    "api.user.promotions.apps.PromotionsConfig",
+    "api.user.content.apps.ContentConfig",
     "api.admin.apps.AdminConfig",
     "api.config.apps.ConfigConfig",
 ]
@@ -84,7 +84,7 @@ SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
 SOCIALACCOUNT_QUERY_EMAIL = True
 
 # Custom adapter to integrate with your User model
-SOCIALACCOUNT_ADAPTER = 'api.users.adapters.CustomSocialAccountAdapter'
+SOCIALACCOUNT_ADAPTER = 'api.user.auth.adapters.CustomSocialAccountAdapter'
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

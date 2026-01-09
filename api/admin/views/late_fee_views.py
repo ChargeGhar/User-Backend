@@ -18,7 +18,7 @@ from api.common.routers import CustomViewRouter
 from api.common.mixins import BaseAPIView
 from api.common.decorators import log_api_call
 from api.common.serializers import BaseResponseSerializer
-from api.users.permissions import IsStaffPermission
+from api.user.auth.permissions import IsStaffPermission
 from api.admin.services.late_fee_service import LateFeeConfigurationService
 from api.admin.serializers.late_fee_serializers import (
     LateFeeConfigurationSerializer,

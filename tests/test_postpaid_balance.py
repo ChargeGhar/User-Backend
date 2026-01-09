@@ -19,10 +19,10 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'api.config.settings')
 django.setup()
 
 from django.utils import timezone
-from api.users.models import User
-from api.rentals.models import RentalPackage
-from api.rentals.services import RentalService
-from api.stations.models import Station
+from api.user.auth.models import User
+from api.user.rentals.models import RentalPackage
+from api.user.rentals.services import RentalService
+from api.user.stations.models import Station
 
 # ANSI color codes
 GREEN = '\033[92m'
@@ -140,7 +140,7 @@ def test_postpaid_with_insufficient_balance():
                 password='testpass123'
             )
             # Set low balance
-            from api.payments.models import Wallet
+            from api.user.payments.models import Wallet
             wallet = Wallet.objects.create(user=user, balance=Decimal('20.00'))
             user.wallet = wallet
         

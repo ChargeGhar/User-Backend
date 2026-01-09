@@ -8,7 +8,7 @@ from django.db.models import Count, Q
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
 
-from api.users.models import User
+from api.user.auth.models import User
 
 
 class UserAnalyticsService:

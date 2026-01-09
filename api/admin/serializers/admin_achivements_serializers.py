@@ -1,7 +1,7 @@
 
 from __future__ import annotations
 from rest_framework import serializers
-from api.social.models import Achievement
+from api.user.social.models import Achievement
 
 
 # ============================================================

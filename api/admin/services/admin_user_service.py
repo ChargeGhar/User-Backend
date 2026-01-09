@@ -15,7 +15,7 @@ from django.db.models import Q
 from api.common.services.base import CRUDService, ServiceException
 from api.common.utils.helpers import paginate_queryset
 from api.admin.models import AdminActionLog
-from api.users.models import User
+from api.user.auth.models import User
 
 class AdminUserService(CRUDService):
     """Service for admin user management"""
@@ -99,7 +99,7 @@ class AdminUserService(CRUDService):
             
             # Send notification to user if status changed to banned/inactive
             if status in ['BANNED', 'INACTIVE']:
-                from api.notifications.services import notify
+                from api.user.notifications.services import notify
                 notify(
                     user,
                     'account_status_update',
@@ -126,7 +126,7 @@ class AdminUserService(CRUDService):
             user = User.objects.get(id=user_id)
             
             # Get or create wallet
-            from api.payments.services import WalletService
+            from api.user.payments.services import WalletService
             wallet_service = WalletService()
             
             old_balance = wallet_service.get_wallet_balance(user)
@@ -156,7 +156,7 @@ class AdminUserService(CRUDService):
             )
             
             # Send notification to user
-            from api.notifications.services import notify
+            from api.user.notifications.services import notify
             notify(
                 user,
                 'wallet_recharged',
@@ -185,7 +185,7 @@ class AdminUserService(CRUDService):
     def get_kyc_submissions(self, filters: Dict[str, Any] = None) -> Dict[str, Any]:
         """Get paginated list of KYC submissions with filters"""
         try:
-            from api.users.models import UserKYC
+            from api.user.auth.models import UserKYC
             
             queryset = UserKYC.objects.select_related('user', 'verified_by')
             
@@ -231,7 +231,7 @@ class AdminUserService(CRUDService):
     def update_kyc_status(self, kyc_id: str, status: str, rejection_reason: str, admin_user) -> Dict[str, Any]:
         """Approve or reject KYC submission"""
         try:
-            from api.users.models import UserKYC
+            from api.user.auth.models import UserKYC
             from django.utils import timezone
             
             kyc = UserKYC.objects.select_related('user').get(id=kyc_id)
@@ -266,7 +266,7 @@ class AdminUserService(CRUDService):
             )
             
             # Send notification to user
-            from api.notifications.services import notify
+            from api.user.notifications.services import notify
             notify(
                 kyc.user,
                 'kyc_status_update',
@@ -277,8 +277,8 @@ class AdminUserService(CRUDService):
             
             # Award KYC completion points if approved
             if status == 'APPROVED':
-                from api.points.tasks import award_points_task
-                from api.system.services import AppConfigService
+                from api.user.points.tasks import award_points_task
+                from api.user.system.services import AppConfigService
                 
                 config_service = AppConfigService()
                 kyc_points = int(config_service.get_config_cached('POINTS_KYC', 30))

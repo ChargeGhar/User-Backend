@@ -64,20 +64,20 @@ urlpatterns = [
     # Django Allauth URLs
     path("accounts/", include("allauth.urls")),
     
-    # API app includes
-    path("api/", include("api.users.urls")),
-    path("api/", include("api.stations.urls")),
-    path("api/", include("api.stations.internal_urls")),  # Internal IoT endpoints
-    path("api/", include("api.notifications.urls")),
-    path("api/", include("api.payments.urls")),
-    path("api/", include("api.points.urls")),
-    path("api/", include("api.rentals.urls")),
-    path("api/", include("api.social.urls")),
-    path("api/", include("api.promotions.urls")),
-    path("api/", include("api.content.urls")),
+    # API app includes - User Namespace
+    path("api/", include("api.user.auth.urls")),
+    path("api/", include("api.user.stations.urls")),
+    path("api/", include("api.user.stations.internal_urls")),  # Internal IoT endpoints
+    path("api/", include("api.user.notifications.urls")),
+    path("api/", include("api.user.payments.urls")),
+    path("api/", include("api.user.points.urls")),
+    path("api/", include("api.user.rentals.urls")),
+    path("api/", include("api.user.social.urls")),
+    path("api/", include("api.user.promotions.urls")),
+    path("api/", include("api.user.content.urls")),
     path("api/", include("api.admin.urls")),
-    path("api/", include("api.system.urls")),  # System app (countries, app config, versions)
-    path("api/", include("api.media.urls")),   # Media app (file uploads)
+    path("api/", include("api.user.system.urls")),
+    path("api/", include("api.user.media.urls")),
 ]
 
 if USE_SILK:

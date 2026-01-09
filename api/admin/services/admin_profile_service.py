@@ -15,9 +15,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from api.common.services.base import CRUDService, ServiceException
 from api.admin.models import AdminProfile, AdminActionLog
-from api.users.models import User, UserProfile
-from api.points.models import UserPoints
-from api.payments.models import Wallet
+from api.user.auth.models import User, UserProfile
+from api.user.points.models import UserPoints
+from api.user.payments.models import Wallet
 
 
 class AdminProfileService(CRUDService):
@@ -74,7 +74,7 @@ class AdminProfileService(CRUDService):
         
         # Log authentication
         if request:
-            from api.users.services.account_service import AccountService
+            from api.user.auth.services.account_service import AccountService
             account_service = AccountService()
             account_service.log_auth_action(user, 'LOGIN', request)
         

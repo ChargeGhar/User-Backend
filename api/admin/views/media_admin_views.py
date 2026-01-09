@@ -16,9 +16,9 @@ from api.common.routers import CustomViewRouter
 from api.common.mixins import BaseAPIView
 from api.common.decorators import log_api_call
 from api.common.serializers import BaseResponseSerializer, PaginatedResponseSerializer
-from api.users.permissions import IsStaffPermission
-from api.media.services import MediaUploadService
-from api.media.serializers import MediaUploadSerializer, MediaUploadCreateSerializer, MediaUploadResponseSerializer
+from api.user.auth.permissions import IsStaffPermission
+from api.user.media.services import MediaUploadService
+from api.user.media.serializers import MediaUploadSerializer, MediaUploadCreateSerializer, MediaUploadResponseSerializer
 
 media_admin_router = CustomViewRouter()
 logger = logging.getLogger(__name__)

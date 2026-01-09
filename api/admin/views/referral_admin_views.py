@@ -22,9 +22,9 @@ from api.common.decorators import log_api_call
 from api.common.mixins import BaseAPIView
 from api.common.routers import CustomViewRouter
 from api.common.serializers import BaseResponseSerializer
-from api.users.permissions import IsStaffPermission
-from api.points.serializers import ReferralSerializer
-from api.social.serializers import UserLeaderboardSerializer
+from api.user.auth.permissions import IsStaffPermission
+from api.user.points.serializers import ReferralSerializer
+from api.user.social.serializers import UserLeaderboardSerializer
 
 referral_admin_router = CustomViewRouter()
 logger = logging.getLogger(__name__)

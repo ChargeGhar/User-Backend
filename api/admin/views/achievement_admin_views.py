@@ -22,7 +22,7 @@ from api.common.decorators import log_api_call
 from api.common.mixins import BaseAPIView
 from api.common.routers import CustomViewRouter
 from api.common.serializers import BaseResponseSerializer
-from api.users.permissions import IsStaffPermission
+from api.user.auth.permissions import IsStaffPermission
 
 achievement_admin_router = CustomViewRouter()
 logger = logging.getLogger(__name__)
@@ -145,7 +145,7 @@ class AdminAchievementsView(GenericAPIView, BaseAPIView):
             )
             
             # Reload with statistics
-            from api.social.models import Achievement
+            from api.user.social.models import Achievement
             from django.db.models import Count, Q
             achievement = Achievement.objects.annotate(
                 total_unlocked=Count(
@@ -194,7 +194,7 @@ class AdminAchievementDetailView(GenericAPIView, BaseAPIView):
     def get(self, request: Request, achievement_id: str) -> Response:
         """Get achievement details"""
         def operation():
-            from api.social.models import Achievement
+            from api.user.social.models import Achievement
             from django.db.models import Count, Q
             
             achievement = Achievement.objects.annotate(
@@ -242,7 +242,7 @@ class AdminAchievementDetailView(GenericAPIView, BaseAPIView):
             )
             
             # Reload with statistics
-            from api.social.models import Achievement
+            from api.user.social.models import Achievement
             from django.db.models import Count, Q
             achievement = Achievement.objects.annotate(
                 total_unlocked=Count(

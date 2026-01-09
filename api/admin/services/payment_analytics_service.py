@@ -6,8 +6,8 @@ from decimal import Decimal
 from django.db.models import Count, Sum, Q, F
 from django.utils import timezone
 
-from api.payments.models import Transaction, Wallet
-from api.users.models import User
+from api.user.payments.models import Transaction, Wallet
+from api.user.auth.models import User
 
 
 class PaymentAnalyticsService:

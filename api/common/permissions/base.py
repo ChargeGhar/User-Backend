@@ -31,7 +31,7 @@ class IsProfileComplete(BasePermission):
         
         # Check if profile completion is required via app config
         # Using get_config_cached() for performance - cache is auto-cleared by signals on config change
-        from api.system.services.app_config_service import AppConfigService
+        from api.user.system.services.app_config_service import AppConfigService
         app_config_service = AppConfigService()
         
         need_profile_complete = app_config_service.get_config_cached(
@@ -66,7 +66,7 @@ class IsKYCVerified(BasePermission):
         
         # Check if KYC verification is required via app config
         # Using get_config_cached() for performance - cache is auto-cleared by signals on config change
-        from api.system.services.app_config_service import AppConfigService
+        from api.user.system.services.app_config_service import AppConfigService
         app_config_service = AppConfigService()
         
         need_kyc_verified = app_config_service.get_config_cached(
@@ -99,7 +99,7 @@ class HasNoPendingDues(BasePermission):
             return False
         
         # Check for pending rental dues
-        from api.rentals.models import Rental
+        from api.user.rentals.models import Rental
         
         pending_dues = Rental.objects.filter(
             user=request.user,

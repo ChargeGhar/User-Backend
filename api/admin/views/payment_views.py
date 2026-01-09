@@ -14,8 +14,8 @@ from api.common.decorators import log_api_call
 from api.common.mixins import BaseAPIView
 from api.common.routers import CustomViewRouter
 from api.common.serializers import BaseResponseSerializer
-from api.payments.serializers import RefundSerializer
-from api.users.permissions import IsStaffPermission
+from api.user.payments.serializers import RefundSerializer
+from api.user.auth.permissions import IsStaffPermission
 
 payment_router = CustomViewRouter()
 logger = logging.getLogger(__name__)

@@ -16,8 +16,8 @@ from django.db import transaction
 
 from api.admin.models import AdminActionLog
 from api.common.services.base import BaseService
-from api.content.models import ContentPage, FAQ, ContactInfo, Banner
-from api.content.services import (
+from api.user.content.models import ContentPage, FAQ, ContactInfo, Banner
+from api.user.content.services import (
     ContentPageService,
     FAQService,
     ContactInfoService,

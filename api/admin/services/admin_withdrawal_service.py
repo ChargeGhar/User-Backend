@@ -13,8 +13,8 @@ from typing import Dict, Any
 from django.db import transaction
 from api.common.services.base import CRUDService, ServiceException
 from api.admin.models import AdminActionLog
-from api.payments.models import WithdrawalRequest
-from api.payments.services.withdrawal import WithdrawalService
+from api.user.payments.models import WithdrawalRequest
+from api.user.payments.services.withdrawal import WithdrawalService
 
 class AdminWithdrawalService(CRUDService):
     """Service for admin withdrawal management - delegates to core WithdrawalService"""
@@ -90,7 +90,7 @@ class AdminWithdrawalService(CRUDService):
     def _send_withdrawal_notification(self, withdrawal: WithdrawalRequest, action: str, admin_notes: str) -> None:
         """Send withdrawal notification to user"""
         try:
-            from api.notifications.services import notify
+            from api.user.notifications.services import notify
             template_slug = 'withdrawal_approved' if action == 'APPROVE' else 'withdrawal_rejected'
             notify(
                 withdrawal.user, 

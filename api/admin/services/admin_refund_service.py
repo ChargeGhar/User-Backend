@@ -13,8 +13,8 @@ from typing import Dict, Any
 from django.db import transaction
 from api.common.services.base import CRUDService, ServiceException
 from api.admin.models import AdminActionLog
-from api.payments.models import Refund
-from api.payments.services.refund import RefundService
+from api.user.payments.models import Refund
+from api.user.payments.services.refund import RefundService
 
 class AdminRefundService(CRUDService):
     """Service for admin refund management - delegates to core RefundService"""
@@ -83,7 +83,7 @@ class AdminRefundService(CRUDService):
     def _send_refund_notification(self, refund: Refund, action: str, admin_notes: str) -> None:
         """Send refund notification to user"""
         try:
-            from api.notifications.services import notify
+            from api.user.notifications.services import notify
             template_slug = 'refund_approved' if action == 'APPROVE' else 'refund_rejected'
             notify(
                 refund.requested_by, 

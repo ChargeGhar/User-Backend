@@ -8,9 +8,9 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'api.config.settings')
 django.setup()
 
 from django.utils import timezone
-from api.rentals.models import Rental
-from api.stations.services.station_sync_service import StationSyncService
-from api.stations.models import Station, StationSlot
+from api.user.rentals.models import Rental
+from api.user.stations.services.station_sync_service import StationSyncService
+from api.user.stations.models import Station, StationSlot
 
 def test_return(rental_code):
     print(f'\n{"="*80}')

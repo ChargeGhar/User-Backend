@@ -18,8 +18,8 @@ from django.utils import timezone
 from api.common.services.base import CRUDService, ServiceException
 from api.common.utils.helpers import paginate_queryset
 from api.admin.models import AdminActionLog
-from api.points.models import PointsTransaction
-from api.users.models import User
+from api.user.points.models import PointsTransaction
+from api.user.auth.models import User
 
 
 class AdminPointsService(CRUDService):
@@ -28,7 +28,7 @@ class AdminPointsService(CRUDService):
     
     def __init__(self):
         super().__init__()
-        from api.points.services import PointsService
+        from api.user.points.services import PointsService
         self.points_service = PointsService()
     
     @transaction.atomic
@@ -83,7 +83,7 @@ class AdminPointsService(CRUDService):
             )
             
             # Send notification to user
-            from api.notifications.services import notify
+            from api.user.notifications.services import notify
             notify(
                 user=user,
                 template_slug='admin_points_adjustment',

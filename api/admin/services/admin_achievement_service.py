@@ -17,7 +17,7 @@ from django.utils import timezone
 from api.common.services.base import CRUDService, ServiceException
 from api.common.utils.helpers import paginate_queryset
 from api.admin.models import AdminActionLog
-from api.social.models import Achievement, UserAchievement
+from api.user.social.models import Achievement, UserAchievement
 
 
 class AdminAchievementService(CRUDService):

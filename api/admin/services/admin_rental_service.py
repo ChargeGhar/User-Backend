@@ -13,7 +13,7 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 
 from api.common.services.base import BaseService, ServiceException
-from api.rentals.models import RentalIssue
+from api.user.rentals.models import RentalIssue
 
 User = get_user_model()
 
@@ -211,7 +211,7 @@ class AdminRentalService(BaseService):
     def _send_issue_resolved_notification(self, issue: RentalIssue):
         """Send notification to user when issue is resolved"""
         try:
-            from api.notifications.services import notify
+            from api.user.notifications.services import notify
             
             notify(
                 issue.rental.user,
@@ -370,7 +370,7 @@ class AdminRentalService(BaseService):
         Raises:
             ServiceException: If rental not found
         """
-        from api.rentals.models import Rental
+        from api.user.rentals.models import Rental
         
         try:
             return self._get_base_rental_queryset().get(id=rental_id)
@@ -382,7 +382,7 @@ class AdminRentalService(BaseService):
     
     def _get_base_rental_queryset(self):
         """Get base queryset with all necessary relationships"""
-        from api.rentals.models import Rental
+        from api.user.rentals.models import Rental
         
         return Rental.objects.select_related(
             'user',

@@ -16,12 +16,12 @@ from django.db import transaction
 from datetime import timedelta
 from decimal import Decimal
 
-from api.rentals.models import Rental
-from api.payments.models import Transaction
-from api.users.models import User
-from api.rentals.models import RentalPackage
-from api.stations.models import Station
-from api.system.models import AppConfig
+from api.user.rentals.models import Rental
+from api.user.payments.models import Transaction
+from api.user.auth.models import User
+from api.user.rentals.models import RentalPackage
+from api.user.stations.models import Station
+from api.user.system.models import AppConfig
 
 # Colors
 GREEN = '\033[92m'
@@ -59,7 +59,7 @@ def test_transaction_rental_link():
     print(f"{CYAN}Checking Code Implementation...{RESET}\n")
     
     # Check if the code has been updated
-    from api.rentals.services.rental_service import RentalService
+    from api.user.rentals.services.rental_service import RentalService
     import inspect
     
     service = RentalService()
@@ -142,7 +142,7 @@ def test_auto_collection():
     
     print(f"{CYAN}Checking Code Implementation...{RESET}\n")
     
-    from api.rentals.services.rental_service import RentalService
+    from api.user.rentals.services.rental_service import RentalService
     import inspect
     
     service = RentalService()
@@ -215,7 +215,7 @@ def test_timely_return_bonus():
     
     print(f"{CYAN}Checking Code Implementation...{RESET}\n")
     
-    from api.rentals.services.rental_service import RentalService
+    from api.user.rentals.services.rental_service import RentalService
     import inspect
     
     service = RentalService()

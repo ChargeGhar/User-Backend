@@ -15,9 +15,9 @@ from api.common.routers import CustomViewRouter
 from api.common.mixins import BaseAPIView
 from api.common.decorators import log_api_call
 from api.common.serializers import BaseResponseSerializer
-from api.users.permissions import IsStaffPermission
-from api.system.services import AppConfigService
-from api.system.serializers import (
+from api.user.auth.permissions import IsStaffPermission
+from api.user.system.services import AppConfigService
+from api.user.system.serializers import (
     AppConfigAdminSerializer,
     CreateAppConfigSerializer,
     UpdateAppConfigSerializer
