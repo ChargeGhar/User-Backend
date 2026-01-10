@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 PowerBank Static Table Extractor Tool
-Extracts only the static/configuration tables from PowerBank_ER_Diagram.md
+Extracts only the static/configuration tables from chargeghar_erd.md
 Helps stay within project boundaries and requirements.
 
 Usage:
@@ -22,7 +22,7 @@ from pathlib import Path
 class PowerBankTableExtractor:
     """Extracts ALL tables from ER diagram - Simple and Powerful for ongoing context."""
     
-    def __init__(self, er_diagram_path: str = "docs/PowerBank_ER_Diagram.md"):
+    def __init__(self, er_diagram_path: str = "/chargeghar_erd.md"):
         self.er_diagram_path = Path(er_diagram_path)
         self.all_tables: Set[str] = set()
         self.table_definitions: Dict[str, Dict] = {}
@@ -472,7 +472,7 @@ Examples:
     if len(sys.argv) == 1:
         args.list = True
     
-    extractor = PowerBankTableExtractor("PowerBank_ER_Diagram.md")
+    extractor = PowerBankTableExtractor("chargeghar_erd.md")
     
     # Load and parse ER diagram
     content = extractor.load_er_diagram()
@@ -517,7 +517,7 @@ Examples:
 def extract_table_structure(table_name: str) -> Dict:
     """Extract table structure for use in other scripts."""
     try:
-        extractor = PowerBankTableExtractor("PowerBank_ER_Diagram.md")
+        extractor = PowerBankTableExtractor("chargeghar_erd.md")
         content = extractor.load_er_diagram()
         if not content:
             return {"error": "Could not load ER diagram"}
@@ -532,7 +532,7 @@ def extract_table_structure(table_name: str) -> Dict:
 def get_all_available_tables() -> List[str]:
     """Get list of all tables programmatically."""
     try:
-        extractor = PowerBankTableExtractor("PowerBank_ER_Diagram.md")
+        extractor = PowerBankTableExtractor("chargeghar_erd.md")
         content = extractor.load_er_diagram()
         if not content:
             return []
@@ -548,7 +548,7 @@ def get_all_available_tables() -> List[str]:
 def preview_model(table_name: str) -> Dict:
     """Preview Django model for any table programmatically."""
     try:
-        extractor = PowerBankTableExtractor("PowerBank_ER_Diagram.md")
+        extractor = PowerBankTableExtractor("chargeghar_erd.md")
         content = extractor.load_er_diagram()
         if not content:
             return {"error": "Could not load ER diagram"}
