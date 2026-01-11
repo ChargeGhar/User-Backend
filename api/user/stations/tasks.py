@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict
 
 from celery import shared_task
@@ -11,6 +12,100 @@ from api.common.tasks.base import BaseTask
 from api.user.stations.models import PowerBank, Station, StationSlot
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=10,
+    queue="stations"
+)
+def verify_popup_completion(self, rental_id: str, station_sn: str, expected_powerbank_sn: str = None):
+    """
+    Verify popup completed after sync timeout
+    
+    Called when sync popup times out but rental was created.
+    Checks device logs for successful popup within last 2 minutes.
+    
+    Args:
+        rental_id: Rental ID to update
+        station_sn: Station serial number
+        expected_powerbank_sn: Expected powerbank SN (optional for random popup)
+    """
+    from api.user.rentals.models import Rental
+    from api.user.stations.services.device_api_service import DeviceAPIService
+    
+    try:
+        rental = Rental.objects.get(id=rental_id)
+        
+        # Skip if already completed or cancelled
+        if rental.status not in ['PENDING', 'PENDING_POPUP']:
+            logger.info(f"Rental {rental_id} already processed, status={rental.status}")
+            return {"status": "skipped", "reason": f"rental status is {rental.status}"}
+        
+        device_service = DeviceAPIService()
+        recent_popups = device_service.get_recent_popups(station_sn, limit=20)
+        
+        # Check if our powerbank was popped in last 2 minutes
+        cutoff = int((timezone.now().timestamp() - 120) * 1000)  # Convert to milliseconds
+        
+        for popup in recent_popups:
+            if popup.timestamp > cutoff:
+                parsed = popup.parsed
+                popup_sn = parsed.get("powerbankSN", "")
+                popup_status = parsed.get("status", 0)
+                
+                # If we have expected SN, match it; otherwise accept any successful popup
+                if popup_status == 1:
+                    if expected_powerbank_sn is None or popup_sn == expected_powerbank_sn:
+                        # Found successful popup!
+                        logger.info(
+                            f"Verified popup for rental {rental_id}: "
+                            f"powerbank={popup_sn}"
+                        )
+                        rental.status = 'ACTIVE'
+                        rental.started_at = timezone.now()
+                        rental.rental_metadata['popup_verified'] = True
+                        rental.rental_metadata['popup_verified_at'] = timezone.now().isoformat()
+                        rental.rental_metadata['verified_powerbank_sn'] = popup_sn
+                        rental.save(update_fields=['status', 'started_at', 'rental_metadata'])
+                        
+                        return {"status": "verified", "powerbank_sn": popup_sn}
+        
+        # Not found - retry or mark failed
+        if self.request.retries < self.max_retries:
+            logger.warning(f"Popup not verified for rental {rental_id}, retrying... (attempt {self.request.retries + 1})")
+            raise self.retry()
+        else:
+            logger.error(f"Popup verification failed for rental {rental_id} after {self.max_retries} retries")
+            rental.status = 'CANCELLED'
+            rental.rental_metadata['popup_failed'] = True
+            rental.rental_metadata['popup_failed_at'] = timezone.now().isoformat()
+            rental.save(update_fields=['status', 'rental_metadata'])
+            
+            # TODO: Trigger refund if prepaid
+            # For now, just notify user
+            try:
+                from api.user.notifications.services import notify
+                notify(
+                    rental.user,
+                    'rental_popup_failed',
+                    async_send=True,
+                    rental_code=rental.rental_code,
+                    station_name=rental.station.station_name
+                )
+            except Exception as notify_error:
+                logger.error(f"Failed to send popup failure notification: {notify_error}")
+            
+            return {"status": "failed", "reason": "popup not verified after retries"}
+            
+    except Rental.DoesNotExist:
+        logger.error(f"Rental {rental_id} not found")
+        return {"status": "error", "reason": "rental not found"}
+    except Exception as e:
+        logger.error(f"Verify popup error: rental={rental_id}, error={e}")
+        raise self.retry(exc=e)
 
 
 @shared_task(base=BaseTask, bind=True)

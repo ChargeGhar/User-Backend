@@ -59,7 +59,7 @@ def test_transaction_rental_link():
     print(f"{CYAN}Checking Code Implementation...{RESET}\n")
     
     # Check if the code has been updated
-    from api.user.rentals.services.rental_service import RentalService
+    from api.user.rentals.services import RentalService
     import inspect
     
     service = RentalService()
@@ -142,7 +142,7 @@ def test_auto_collection():
     
     print(f"{CYAN}Checking Code Implementation...{RESET}\n")
     
-    from api.user.rentals.services.rental_service import RentalService
+    from api.user.rentals.services import RentalService
     import inspect
     
     service = RentalService()
@@ -215,7 +215,7 @@ def test_timely_return_bonus():
     
     print(f"{CYAN}Checking Code Implementation...{RESET}\n")
     
-    from api.user.rentals.services.rental_service import RentalService
+    from api.user.rentals.services import RentalService
     import inspect
     
     service = RentalService()

@@ -383,6 +383,80 @@ class TokenInfo:
 # HELPER FUNCTIONS
 # ==========================================
 
+@dataclass
+class PopupSnResult:
+    """
+    Response from popup_sn endpoint
+    
+    Response format:
+    {
+        "slot": 1,
+        "powerbankSN": "40818048",
+        "status": 1,
+        "success": true
+    }
+    """
+    slot: int = 0
+    powerbank_sn: str = ""
+    status: int = 0
+    success: bool = False
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'PopupSnResult':
+        """Create PopupSnResult from API response dict"""
+        if not data:
+            return cls()
+        
+        return cls(
+            slot=data.get('slot', 0),
+            powerbank_sn=data.get('powerbankSN', ''),
+            status=data.get('status', 0),
+            success=data.get('success', False)
+        )
+
+
+@dataclass
+class TransactionLog:
+    """
+    Device transaction log entry
+    
+    Response format:
+    {
+        "messageId": "abc123",
+        "deviceName": "864601069946994",
+        "cmd": "0x31",
+        "raw": "...",
+        "parsed": {...},
+        "timestamp": 1704844800000
+    }
+    """
+    message_id: str = ""
+    device_name: str = ""
+    cmd: str = ""
+    raw: str = ""
+    parsed: Dict[str, Any] = field(default_factory=dict)
+    timestamp: int = 0
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'TransactionLog':
+        """Create TransactionLog from API response dict"""
+        if not data:
+            return cls()
+        
+        return cls(
+            message_id=data.get('messageId', ''),
+            device_name=data.get('deviceName', ''),
+            cmd=data.get('cmd', ''),
+            raw=data.get('raw', ''),
+            parsed=data.get('parsed', {}),
+            timestamp=data.get('timestamp', 0)
+        )
+
+
+# ==========================================
+# HELPER FUNCTIONS
+# ==========================================
+
 def _parse_datetime(value: Any) -> Optional[datetime]:
     """Parse datetime from various formats"""
     if value is None:

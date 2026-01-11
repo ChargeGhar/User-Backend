@@ -14,7 +14,7 @@ from api.common.routers import CustomViewRouter
 from api.common.mixins import BaseAPIView
 from api.common.decorators import log_api_call, cached_response
 from api.common.serializers import BaseResponseSerializer
-from api.user.rentals.serializers import core_serializers as serializers
+from api.user.rentals import serializers
 from api.user.rentals.services import RentalService
 
 

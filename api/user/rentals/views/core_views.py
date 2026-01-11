@@ -13,7 +13,7 @@ from api.common.routers import CustomViewRouter
 from api.common.mixins import BaseAPIView
 from api.common.decorators import rate_limit, log_api_call
 from api.common.serializers import BaseResponseSerializer
-from api.user.rentals.serializers import core_serializers as serializers
+from api.user.rentals import serializers
 from api.user.rentals.services import RentalService
 from rest_framework.request import Request
 
@@ -49,7 +49,8 @@ class RentalStartView(GenericAPIView, BaseAPIView):
             rental = service.start_rental(
                 user=request.user,
                 station_sn=serializer.validated_data['station_sn'],
-                package_id=serializer.validated_data['package_id']
+                package_id=serializer.validated_data['package_id'],
+                powerbank_sn=serializer.validated_data.get('powerbank_sn')
             )
             
             response_serializer = serializers.RentalDetailSerializer(rental)

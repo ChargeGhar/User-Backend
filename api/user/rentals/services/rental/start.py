@@ -1,0 +1,264 @@
+"""
+Rental Start Service
+====================
+
+Handles starting new rentals with validation, payment, and device popup.
+"""
+from __future__ import annotations
+
+from typing import Tuple, Optional
+from decimal import Decimal
+
+from django.db import transaction
+from django.utils import timezone
+
+from api.common.services.base import ServiceException
+from api.common.utils.helpers import generate_rental_code
+from api.common.permissions.base import CanRentPowerBank
+from api.user.rentals.models import Rental, RentalPackage
+from api.user.stations.models import Station, StationSlot, PowerBank
+
+
+class RentalStartMixin:
+    """Mixin for rental start operations"""
+    
+    @transaction.atomic
+    def start_rental(self, user, station_sn: str, package_id: str, powerbank_sn: Optional[str] = None) -> Rental:
+        """
+        Start a new rental session with device popup.
+        
+        Flow:
+        1. Validate user and station
+        2. Process payment (if PREPAID)
+        3. Trigger device popup (sync, 15s timeout)
+        4. If popup succeeds -> ACTIVE
+        5. If popup times out -> PENDING_POPUP + async verification task
+        6. If popup fails -> CANCELLED + refund
+        
+        Args:
+            user: User starting rental
+            station_sn: Station serial number
+            package_id: Rental package ID
+            powerbank_sn: Optional specific powerbank SN (if user selected from app)
+        """
+        try:
+            self._validate_rental_prerequisites(user)
+            
+            station = Station.objects.get(serial_number=station_sn)
+            package = RentalPackage.objects.get(id=package_id, is_active=True)
+            
+            self._validate_station_availability(station)
+            
+            if package.payment_model == 'POSTPAID':
+                self._validate_postpaid_balance(user)
+            
+            # Get powerbank from DB for validation (will be confirmed by device)
+            power_bank, slot = self._get_available_power_bank_and_slot(station)
+            
+            # Create rental in PENDING_POPUP status
+            rental = Rental.objects.create(
+                user=user,
+                station=station,
+                slot=slot,
+                package=package,
+                power_bank=power_bank,
+                rental_code=generate_rental_code(),
+                status='PENDING_POPUP',
+                due_at=timezone.now() + timezone.timedelta(minutes=package.duration_minutes),
+                amount_paid=Decimal('0')
+            )
+            
+            # Process prepayment before popup
+            if package.payment_model == 'PREPAID':
+                self._process_prepayment(user, package, rental)
+                rental.amount_paid = package.price
+                rental.payment_status = 'PAID'
+                rental.save(update_fields=['amount_paid', 'payment_status'])
+            
+            # Trigger device popup
+            popup_success, popup_result_sn = self._trigger_device_popup(
+                rental, station, power_bank, powerbank_sn
+            )
+            
+            if popup_success:
+                # Popup successful - activate rental
+                from api.user.stations.services import PowerBankService
+                powerbank_service = PowerBankService()
+                powerbank_service.assign_power_bank_to_rental(power_bank, rental)
+                
+                rental.status = 'ACTIVE'
+                rental.started_at = timezone.now()
+                rental.rental_metadata['popup_sn'] = popup_result_sn
+                rental.save(update_fields=['status', 'started_at', 'rental_metadata'])
+                
+                self._schedule_reminder_notification(user, rental)
+                self._send_rental_started_notification(user, power_bank, station)
+                
+                self.log_info(f"Rental started: {rental.rental_code} by {user.username}")
+            else:
+                # Popup failed or timed out - rental stays in PENDING_POPUP
+                # Async task will verify and update status
+                self.log_warning(f"Rental {rental.rental_code} popup pending verification")
+            
+            return rental
+            
+        except Exception as e:
+            self.handle_service_error(e, "Failed to start rental")
+    
+    def _trigger_device_popup(
+        self, 
+        rental: Rental, 
+        station: Station, 
+        power_bank: PowerBank,
+        specific_sn: Optional[str] = None
+    ) -> Tuple[bool, Optional[str]]:
+        """
+        Trigger device popup and handle result.
+        
+        Returns:
+            Tuple[success, powerbank_sn]
+        """
+        from api.user.stations.services.device_api_service import get_device_api_service
+        from api.user.stations.tasks import verify_popup_completion
+        
+        device_service = get_device_api_service()
+        
+        try:
+            if specific_sn:
+                # User selected specific powerbank
+                success, result, message = device_service.popup_specific(
+                    station.serial_number, specific_sn
+                )
+                powerbank_sn = result.powerbank_sn if result else None
+            else:
+                # Random popup
+                success, powerbank_sn, message = device_service.popup_random(
+                    station.serial_number,
+                    min_power=20
+                )
+            
+            if success:
+                return True, powerbank_sn
+            else:
+                # Popup failed - schedule async verification
+                rental.rental_metadata['popup_message'] = message
+                rental.save(update_fields=['rental_metadata'])
+                
+                verify_popup_completion.apply_async(
+                    args=[str(rental.id), station.serial_number, power_bank.serial_number],
+                    countdown=10
+                )
+                return False, None
+                
+        except Exception as e:
+            # Timeout or error - schedule async verification
+            self.log_error(f"Device popup error for rental {rental.rental_code}: {e}")
+            rental.rental_metadata['popup_error'] = str(e)
+            rental.save(update_fields=['rental_metadata'])
+            
+            verify_popup_completion.apply_async(
+                args=[str(rental.id), station.serial_number, power_bank.serial_number],
+                countdown=10
+            )
+            return False, None
+    
+    def _validate_rental_prerequisites(self, user) -> None:
+        """Validate user can start rental"""
+        permission = CanRentPowerBank()
+        
+        class MockRequest:
+            def __init__(self, user):
+                self.user = user
+        
+        mock_request = MockRequest(user)
+        
+        if not permission.has_permission(mock_request, None):
+            raise ServiceException(
+                detail="User does not meet rental requirements",
+                code="rental_prerequisites_not_met"
+            )
+        
+        active_rental = Rental.objects.filter(
+            user=user,
+            status__in=['PENDING', 'PENDING_POPUP', 'ACTIVE']
+        ).first()
+        
+        if active_rental:
+            raise ServiceException(
+                detail="You already have an active rental",
+                code="active_rental_exists"
+            )
+    
+    def _validate_station_availability(self, station: Station) -> None:
+        """Validate station is available for rental"""
+        if station.status != 'ONLINE':
+            raise ServiceException(detail="Station is not online", code="station_offline")
+        
+        if station.is_maintenance:
+            raise ServiceException(detail="Station is under maintenance", code="station_maintenance")
+    
+    def _validate_postpaid_balance(self, user) -> None:
+        """Validate user has minimum balance for POSTPAID rentals"""
+        from api.user.system.models import AppConfig
+        
+        min_balance = Decimal(AppConfig.objects.filter(
+            key='POSTPAID_MINIMUM_BALANCE', is_active=True
+        ).values_list('value', flat=True).first() or '50')
+        
+        wallet_balance = Decimal('0')
+        if hasattr(user, 'wallet') and user.wallet:
+            wallet_balance = user.wallet.balance
+        
+        if wallet_balance < min_balance:
+            raise ServiceException(
+                detail=f"POSTPAID rentals require minimum wallet balance of NPR {min_balance}. Your balance: NPR {wallet_balance}.",
+                code="insufficient_postpaid_balance"
+            )
+        
+        self.log_info(f"POSTPAID balance check passed for user {user.username}")
+    
+    def _get_available_power_bank_and_slot(self, station: Station) -> Tuple[PowerBank, StationSlot]:
+        """Get available power bank and slot from station with row-level locking"""
+        available_slot = station.slots.select_for_update().filter(
+            status='AVAILABLE'
+        ).order_by('-battery_level').first()
+        
+        if not available_slot:
+            raise ServiceException(detail="No available slots at this station", code="no_available_slots")
+        
+        power_bank = PowerBank.objects.select_for_update().filter(
+            current_station=station,
+            current_slot=available_slot,
+            status='AVAILABLE',
+            battery_level__gte=20
+        ).first()
+        
+        if not power_bank:
+            raise ServiceException(detail="No power bank available with sufficient battery", code="no_power_bank_available")
+        
+        return power_bank, available_slot
+    
+    def _process_prepayment(self, user, package: RentalPackage, rental=None):
+        """Process pre-payment for rental"""
+        from api.user.payments.services import PaymentCalculationService, RentalPaymentService
+        
+        calc_service = PaymentCalculationService()
+        payment_options = calc_service.calculate_payment_options(
+            user=user,
+            scenario='pre_payment',
+            package_id=str(package.id),
+            amount=package.price
+        )
+        
+        if not payment_options['is_sufficient']:
+            raise ServiceException(
+                detail=f"Insufficient balance. Need NPR {payment_options['shortfall']} more.",
+                code="insufficient_balance"
+            )
+        
+        payment_service = RentalPaymentService()
+        return payment_service.process_rental_payment(
+            user=user,
+            rental=rental,
+            payment_breakdown=payment_options['payment_breakdown']
+        )

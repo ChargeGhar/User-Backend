@@ -88,6 +88,8 @@ from .types import (
     DeviceCreateResult,
     AdminStatistics,
     TokenInfo,
+    PopupSnResult,
+    TransactionLog,
 )
 
 # Client exports
@@ -320,4 +322,6 @@ __all__ = [
     'DeviceCreateResult',
     'AdminStatistics',
     'TokenInfo',
+    'PopupSnResult',
+    'TransactionLog',
 ]

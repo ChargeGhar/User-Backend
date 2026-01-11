@@ -23,7 +23,7 @@ import logging
 from typing import Optional, List
 
 from .base import BaseClient
-from .types import HttpResult, Powerbank, NetworkMode
+from .types import HttpResult, Powerbank, NetworkMode, PopupSnResult, TransactionLog
 
 
 logger = logging.getLogger(__name__)
@@ -265,6 +265,168 @@ class DeviceClient(BaseClient):
         
         if result.success and result.data:
             return str(result.data)
+        
+        return None
+    
+    def popup_sn(self, device_name: str, powerbank_sn: str) -> HttpResult:
+        """
+        Pop out specific powerbank by SN (SYNC - 15s timeout on server)
+        
+        Endpoint: GET /popup_sn
+        
+        Query params:
+        - rentboxSN: Device identifier (IMEI)
+        - singleSN: Powerbank SN to eject
+        
+        Response (success):
+        {
+            "code": 200,
+            "data": {
+                "slot": 1,
+                "powerbankSN": "40818048",
+                "status": 1,
+                "success": true
+            },
+            "msg": "ok",
+            "time": 1704844800000
+        }
+        
+        Response (failed):
+        {
+            "code": 500,
+            "data": null,
+            "msg": "Popup Error:...",
+            "time": 1704844800000
+        }
+        
+        Args:
+            device_name: Station serial number (IMEI)
+            powerbank_sn: Powerbank SN to eject
+            
+        Returns:
+            HttpResult with popup result
+        """
+        return self.get(
+            '/popup_sn',
+            params={'rentboxSN': device_name, 'singleSN': powerbank_sn},
+            timeout=20  # 15s server timeout + 5s network buffer
+        )
+    
+    def popup_sn_typed(self, device_name: str, powerbank_sn: str) -> Optional[PopupSnResult]:
+        """
+        Pop out specific powerbank, returns typed result or None on failure
+        
+        Args:
+            device_name: Station serial number (IMEI)
+            powerbank_sn: Powerbank SN to eject
+            
+        Returns:
+            PopupSnResult if successful, None otherwise
+        """
+        result = self.popup_sn(device_name, powerbank_sn)
+        
+        if result.success and result.data:
+            return PopupSnResult.from_dict(result.data)
+        
+        return None
+    
+    # ==========================================
+    # TRANSACTION LOGS
+    # ==========================================
+    
+    def get_logs(self, device_name: str, limit: int = 20, cmd: str = None) -> HttpResult:
+        """
+        Get device transaction logs
+        
+        Endpoint: GET /api/device/{deviceName}/logs
+        
+        Query params:
+        - limit: Number of logs to return (default: 20)
+        - cmd: Filter by command type (e.g., '0x31' for popup)
+        
+        Response (success):
+        {
+            "code": 200,
+            "data": [
+                {
+                    "messageId": "abc123",
+                    "deviceName": "864601069946994",
+                    "cmd": "0x31",
+                    "raw": "...",
+                    "parsed": {...},
+                    "timestamp": 1704844800000
+                },
+                ...
+            ],
+            "msg": "ok",
+            "time": 1704844800000
+        }
+        
+        Args:
+            device_name: Device identifier (IMEI)
+            limit: Number of logs to return
+            cmd: Filter by command type
+            
+        Returns:
+            HttpResult with list of transaction logs
+        """
+        params = {'limit': limit}
+        if cmd:
+            params['cmd'] = cmd
+        return self.get(f'/api/device/{device_name}/logs', params=params)
+    
+    def get_logs_typed(self, device_name: str, limit: int = 20, cmd: str = None) -> List[TransactionLog]:
+        """
+        Get device logs as typed list
+        
+        Args:
+            device_name: Device identifier (IMEI)
+            limit: Number of logs to return
+            cmd: Filter by command type
+            
+        Returns:
+            List of TransactionLog objects
+        """
+        result = self.get_logs(device_name, limit, cmd)
+        
+        if not result.success or not result.data:
+            return []
+        
+        if isinstance(result.data, list):
+            return [TransactionLog.from_dict(log) for log in result.data]
+        
+        return []
+    
+    def get_transaction(self, device_name: str, message_id: str) -> HttpResult:
+        """
+        Get specific transaction by message ID
+        
+        Endpoint: GET /api/device/{deviceName}/logs/{messageId}
+        
+        Args:
+            device_name: Device identifier (IMEI)
+            message_id: Transaction message ID
+            
+        Returns:
+            HttpResult with transaction log
+        """
+        return self.get(f'/api/device/{device_name}/logs/{message_id}')
+    
+    def get_transaction_typed(self, device_name: str, message_id: str) -> Optional[TransactionLog]:
+        """
+        Get specific transaction as typed object
+        
+        Args:
+            device_name: Device identifier (IMEI)
+            message_id: Transaction message ID
+            
+        Returns:
+            TransactionLog if found, None otherwise
+        """
+        result = self.get_transaction(device_name, message_id)
+        
+        if result.success and result.data:
+            return TransactionLog.from_dict(result.data)
         
         return None
     

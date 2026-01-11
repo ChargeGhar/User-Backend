@@ -1,0 +1,47 @@
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         RENTAL START FLOW                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  1. API Request                                                              │
+│     POST /api/rentals/start                                                  │
+│     Body: { station_sn, package_id, powerbank_sn? }                         │
+│                                                                              │
+│  2. View Layer (core_views.py)                                              │
+│     RentalStartView.post()                                                   │
+│     └── Validates via RentalStartSerializer                                  │
+│     └── Calls RentalService().start_rental(user, station_sn, package_id,    │
+│                                            powerbank_sn)                     │
+│                                                                              │
+│  3. Service Layer (rental/start.py)                                         │
+│     RentalStartMixin.start_rental()                                          │
+│     ├── _validate_rental_prerequisites(user)                                 │
+│     ├── _validate_station_availability(station)                              │
+│     ├── _validate_postpaid_balance(user) [if POSTPAID]                      │
+│     ├── _get_available_power_bank_and_slot(station)                         │
+│     ├── Create Rental (status='PENDING_POPUP')                              │
+│     ├── _process_prepayment() [if PREPAID]                                  │
+│     └── _trigger_device_popup()                                              │
+│         ├── DeviceAPIService.popup_random() OR popup_specific()             │
+│         │   └── chargeghar_client.device.popup_random_typed()               │
+│         │   └── chargeghar_client.device.popup_sn_typed()                   │
+│         │                                                                    │
+│         ├── SUCCESS: status='ACTIVE', started_at=now()                      │
+│         │                                                                    │
+│         └── TIMEOUT/FAIL: status='PENDING_POPUP'                            │
+│             └── verify_popup_completion.apply_async(countdown=10)           │
+│                                                                              │
+│  4. Async Verification (stations/tasks.py)                                  │
+│     verify_popup_completion()                                                │
+│     ├── DeviceAPIService.get_recent_popups(station_sn)                      │
+│     ├── Check logs for successful popup in last 2 minutes                   │
+│     │                                                                        │
+│     ├── FOUND: status='ACTIVE', started_at=now()                            │
+│     │                                                                        │
+│     └── NOT FOUND (after 3 retries):                                        │
+│         └── status='CANCELLED', notify user                                 │
+│                                                                              │
+│  5. Response                                                                 │
+│     RentalDetailSerializer(rental)                                           │
+│     └── status: 'ACTIVE' | 'PENDING_POPUP'                                  │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘

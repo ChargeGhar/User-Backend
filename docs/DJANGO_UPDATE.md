@@ -551,12 +551,12 @@ for log in logs:
 
 ## Deployment Checklist
 
-1. ✅ Update `libs/chargeghar_client/types.py` - Add new types
-2. ✅ Update `libs/chargeghar_client/device.py` - Add methods
-3. ✅ Update `libs/chargeghar_client/__init__.py` - Export types
+1. ✅ Update `libs/chargeghar_client/types.py` - Add new types (PopupSnResult, TransactionLog)
+2. ✅ Update `libs/chargeghar_client/device.py` - Add popup_sn and logs methods
+3. ✅ Update `libs/chargeghar_client/__init__.py` - Export new types
 4. ✅ Create `api/user/stations/services/device_api_service.py`
 5. ✅ Update `api/user/stations/tasks.py` - Add verification task
-6. ✅ Update rental service with popup integration
-7. ✅ Add `PENDING_POPUP` and `POPUP_FAILED` to Rental status choices
-8. ✅ Run migrations if needed
-9. ✅ Deploy and test
+6. ✅ Update rental service with popup integration (`api/user/rentals/services/rental/start.py`)
+7. ✅ Add `PENDING_POPUP` status to Rental model
+8. ✅ Migration created: `api/user/rentals/migrations/0004_add_pending_popup_status.py`
+9. ⏳ Deploy and test

@@ -152,7 +152,7 @@ def test_race_condition_protection():
     print_section("TEST 3: CRITICAL - Race Condition Protection")
     
     # Check if slot selection uses select_for_update
-    from api.user.rentals.services.rental_service import RentalService
+    from api.user.rentals.services import RentalService
     import inspect
     
     service = RentalService()
@@ -180,7 +180,7 @@ def test_points_refund():
     print_section("TEST 4: HIGH - Points Refund on Cancellation")
     
     # Check if cancel_rental has points refund logic
-    from api.user.rentals.services.rental_service import RentalService
+    from api.user.rentals.services import RentalService
     import inspect
     
     service = RentalService()
@@ -322,7 +322,7 @@ def test_appconfig_integration():
         print_info(f"Active: {config.is_active}")
         
         # Check if it's used in code
-        from api.user.rentals.services.rental_service import RentalService
+        from api.user.rentals.services import RentalService
         import inspect
         
         service = RentalService()

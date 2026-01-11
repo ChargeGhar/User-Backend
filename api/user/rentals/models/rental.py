@@ -8,6 +8,7 @@ class Rental(BaseModel):
     """
     RENTAL_STATUS_CHOICES = [
         ('PENDING', 'Pending'),
+        ('PENDING_POPUP', 'Pending Popup'),  # Waiting for device popup verification
         ('ACTIVE', 'Active'),
         ('COMPLETED', 'Completed'),
         ('CANCELLED', 'Cancelled'),
