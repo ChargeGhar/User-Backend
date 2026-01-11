@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     "api.user.content.apps.ContentConfig",
     "api.admin.apps.AdminConfig",
     "api.config.apps.ConfigConfig",
+    "api.internal.apps.InternalConfig",
 ]
 
 # Required for django-allauth

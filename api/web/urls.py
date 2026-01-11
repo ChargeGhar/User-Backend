@@ -67,7 +67,7 @@ urlpatterns = [
     # API app includes - User Namespace
     path("api/", include("api.user.auth.urls")),
     path("api/", include("api.user.stations.urls")),
-    path("api/", include("api.user.stations.internal_urls")),  # Internal IoT endpoints
+    path("api/", include("api.internal.urls")),  # Internal IoT endpoints
     path("api/", include("api.user.notifications.urls")),
     path("api/", include("api.user.payments.urls")),
     path("api/", include("api.user.points.urls")),
