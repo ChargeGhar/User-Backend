@@ -10,7 +10,6 @@ from .payment_intent import PaymentIntentService
 from .rental_payment import RentalPaymentService
 from .refund import RefundService
 from .transaction import TransactionService
-from .nepal_gateway import NepalGatewayService
 from .withdrawal import WithdrawalService
 
 __all__ = [
@@ -20,6 +19,5 @@ __all__ = [
     'RentalPaymentService',
     'RefundService',
     'TransactionService',
-    'NepalGatewayService',
     'WithdrawalService',
 ]

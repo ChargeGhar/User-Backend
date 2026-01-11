@@ -11,7 +11,7 @@ from api.common.utils.helpers import generate_transaction_id
 from api.user.payments.models import PaymentIntent
 from api.user.payments.repositories import PaymentIntentRepository, TransactionRepository, PaymentMethodRepository
 from api.user.payments.services.wallet import WalletService
-from api.user.payments.services.nepal_gateway import NepalGatewayService
+from libs.payment_client import PaymentGatewayClient
 
 class PaymentIntentService(CRUDService):
     """Service for payment intents"""
@@ -61,13 +61,13 @@ class PaymentIntentService(CRUDService):
                 }
             )
 
-            # Generate payment URL using nepal-gateways
-            gateway_service = NepalGatewayService()
-            gateway_result = self._initiate_gateway_payment(intent, payment_method, gateway_service, request)
+            # Generate payment URL using payment_client
+            gateway_client = PaymentGatewayClient()
+            gateway_result = self._initiate_gateway_payment(intent, payment_method, gateway_client, request)
 
-            intent.gateway_url = gateway_result.get('redirect_url')
+            intent.gateway_url = gateway_result.redirect_url
             intent.intent_metadata.update({
-                'gateway_result': gateway_result,
+                'gateway_result': gateway_result.to_dict(),
                 'gateway': payment_method.gateway
             })
             intent.save(update_fields=['gateway_url', 'intent_metadata'])
@@ -80,11 +80,12 @@ class PaymentIntentService(CRUDService):
         except Exception as e:
             self.handle_service_error(e, "Failed to create top-up intent")
 
-    def _initiate_gateway_payment(self, intent: PaymentIntent, payment_method, gateway_service: NepalGatewayService, request=None) -> Dict[str, Any]:
+    def _initiate_gateway_payment(self, intent: PaymentIntent, payment_method, gateway_client: PaymentGatewayClient, request=None):
         """Initiate payment with actual gateway"""
+        from libs.payment_client import PaymentInitiationResult
         try:
             if payment_method.gateway == 'esewa':
-                return gateway_service.initiate_esewa_payment(
+                return gateway_client.initiate_esewa_payment(
                     amount=intent.amount,
                     order_id=intent.intent_id,
                     description=f"Wallet top-up - NPR {intent.amount}",
@@ -93,7 +94,7 @@ class PaymentIntentService(CRUDService):
                     product_delivery_charge=Decimal('0')
                 )
             elif payment_method.gateway == 'khalti':
-                return gateway_service.initiate_khalti_payment(
+                return gateway_client.initiate_khalti_payment(
                     amount=intent.amount,
                     order_id=intent.intent_id,
                     description=f"Wallet top-up - NPR {intent.amount}",
@@ -107,6 +108,8 @@ class PaymentIntentService(CRUDService):
                     detail=f"Unsupported gateway: {payment_method.gateway}",
                     code="unsupported_gateway"
                 )
+        except ServiceException:
+            raise
         except Exception as e:
             self.log_error(f"Gateway payment initiation failed: {str(e)}")
             raise
@@ -143,13 +146,13 @@ class PaymentIntentService(CRUDService):
                     code="intent_expired"
                 )
 
-            gateway_service = NepalGatewayService()
-            verification_result = self._verify_with_gateway(intent, callback_data, gateway_service)
-            payment_verified = verification_result.get('success', False)
+            gateway_client = PaymentGatewayClient()
+            verification_result = self._verify_with_gateway(intent, callback_data, gateway_client)
+            payment_verified = verification_result.success
 
             if payment_verified:
                 gateway_name = intent.intent_metadata.get('gateway', 'unknown') if intent.intent_metadata else 'unknown'
-                txn_id = verification_result.get('transaction_id', '')
+                txn_id = verification_result.transaction_id or ''
                 gateway_reference = f"{gateway_name}_{txn_id}" if txn_id else gateway_name
                 
                 # Create transaction using repository
@@ -161,7 +164,7 @@ class PaymentIntentService(CRUDService):
                     status='SUCCESS',
                     payment_method_type='GATEWAY',
                     gateway_reference=gateway_reference,
-                    gateway_response=verification_result.get('gateway_response', {})
+                    gateway_response=verification_result.gateway_response
                 )
 
                 wallet_service = WalletService()
@@ -227,43 +230,32 @@ class PaymentIntentService(CRUDService):
         except Exception as e:
             self.log_warning(f"Post-payment processing failed: {str(e)}")
 
-    def _verify_with_gateway(self, intent: PaymentIntent, callback_data: Dict[str, Any], gateway_service: NepalGatewayService) -> Dict[str, Any]:
+    def _verify_with_gateway(self, intent: PaymentIntent, callback_data: Dict[str, Any], gateway_client: PaymentGatewayClient):
         """Verify payment with actual gateway using callback data"""
+        from libs.payment_client import PaymentVerificationResult
         try:
             gateway = intent.intent_metadata.get('gateway') if intent.intent_metadata else None
             
             if not gateway or not callback_data:
-                return {
-                    'success': True,
-                    'transaction_id': f"VERIFIED_{intent.intent_id[:8]}",
-                    'order_id': intent.intent_id,
-                    'amount': float(intent.amount),
-                    'gateway_response': {'status': 'verified_without_callback'}
-                }
+                return PaymentVerificationResult(
+                    success=True,
+                    transaction_id=f"VERIFIED_{intent.intent_id[:8]}",
+                    order_id=intent.intent_id,
+                    amount=intent.amount,
+                    gateway_response={'status': 'verified_without_callback'}
+                )
             
             if gateway == 'esewa':
-                verification = gateway_service.verify_esewa_payment(callback_data)
-                return {
-                    'success': verification.get('success', False),
-                    'transaction_id': verification.get('transaction_id'),
-                    'order_id': verification.get('order_id'),
-                    'amount': verification.get('amount'),
-                    'gateway_response': verification.get('gateway_response', {})
-                }
+                return gateway_client.verify_esewa_payment(callback_data)
             elif gateway == 'khalti':
-                verification = gateway_service.verify_khalti_payment(callback_data)
-                return {
-                    'success': verification.get('success', False),
-                    'transaction_id': verification.get('transaction_id'),
-                    'order_id': verification.get('order_id'),
-                    'amount': verification.get('amount'),
-                    'gateway_response': verification.get('gateway_response', {})
-                }
+                return gateway_client.verify_khalti_payment(callback_data)
             else:
                 raise ServiceException(
                     detail=f"Unsupported gateway for verification: {gateway}",
                     code="unsupported_gateway_verification"
                 )
+        except ServiceException:
+            raise
         except Exception as e:
             self.log_error(f"Gateway payment verification failed: {str(e)}")
             raise
