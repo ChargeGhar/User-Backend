@@ -4,6 +4,10 @@ This document serves as the final, 1000% accurate source of truth for the Charge
 
 ---
 
+> **Request**: Mobile app UI is designed to Send initial request for Partnership Request with fields (Full Name, Contact Number, Subject, Message) and from admin panel admin can see the request and Contact user for further (Vendor/Franchise) process and update admin panel. 
+>
+> **Or**: Admin can add Partner as it own from admin panel.
+
 ## 1. Payment Hierarchy & Distribution
 
 - **Centralized Collection:** All user transactions (rentals, top-ups, ad payments) are processed through the **Chargeghar Mobile App** into the main Chargeghar account.
@@ -19,10 +23,6 @@ This document serves as the final, 1000% accurate source of truth for the Charge
 ---
 
 ## 2. Platform Entity Models
-
-> **Request**: Mobile app UI is designed to Send initial request for Partnership Request with fields (Full Name, Contact Number, Subject, Message) and from admin panel admin can see the request and Contact user for further (Vendor/Franchise) process and update admin panel. 
->
-> **Or**: Admin can add Partner as it own from admin panel.
 
 ### A. Franchise Model
 
@@ -45,17 +45,11 @@ This document serves as the final, 1000% accurate source of truth for the Charge
 
 ## 3. Operations & Hardware Control
 
-### Powerbank Ejection (Perks & Limits)
+### Powerbank Ejection (Perks & Limits): Need to Make PartnerIotHistory table for tracking both partner types in where we can log type [ eject/Reboot/Check/ WiFi Settings ]
 
 - **Vendor Perk:** Every vendor (Revenue or Non-Revenue) can eject **one powerbank for free, one at a time, per day** via the mobile app with this endpoint `POST /api/rentals/start`.
+- **Franchise Prek**: Franchise have all the control and unlimited ejection from his Dashboard only
 - **Control Rights:** Chargeghar and Franchises have full system control (remote eject/Reboot/Check/ WiFi Settings) and Vendors have only **(remote Reboot/Check/ WiFi Settings)** and for manual ejections must manually contact their Franchise or Chargeghar for operational needs.
-
-### Rental Lifecycle Rules
-
-- **5-Minute Rule:** If a powerbank is returned within **5 minutes**, it is addressed as a potential issue (e.g., faulty bank). System must track this to handle payment adjustments and notifications.
-- **Battery Life Cycle:** 1 Cycle = 100% to 0% discharge. 
-  - *Tracking:* System must record battery levels at the time of return to track the exact lifecycle of the hardware.
-- **Station Monitoring:** The system must track Online/Offline status history and total counts (Rented, Overdue, Cancelled, Ongoing).
 
 ---
 
@@ -79,7 +73,10 @@ This document serves as the final, 1000% accurate source of truth for the Charge
 - **Package Discounts:** Specific stations can offer discounts on specific packages and need update on `GET /api/rentals/package` with new field station_sn: and need update on  `POST /api/rentals/start` .
 - **Advertisement**: Need to make Advertisement app inside api/user dir with proper  repositeries. models. services, views, fixtures, utils with consistency and 100% accuately without **Duplicacy**.
 -  **Biometric Auth**: Need to update the api/user/auth app  **POST /auth/biometric/enable** and **POST /auth/biometric/login** with best and 100% accurate business logic by Analysing the Current authentication and authorization flow and business logic what is the best and 100% accurate picked plan for the project.
-
+- **5-Minute Rule:** If a powerbank is returned within **5 minutes**, it is addressed as a potential issue (e.g., faulty bank). System must track this to handle payment adjustments and notifications.
+- **Battery Life Cycle:** 1 Cycle = 100% to 0% discharge. 
+  - *Tracking:* System must record battery levels at the time of return to track the exact lifecycle of the hardware.
+- **Station Monitoring:** The system must track Online/Offline status history and total counts (Rented, Overdue, Cancelled, Ongoing).
 ---
 
 **6. IOT Level Update**
@@ -87,19 +84,6 @@ This document serves as the final, 1000% accurate source of truth for the Charge
 - Need to move the **Internal - IoT Integration** current endpoint `POST /api/internal/stations/data` and related business logic to api/internal new app.
 - Need to update internal app with new endpoints by implement the `libs/chargeghar_client`  by Analysing it and all the endpoints mentioned inside  `libs/chargeghar_client` client.
 - Need to make the endpoints to get ads as per manufacturer api docs `/docs/AdsScreen_Cabinet_Advertising_API.md` for our and this endpoint will consume by the http://api.chargeghar.com which is build on spring java to sync the data of ads to our next project and business logic and hardware consuming endpoint will be implemented there we just need to make endpoint to send ads data to our java project. (Need to make plan)
-
----
-
-## 6. Light & Heavy Requirements Summary
-
-| Feature               | Implementation Detail                                        |
-| :-------------------- | :----------------------------------------------------------- |
-| **Station Coupons**   | Junction table to restrict coupons to specific Station IDs.  |
-| **Package Discounts** | Station-specific percentage discounts on specific packages (w/ usage limits). |
-| **Ad Management**     | Table for user requests + Admin approval/pricing workflow.   |
-| **Biometric Auth**    | APIs for biometric login using device-generated tokens.      |
-| **User Attribution**  | Ability to assign existing users to specific Vendors or Franchises. |
-| **Hardware Display**  | Support for showing approved advertisements on station screens. |
 
 ---
 
