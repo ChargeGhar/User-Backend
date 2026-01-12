@@ -1,6 +1,6 @@
 # Gap Analysis Report: Requirements.md vs Plans
 
-**Date**: 2026-01-12  
+**Date**: 2026-01-13  
 **Status**: Cross-Checked & Verified
 
 ---
@@ -12,16 +12,29 @@
 | Partnership Request | ✅ COMPLETE | None |
 | Partner Models | ✅ COMPLETE | None |
 | Station Distribution | ✅ COMPLETE | None |
-| Payout System | ✅ COMPLETE | None |
+| Payout System | ✅ COMPLETE | AppConfig keys added |
 | Partner IoT History | ✅ COMPLETE | None |
-| Advertisement System | ✅ COMPLETE | Minor clarification needed |
+| Advertisement System | ✅ COMPLETE | None |
 | Station Coupons | ✅ COMPLETE | None |
 | Package Discounts | ✅ COMPLETE | None |
 | Biometric Auth | ✅ COMPLETE | None |
-| Rental Lifecycle | ⚠️ GAP | Missing `powerbank_sn` in rental start |
-| IoT Sync Log | ✅ COMPLETE | None |
-| Station Monitoring | ⚠️ GAP | Not explicitly planned |
-| Swapping Rate Limit | ⚠️ GAP | Not explicitly planned |
+| Rental Lifecycle | ✅ COMPLETE | powerbank_sn added |
+| IoT Sync Log | ✅ COMPLETE | Station monitoring added |
+| Station Monitoring | ✅ COMPLETE | Added to 11_iot_sync_log.md |
+| Swapping Rate Limit | ✅ COMPLETE | Added to 10_rental_lifecycle.md |
+
+---
+
+## AppConfig Keys Required
+
+Add to `api/user/system/fixtures/app_config.json`:
+
+| Key | Value | Description | Used In |
+|-----|-------|-------------|---------|
+| `PLATFORM_VAT_PERCENT` | `13` | VAT % for Chargeghar-level payouts | `04_payout_system.md` |
+| `PLATFORM_SERVICE_CHARGE_PERCENT` | `2.5` | Service charge % for Chargeghar-level payouts | `04_payout_system.md` |
+
+**Important**: These are ONLY applied to Chargeghar-level payouts (to Franchise/Direct Vendor), NOT Franchise-level payouts (to Sub-Vendors).
 
 ---
 
@@ -51,6 +64,11 @@
 ### 4. Payout System (04_payout_system.md)
 **Requirement**: VAT/Service deduction for CG-level, NO deduction for Franchise-level  
 **Plan**: ✅ PayoutRequest with payout_type logic, RevenueDistribution for tracing  
+**AppConfig**: ✅ `PLATFORM_VAT_PERCENT`, `PLATFORM_SERVICE_CHARGE_PERCENT`  
+**Logic**:
+- `CHARGEGHAR_TO_FRANCHISE` → DEDUCT VAT & Service Charge
+- `CHARGEGHAR_TO_VENDOR` → DEDUCT VAT & Service Charge  
+- `FRANCHISE_TO_VENDOR` → NO deductions (internal distribution)
 **Verdict**: COMPLETE
 
 ---
@@ -96,65 +114,15 @@
 
 ### 10. Rental Lifecycle (10_rental_lifecycle.md)
 **Requirement**: 5-min rule, battery cycle tracking, powerbank_sn in rental start  
-**Plan**: ✅ is_under_5_min, BatteryCycleLog, PowerBank.total_cycles  
-
-**⚠️ GAP FOUND**: `powerbank_sn` field in `POST /api/rentals/start` request  
-- Requirements.md says: "request fields (station_sn, package_id, powerbank_sn)"
-- Plan 10 mentions battery tracking but doesn't explicitly add powerbank_sn to rental start request
-- Current Rental model has `power_bank` FK but it's nullable
-
-**FIX NEEDED**: Update rental start service to accept `powerbank_sn` parameter
-
----
-
-### 11. IoT Sync Log (11_iot_sync_log.md)
-**Requirement**: Track sync operations  
-**Plan**: ✅ IotSyncLog with sync_type, direction, status  
+**Plan**: ✅ is_under_5_min, BatteryCycleLog, PowerBank.total_cycles, powerbank_sn param  
 **Verdict**: COMPLETE
 
 ---
 
-## GAPS IDENTIFIED
-
-### GAP 1: Rental Start - powerbank_sn Parameter
-**Location**: `api/user/rentals/services/rental/start.py`  
-**Issue**: Requirements say `POST /api/rentals/start` should accept `powerbank_sn`  
-**Current**: Not accepting powerbank_sn in request  
-**Fix**: Add `powerbank_sn` to RentalStartSerializer and service logic
-
-### GAP 2: Station Monitoring - Online/Offline History
-**Location**: Requirements Section 5  
-**Issue**: "Station Monitoring: Track Online/Offline status history and total counts"  
-**Current**: Not explicitly planned in any file  
-**Fix**: Add to `11_iot_sync_log.md` or create new plan file
-
-**Proposed Table**: `StationStatusHistory`
-```python
-class StationStatusHistory(BaseModel):
-    station = ForeignKey(Station)
-    status = CharField  # ONLINE, OFFLINE
-    changed_at = DateTimeField
-    duration_seconds = IntegerField  # How long in previous status
-```
-
-### GAP 3: Swapping Rate Limit
-**Location**: Requirements Section 5  
-**Issue**: "User can swap only up to total available powerbank count of that station per day"  
-**Current**: Not explicitly planned  
-**Fix**: Add validation logic in rental start service
-
-**Proposed Logic**:
-```python
-# In rental start service
-today_swaps = Rental.objects.filter(
-    user=user,
-    station=station,
-    created_at__date=today
-).count()
-
-if today_swaps >= station.available_slots:
-    raise ValidationError("Daily swap limit reached for this station")
-```
+### 11. IoT Sync Log (11_iot_sync_log.md)
+**Requirement**: Track sync operations, Station Online/Offline history  
+**Plan**: ✅ IotSyncLog + StationStatusHistory  
+**Verdict**: COMPLETE
 
 ---
 
@@ -191,12 +159,45 @@ if today_swaps >= station.available_slots:
 
 ---
 
+## Fixture Updates Required
+
+### `api/user/system/fixtures/app_config.json`
+
+Add these entries:
+
+```json
+{
+  "model": "system.appconfig",
+  "fields": {
+    "key": "PLATFORM_VAT_PERCENT",
+    "value": "13",
+    "description": "VAT percentage deducted from Chargeghar-level payouts (to Franchise/Direct Vendor). NOT applied to Franchise-level payouts.",
+    "is_active": true,
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  }
+},
+{
+  "model": "system.appconfig",
+  "fields": {
+    "key": "PLATFORM_SERVICE_CHARGE_PERCENT",
+    "value": "2.5",
+    "description": "Service charge percentage deducted from Chargeghar-level payouts. NOT applied to Franchise-level payouts.",
+    "is_active": true,
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
+---
+
 ## Conclusion
 
-**Plans are 95% complete.** Three minor gaps identified:
+**Plans are 100% complete.** All requirements from Requirements.md are covered:
 
-1. **powerbank_sn in rental start** - Easy fix, add to serializer
-2. **Station status history** - Add StationStatusHistory table
-3. **Swapping rate limit** - Add validation logic in rental service
+- VAT & Service Charge logic properly documented with AppConfig integration
+- Deduction rules clearly defined per payout type
+- All gaps identified in previous analysis have been fixed
 
-All core business logic, payment hierarchy, partner models, and IoT integration are properly planned.
+Ready for implementation.

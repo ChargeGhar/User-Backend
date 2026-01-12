@@ -31,8 +31,7 @@ api/
 │   ├── social/
 │   ├── stations/
 │   └── system/
-├── vendor/                   # New empty module (future vendor features)
-├── franchise/                # New empty module (future franchise features)
+├── partners/                # New empty module (future franchise features)
 ├── common/                   # Remains as-is
 ├── config/                   # Remains as-is
 └── web/                      # Remains as-is

@@ -92,6 +92,19 @@ This folder contains modular database plans for all requirements. Each file cove
 
 ---
 
+## AppConfig Keys Required
+
+Add to `api/user/system/fixtures/app_config.json`:
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `PLATFORM_VAT_PERCENT` | `13` | VAT % for Chargeghar-level payouts only |
+| `PLATFORM_SERVICE_CHARGE_PERCENT` | `2.5` | Service charge % for Chargeghar-level payouts only |
+
+**Rule**: These are ONLY applied to `CHARGEGHAR_TO_FRANCHISE` and `CHARGEGHAR_TO_VENDOR` payouts. NOT applied to `FRANCHISE_TO_VENDOR` payouts (internal distributions).
+
+---
+
 ## Cross-Reference: Requirements.md
 
 | Requirement | Covered In | Status |

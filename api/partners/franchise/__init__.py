@@ -1,0 +1,1 @@
+# Franchise apps namespace (future)

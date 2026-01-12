@@ -38,7 +38,7 @@ This document serves as the final, 1000% accurate source of truth for the Charge
   2. **Fixed Rent (%):** Chargeghar/Franchise takes a fixed cut (e.g., 70%), and the vendor receives the remaining percentage.
 - **Vendor Types:** 
   - **Revenue Vendor:** Has a dashboard and payout features.
-  - **Non-Revenue Vendor:** Assigned for physical presence; excluded from revenue/dashboard features.
+  - **Non-Revenue Vendor:** Assigned for physical presence; excluded from revenue/dashboard features only can eject **one powerbank for free, one at a time, per day** via the mobile app with this endpoint `POST /api/rentals/start`.
 - **Conversion:** A Franchise can transition to a Vendor model after their initial agreement term ends, switching to fixed or percentage-based revenue.
 
 ---
