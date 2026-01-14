@@ -16,24 +16,26 @@ This folder contains modular database plans for all requirements. Each file cove
 
 | File | Feature | App | Priority |
 |------|---------|-----|----------|
-| `01_partnership_request.md` | Partnership Request | `api/vendor/` | Phase 1 |
-| `02_partner_models.md` | Partner, Franchise, Vendor | `api/vendor/` | Phase 1 |
-| `03_station_distribution.md` | Station Distribution & Revenue | `api/vendor/` | Phase 1 |
-| `04_payout_system.md` | Payout & Revenue Distribution | `api/vendor/` | Phase 1 |
-| `05_partner_iot_history.md` | Partner IoT Actions | `api/vendor/` | Phase 1 |
+| `01_partnership_request.md` | Partnership Request | `api/partners/common/` | Phase 1 |
+| `02_partner_models.md` | Partner, Franchise, Vendor | `api/partners/common/` | Phase 1 |
+| `03_station_distribution.md` | Station Distribution & Revenue | `api/partners/common/` | Phase 1 |
+| `04_payout_system.md` | Payout & Revenue Distribution | `api/partners/common/` | Phase 1 |
+| `05_partner_iot_history.md` | Partner IoT Actions | `api/partners/common/` | Phase 1 |
 | `06_advertisement.md` | Advertisement System | `api/user/advertisements/` | Phase 2 |
 | `07_station_coupons.md` | Station-Specific Coupons | `api/user/promotions/` | Phase 2 |
 | `08_station_package_discounts.md` | Station Package Discounts | `api/user/rentals/` | Phase 2 |
 | `09_biometric_auth.md` | Biometric Authentication | `api/user/auth/` | Phase 2 |
 | `10_rental_lifecycle.md` | Rental Enhancements | `api/user/rentals/` | Phase 2 |
 | `11_iot_sync_log.md` | IoT Sync & Station Monitoring | `api/internal/` | Phase 2 |
+| `12_partners_auth.md` | Partner Authentication | `api/partners/auth/` | Phase 1 |
+| `12_partner_auth_VERIFICATION.md` | Auth Plan Verification | - | - |
 | `GAP_ANALYSIS.md` | Gap Analysis Report | - | - |
 
 ---
 
 ## New Tables Summary
 
-### Phase 1 - Partner System (api/vendor/)
+### Phase 1 - Partner System (api/partners/)
 
 | Table | Description |
 |-------|-------------|

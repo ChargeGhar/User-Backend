@@ -238,3 +238,18 @@ class AppHealthSerializer(serializers.Serializer):
     cache = serializers.CharField()
     celery = serializers.CharField()
     uptime_seconds = serializers.IntegerField()
+
+
+# ============================================================================
+# Issue Types Serializers
+# ============================================================================
+class IssueTypeChoiceSerializer(serializers.Serializer):
+    """Single issue type choice"""
+    value = serializers.CharField()
+    label = serializers.CharField()
+
+
+class IssueTypesResponseSerializer(serializers.Serializer):
+    """Response for issue types endpoint"""
+    station_issue_types = IssueTypeChoiceSerializer(many=True)
+    rental_issue_types = IssueTypeChoiceSerializer(many=True)
