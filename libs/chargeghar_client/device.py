@@ -308,8 +308,7 @@ class DeviceClient(BaseClient):
         """
         return self.get(
             '/popup_sn',
-            params={'rentboxSN': device_name, 'singleSN': powerbank_sn},
-            timeout=20  # 15s server timeout + 5s network buffer
+            params={'rentboxSN': device_name, 'singleSN': powerbank_sn}
         )
     
     def popup_sn_typed(self, device_name: str, powerbank_sn: str) -> Optional[PopupSnResult]:
