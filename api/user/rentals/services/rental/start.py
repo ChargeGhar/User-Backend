@@ -219,24 +219,24 @@ class RentalStartMixin:
     
     def _get_available_power_bank_and_slot(self, station: Station) -> Tuple[PowerBank, StationSlot]:
         """Get available power bank and slot from station with row-level locking"""
-        available_slot = station.slots.select_for_update().filter(
-            status='AVAILABLE'
-        ).order_by('-battery_level').first()
-        
-        if not available_slot:
-            raise ServiceException(detail="No available slots at this station", code="no_available_slots")
-        
+        # Find powerbank that is available with sufficient battery
         power_bank = PowerBank.objects.select_for_update().filter(
             current_station=station,
-            current_slot=available_slot,
             status='AVAILABLE',
-            battery_level__gte=20
-        ).first()
+            battery_level__gte=20,
+            current_slot__isnull=False
+        ).order_by('-battery_level').first()
         
         if not power_bank:
             raise ServiceException(detail="No power bank available with sufficient battery", code="no_power_bank_available")
         
-        return power_bank, available_slot
+        # Get the slot where this powerbank is located
+        slot = power_bank.current_slot
+        
+        if not slot or slot.status == 'MAINTENANCE':
+            raise ServiceException(detail="Slot is not available", code="slot_not_available")
+        
+        return power_bank, slot
     
     def _process_prepayment(self, user, package: RentalPackage, rental=None):
         """Process pre-payment for rental"""
