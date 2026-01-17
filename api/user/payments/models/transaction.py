@@ -12,6 +12,7 @@ class Transaction(BaseModel):
         ('RENTAL_DUE', 'Rental Due'),
         ('REFUND', 'Refund'),
         ('FINE', 'Fine'),
+        ('ADVERTISEMENT', 'Advertisement')
     ]
 
     STATUS_CHOICES = [

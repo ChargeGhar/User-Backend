@@ -1,0 +1,44 @@
+[
+  {
+    "model": "notifications.notificationtemplate",
+    "fields": {
+      "created_at": "2026-01-17T08:00:00Z",
+      "updated_at": "2026-01-17T08:00:00Z",
+      "name": "Advertisement Started",
+      "slug": "advertisement_started",
+      "notification_type": "advertisement",
+      "title_template": "Your Ad is Now Live! 🎉",
+      "message_template": "Your advertisement '{{ad_title}}' is now running from {{start_date}} to {{end_date}}. Thank you for advertising with ChargeGhar!",
+      "description": "Notification sent when scheduled ad starts running",
+      "is_active": true
+    }
+  },
+  {
+    "model": "notifications.notificationtemplate",
+    "fields": {
+      "created_at": "2026-01-17T08:00:00Z",
+      "updated_at": "2026-01-17T08:00:00Z",
+      "name": "Advertisement Completed",
+      "slug": "advertisement_completed",
+      "notification_type": "advertisement",
+      "title_template": "Your Ad Campaign Completed ✅",
+      "message_template": "Your advertisement '{{ad_title}}' has completed its {{duration_days}}-day run ({{start_date}} to {{end_date}}). Thank you for choosing ChargeGhar!",
+      "description": "Notification sent when ad campaign completes",
+      "is_active": true
+    }
+  },
+  {
+    "model": "notifications.notificationtemplate",
+    "fields": {
+      "created_at": "2026-01-17T08:00:00Z",
+      "updated_at": "2026-01-17T08:00:00Z",
+      "name": "Advertisement Payment Reminder",
+      "slug": "advertisement_payment_reminder",
+      "notification_type": "advertisement",
+      "title_template": "Payment Pending for Your Ad 💳",
+      "message_template": "Your advertisement '{{ad_title}}' was approved on {{approved_at}} but payment of Rs. {{admin_price}} is still pending. Please complete payment to schedule your ad.",
+      "description": "Reminder sent for ads pending payment > 24 hours",
+      "is_active": true
+    }
+  }
+]

@@ -32,6 +32,7 @@ from .late_fee_views import late_fee_admin_router
 from .points_admin_views import points_admin_router
 from .achievement_admin_views import achievement_admin_router
 from .referral_admin_views import referral_admin_router
+from .ad_views import admin_ads_router
 
 # Merge all sub-routers
 # IMPORTANT: Order matters! More specific routes must come before generic ones
@@ -63,7 +64,8 @@ for sub_router in [
     station_analytics_router,
     late_fee_admin_router,
     points_admin_router,
-    achievement_admin_router
+    achievement_admin_router,
+    admin_ads_router
 ]:
     router._paths.extend(sub_router._paths)
     router._drf_router.registry.extend(sub_router._drf_router.registry)

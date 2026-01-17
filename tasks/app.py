@@ -29,6 +29,7 @@ app.autodiscover_tasks(
         "api.user.social",
         "api.user.promotions",
         "api.user.system",
+        "api.user.advertisements",
     ]
 )
 
@@ -54,6 +55,8 @@ app.conf.task_routes = {
     "api.user.content.tasks.*": {"queue": "low_priority"},
     "api.user.social.tasks.*": {"queue": "low_priority"},
     "api.user.promotions.tasks.*": {"queue": "low_priority"},
+    # Advertisement tasks
+    "advertisements.*": {"queue": "advertisements"},
 }
 
 # Configure periodic tasks
@@ -185,6 +188,22 @@ app.conf.beat_schedule = {
     "update-package-popularity": {
         "task": "api.user.rentals.tasks.update_rental_package_popularity",
         "schedule": 86400.0,  # Daily
+    },
+    # Advertisement tasks
+    "auto-start-scheduled-ads": {
+        "task": "advertisements.auto_start_scheduled_ads",
+        "schedule": 3600.0,  # Every hour
+        "options": {"queue": "advertisements"},
+    },
+    "auto-complete-finished-ads": {
+        "task": "advertisements.auto_complete_finished_ads",
+        "schedule": 3600.0,  # Every hour (offset by 15 minutes)
+        "options": {"queue": "advertisements"},
+    },
+    "check-payment-pending-ads": {
+        "task": "advertisements.check_payment_pending_ads",
+        "schedule": 86400.0,  # Daily at 10 AM
+        "options": {"queue": "advertisements", "eta": "10:00"},
     },
 }
 

@@ -19,6 +19,7 @@ class NotificationTemplate(BaseModel):
         ADMIN = 'admin', 'Admin'
         OTP_SMS = 'otp_sms', 'OTP SMS'
         OTP_EMAIL = 'otp_email', 'OTP Email'
+        ADVERTISEMENT = 'advertisement', 'Advertisement'
     
     name = models.CharField(max_length=100, unique=True)
     slug = models.SlugField(max_length=255, unique=True)

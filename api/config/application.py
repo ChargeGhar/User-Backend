@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     "api.user.social.apps.SocialConfig",
     "api.user.promotions.apps.PromotionsConfig",
     "api.user.content.apps.ContentConfig",
+    "api.user.advertisements.apps.AdvertisementsConfig",
     "api.admin.apps.AdminConfig",
     "api.config.apps.ConfigConfig",
     "api.internal.apps.InternalConfig",

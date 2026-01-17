@@ -45,7 +45,9 @@ SPECTACULAR_SETTINGS = {
         {"name": "Promotions", "description": "Coupon management and promotional campaigns"},
         {"name": "Social", "description": "Social features, achievements, and leaderboards"},
         {"name": "Content", "description": "App content and information pages"},
+        {"name": "Advertisements", "description": "User advertisement request submission and management"},
         {"name": "Admin", "description": "Administrative operations and analytics"},
+        {"name": "Admin - Advertisements", "description": "Admin advertisement review, approval, and management"},
     ],
     
     # UI Configuration
