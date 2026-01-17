@@ -36,7 +36,13 @@ SPECTACULAR_SETTINGS = {
     # Endpoint Organization (tags defined in @extend_schema decorators)
     "TAGS": [
         {"name": "App", "description": "Core app functionality (health, version, media, countries)"},
-        {"name": "Authentication", "description": "User authentication, registration, and profile management"},
+        {"name": "Authentication - OTP", "description": "OTP-based authentication (request, verify, complete)"},
+        {"name": "Authentication - Biometric", "description": "Biometric authentication (fingerprint, Face ID)"},
+        {"name": "Authentication - Social", "description": "Social authentication (Google, Apple OAuth)"},
+        {"name": "Authentication - Session", "description": "Session management (logout, token refresh)"},
+        {"name": "Authentication - Profile", "description": "User profile and account management"},
+        {"name": "Authentication - KYC", "description": "KYC document submission and verification"},
+        {"name": "Authentication - Device", "description": "Device registration for push notifications"},
         {"name": "Stations", "description": "Charging station discovery, favorites, and issue reporting"},
         {"name": "Notifications", "description": "Real-time user notifications and alerts"},
         {"name": "Payments", "description": "Wallet management, transactions, and payment gateways"},

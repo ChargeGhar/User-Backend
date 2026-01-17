@@ -9,5 +9,5 @@ from api.admin.views import router
 app_name = 'admin'
 
 urlpatterns = [
-    path('admin/', include(router.urls)),
+    path('', include(router.urls)),
 ]

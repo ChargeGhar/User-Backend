@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 @auth_router.register(r"auth/otp/request", name="auth-otp-request")
 @extend_schema(
-    tags=["Authentication"],
+    tags=["Authentication - OTP"],
     summary="Request OTP (Auto-detects Login/Register)",
     responses={200: BaseResponseSerializer}
 )
@@ -43,7 +43,7 @@ class OTPRequestView(GenericAPIView, BaseAPIView):
 
 @auth_router.register(r"auth/otp/verify", name="auth-otp-verify")
 @extend_schema(
-    tags=["Authentication"],
+    tags=["Authentication - OTP"],
     summary="Verify OTP",
     responses={200: BaseResponseSerializer}
 )
@@ -66,7 +66,7 @@ class OTPVerifyView(GenericAPIView, BaseAPIView):
 
 @auth_router.register(r"auth/complete", name="auth-complete")
 @extend_schema(
-    tags=["Authentication"],
+    tags=["Authentication - OTP"],
     summary="Complete Authentication",
     responses={200: BaseResponseSerializer}
 )
@@ -92,7 +92,7 @@ class AuthCompleteView(GenericAPIView, BaseAPIView):
 
 @auth_router.register(r"auth/logout", name="auth-logout")
 @extend_schema(
-    tags=["Authentication"],
+    tags=["Authentication - Session"],
     summary="User Logout",
     responses={200: BaseResponseSerializer}
 )
@@ -115,7 +115,7 @@ class LogoutView(GenericAPIView, BaseAPIView):
 
 @auth_router.register(r"auth/refresh", name="auth-refresh")
 @extend_schema(
-    tags=["Authentication"],
+    tags=["Authentication - Session"],
     summary="Refresh JWT Access Token",
     responses={200: BaseResponseSerializer}
 )
@@ -138,7 +138,7 @@ class CustomTokenRefreshView(GenericAPIView, BaseAPIView):
 
 @auth_router.register(r"auth/device", name="auth-device")
 @extend_schema(
-    tags=["Authentication"],
+    tags=["Authentication - Device"],
     summary="Register Device",
     responses={200: BaseResponseSerializer}
 )
@@ -160,7 +160,7 @@ class DeviceView(GenericAPIView, BaseAPIView):
 
 @auth_router.register(r"auth/me", name="auth-me")
 @extend_schema(
-    tags=["Authentication"],
+    tags=["Authentication - Profile"],
     summary="Current User Complete Info",
     responses={200: BaseResponseSerializer}
 )
@@ -180,7 +180,7 @@ class MeView(GenericAPIView, BaseAPIView):
 
 @auth_router.register(r"auth/account", name="auth-account")
 @extend_schema(
-    tags=["Authentication"],
+    tags=["Authentication - Profile"],
     summary="Delete Account",
     responses={200: BaseResponseSerializer}
 )

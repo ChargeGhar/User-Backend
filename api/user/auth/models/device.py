@@ -5,7 +5,7 @@ from .user import User
 
 class UserDevice(BaseModel):
     """
-    UserDevice - User's registered devices for push notifications
+    UserDevice - User's registered devices for push notifications and biometric auth
     """
     DEVICE_TYPE_CHOICES = [
         ('ANDROID', 'Android'),
@@ -22,6 +22,19 @@ class UserDevice(BaseModel):
     os_version = models.CharField(max_length=50, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     last_used = models.DateTimeField(auto_now=True)
+    
+    # Biometric authentication fields
+    biometric_enabled = models.BooleanField(default=False)
+    biometric_token = models.CharField(
+        max_length=512,
+        null=True,
+        blank=True,
+        unique=True,
+        db_index=True,
+        help_text="Secure token for biometric authentication"
+    )
+    biometric_registered_at = models.DateTimeField(null=True, blank=True)
+    biometric_last_used_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "user_devices"

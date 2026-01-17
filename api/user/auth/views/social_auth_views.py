@@ -55,7 +55,7 @@ class SocialAuthMixin:
 
 @social_router.register(r"auth/google/login", name="auth-google-login")
 @extend_schema(
-    tags=["Authentication"],
+    tags=["Authentication - Social"],
     summary="Google OAuth Login",
     description="Get Google OAuth login URL (uses django-allauth)",
     responses={200: BaseResponseSerializer}
@@ -83,7 +83,7 @@ class GoogleLoginView(GenericAPIView, BaseAPIView):
 
 @social_router.register(r"auth/apple/login", name="auth-apple-login")
 @extend_schema(
-    tags=["Authentication"],
+    tags=["Authentication - Social"],
     summary="Apple OAuth Login",
     description="Get Apple OAuth login URL (uses django-allauth)",
     responses={200: BaseResponseSerializer}
@@ -111,7 +111,7 @@ class AppleLoginView(GenericAPIView, BaseAPIView):
 
 @social_router.register(r"auth/social/success", name="auth-social-success")
 @extend_schema(
-    tags=["Authentication"],
+    tags=["Authentication - Social"],
     summary="Social Auth Success",
     description="Handle successful social authentication and redirect to frontend",
     responses={302: BaseResponseSerializer}
@@ -164,7 +164,7 @@ class SocialAuthSuccessView(GenericAPIView, BaseAPIView, SocialAuthMixin):
 
 @social_router.register(r"auth/social/error", name="auth-social-error")
 @extend_schema(
-    tags=["Authentication"],
+    tags=["Authentication - Social"],
     summary="Social Auth Error",
     description="Handle social authentication errors and redirect to frontend",
     responses={302: BaseResponseSerializer}

@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 @profile_router.register(r"users/profile", name="user-profile")
 @extend_schema(
-    tags=["Authentication"],
+    tags=["Authentication - Profile"],
     summary="User Profile Management",
     responses={200: BaseResponseSerializer}
 )
@@ -67,7 +67,7 @@ class UserProfileView(GenericAPIView, BaseAPIView):
 
 @profile_router.register(r"users/kyc", name="user-kyc")
 @extend_schema(
-    tags=["Authentication"],
+    tags=["Authentication - KYC"],
     summary="KYC Document Submission",
     responses={201: BaseResponseSerializer}
 )
@@ -100,7 +100,7 @@ class UserKYCView(GenericAPIView, BaseAPIView):
 
 @profile_router.register(r"users/kyc/status", name="user-kyc-status")
 @extend_schema(
-    tags=["Authentication"],
+    tags=["Authentication - KYC"],
     summary="KYC Status",
     responses={200: BaseResponseSerializer}
 )
@@ -117,7 +117,7 @@ class UserKYCStatusView(GenericAPIView, BaseAPIView):
 
 @profile_router.register(r"users/wallet", name="user-wallet")
 @extend_schema(
-    tags=["Authentication"],
+    tags=["Authentication - Profile"],
     summary="User Wallet",
     responses={200: BaseResponseSerializer}
 )
@@ -134,7 +134,7 @@ class UserWalletView(GenericAPIView, BaseAPIView):
 
 @profile_router.register(r"users/analytics/usage-stats", name="user-analytics")
 @extend_schema(
-    tags=["Authentication"],
+    tags=["Authentication - Profile"],
     summary="User Analytics",
     responses={200: BaseResponseSerializer}
 )
