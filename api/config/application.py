@@ -66,6 +66,8 @@ INSTALLED_APPS = [
     "api.admin.apps.AdminConfig",
     "api.config.apps.ConfigConfig",
     "api.internal.apps.InternalConfig",
+    # Partnership System
+    "api.partners.common.apps.PartnersCommonConfig",
 ]
 
 # Required for django-allauth

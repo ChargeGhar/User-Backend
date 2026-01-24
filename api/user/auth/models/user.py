@@ -36,6 +36,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     # Django required fields
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    is_partner = models.BooleanField(
+        default=False,
+        help_text='True if user is a partner (Franchise/Vendor) - enables password auth'
+    )
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(null=True, blank=True)
     
@@ -102,33 +106,33 @@ class User(AbstractBaseUser, PermissionsMixin):
         super().save(*args, **kwargs)
     
     def set_password(self, raw_password):
-        """Allow password setting for admin users, disable for regular users"""
-        if self.is_staff or self.is_superuser:
-            # Allow password for admin users (Django admin access)
+        """Allow password setting for admin users and partners, disable for regular users"""
+        if self.is_staff or self.is_superuser or self.is_partner:
+            # Allow password for admin users and partners
             super().set_password(raw_password)
         else:
             # Disable password for regular users (OTP-only)
             pass
     
     def check_password(self, raw_password):
-        """Allow password checking for admin users, disable for regular users"""
-        if self.is_staff or self.is_superuser:
-            # Allow password check for admin users
+        """Allow password checking for admin users and partners, disable for regular users"""
+        if self.is_staff or self.is_superuser or self.is_partner:
+            # Allow password check for admin users and partners
             return super().check_password(raw_password)
         else:
             # Disable password check for regular users
             return False
     
     def set_unusable_password(self):
-        """Allow unusable password setting for admin users"""
-        if self.is_staff or self.is_superuser:
+        """Allow unusable password setting for admin users and partners"""
+        if self.is_staff or self.is_superuser or self.is_partner:
             super().set_unusable_password()
         else:
             pass
     
     def has_usable_password(self):
-        """Check if user has usable password (admin users only)"""
-        if self.is_staff or self.is_superuser:
+        """Check if user has usable password (admin users and partners only)"""
+        if self.is_staff or self.is_superuser or self.is_partner:
             return super().has_usable_password()
         else:
             return False
