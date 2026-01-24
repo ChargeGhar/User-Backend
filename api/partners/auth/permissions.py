@@ -4,6 +4,7 @@ Partner Permission Classes
 
 Based on partners_auth.md and Business Rules BR9, BR10, BR12.
 """
+from __future__ import annotations
 
 from rest_framework.permissions import BasePermission
 

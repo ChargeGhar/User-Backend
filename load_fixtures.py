@@ -132,12 +132,33 @@ def main():
         username=username,
         defaults={'email': email, 'is_superuser': True, 'is_staff': True, 'is_active': True}
     )
+    
     if created:
         user.set_password(password)
         user.save()
         print(f"✅ Superuser '{username}' created successfully")
     else:
-        print(f"ℹ️  Superuser '{username}' already exists")
+        # Ensure superuser flags and password are correct even for existing user
+        needs_save = False
+        if not user.is_superuser:
+            user.is_superuser = True
+            needs_save = True
+        if not user.is_staff:
+            user.is_staff = True
+            needs_save = True
+        if not user.is_active:
+            user.is_active = True
+            needs_save = True
+        
+        # Always ensure password is set correctly (in case it was corrupted)
+        # Must set is_staff/is_superuser BEFORE calling set_password due to custom logic
+        if needs_save:
+            user.save(update_fields=['is_superuser', 'is_staff', 'is_active'])
+        
+        # Reset password to ensure it works
+        user.set_password(password)
+        user.save(update_fields=['password'])
+        print(f"ℹ️  Superuser '{username}' already exists - password reset")
     
     # Process apps in order
     for app_label in APPS_IN_ORDER:

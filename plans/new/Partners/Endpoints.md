@@ -1,8 +1,8 @@
 # Partnership System - API Endpoints
 
-> **Version:** 1.1  
+> **Version:** 2.0  
 > **Last Updated:** 2026-01-24  
-> **Status:** Cross-verified with schema.md v1.1 - READY FOR IMPLEMENTATION
+> **Status:** Admin endpoints IMPLEMENTED - Franchise/Vendor dashboard endpoints PENDING
 
 ---
 
@@ -15,20 +15,22 @@ Three dashboard types with distinct access levels:
 
 ---
 
-## 1. Admin Dashboard Endpoints (ChargeGhar)
+## 1. Admin Dashboard Endpoints (ChargeGhar) ✅ IMPLEMENTED
 
 Base Path: `/api/admin/partners/`
 
-### 1.1 Partner Management
+**Implementation:** `api/admin/views/partner_views.py`, `api/admin/services/admin_partner_service.py`
 
-| Method | Endpoint | Description | Tables Affected |
-|--------|----------|-------------|-----------------|
-| GET | `/api/admin/partners/` | List all partners (franchise + vendors) with filters | `partners` |
-| GET | `/api/admin/partners/{id}/` | Get partner details | `partners`, `station_distributions` |
-| POST | `/api/admin/partners/franchise/` | Create franchise | `partners`, `station_distributions` |
-| POST | `/api/admin/partners/vendor/` | Create CG-level vendor | `partners`, `station_distributions`, `station_revenue_shares` |
-| PATCH | `/api/admin/partners/{id}/` | Update partner | `partners` |
-| PATCH | `/api/admin/partners/{id}/status/` | Activate/Suspend partner | `partners` |
+### 1.1 Partner Management ✅
+
+| Method | Endpoint | Description | Status |
+|--------|----------|-------------|--------|
+| GET | `/api/admin/partners/` | List all partners with filters | ✅ |
+| GET | `/api/admin/partners/{id}/` | Get partner details | ✅ |
+| POST | `/api/admin/partners/franchise/` | Create franchise | ✅ |
+| POST | `/api/admin/partners/vendor/` | Create CG-level vendor | ✅ |
+| PATCH | `/api/admin/partners/{id}/` | Update partner | ✅ |
+| PATCH | `/api/admin/partners/{id}/status/` | Activate/Suspend partner | ✅ |
 
 **Query Parameters for GET list:**
 ```
@@ -69,24 +71,24 @@ Base Path: `/api/admin/partners/`
 }
 ```
 
-### 1.2 Station Distribution
+### 1.2 Station Distribution ✅
 
-| Method | Endpoint | Description | Tables Affected |
-|--------|----------|-------------|-----------------|
-| GET | `/api/admin/partners/stations/` | List station assignments | `station_distributions` |
-| GET | `/api/admin/partners/stations/available/` | Unassigned stations | `stations`, `station_distributions` |
-| DELETE | `/api/admin/partners/stations/{dist_id}/` | Deactivate assignment | `station_distributions` |
+| Method | Endpoint | Description | Status |
+|--------|----------|-------------|--------|
+| GET | `/api/admin/partners/stations/` | List station assignments | ✅ |
+| GET | `/api/admin/partners/stations/available/` | Unassigned stations | ✅ |
+| DELETE | `/api/admin/partners/stations/{dist_id}/` | Deactivate assignment | ✅ |
 
 **Note:** Station assignment happens ONLY during partner creation (BR2.1-2). No separate `POST /assign` endpoint.
 - Franchise creation: Include `station_ids[]` in POST body
 - Vendor creation: Include `station_id` in POST body (single station only)
 
-### 1.3 Transactions & Revenue
+### 1.3 Transactions & Revenue ⏳ PENDING
 
-| Method | Endpoint | Description | Tables Affected |
-|--------|----------|-------------|-----------------|
-| GET | `/api/admin/partners/transactions/` | All partner transactions | `revenue_distributions` |
-| GET | `/api/admin/partners/transactions/summary/` | Aggregated stats | `revenue_distributions` |
+| Method | Endpoint | Description | Status |
+|--------|----------|-------------|--------|
+| GET | `/api/admin/partners/transactions/` | All partner transactions | ⏳ |
+| GET | `/api/admin/partners/transactions/summary/` | Aggregated stats | ⏳ |
 
 **Query Parameters:**
 ```
@@ -105,16 +107,16 @@ Base Path: `/api/admin/partners/`
 - `franchise_id={uuid}`: Returns transactions for that franchise's stations
 - `vendor_id={uuid}`: Returns transactions for that vendor's station
 
-### 1.4 Payouts
+### 1.4 Payouts ✅
 
-| Method | Endpoint | Description | Tables Affected |
-|--------|----------|-------------|-----------------|
-| GET | `/api/admin/partners/payouts/` | List all payout requests | `payout_requests` |
-| GET | `/api/admin/partners/payouts/{id}/` | Payout details | `payout_requests` |
-| PATCH | `/api/admin/partners/payouts/{id}/approve/` | Approve payout | `payout_requests` |
-| PATCH | `/api/admin/partners/payouts/{id}/process/` | Mark as processing | `payout_requests` |
-| PATCH | `/api/admin/partners/payouts/{id}/complete/` | Complete payout | `payout_requests`, `partners.balance` |
-| PATCH | `/api/admin/partners/payouts/{id}/reject/` | Reject payout | `payout_requests` |
+| Method | Endpoint | Description | Status |
+|--------|----------|-------------|--------|
+| GET | `/api/admin/partners/payouts/` | List all payout requests | ✅ |
+| GET | `/api/admin/partners/payouts/{id}/` | Payout details | ✅ |
+| PATCH | `/api/admin/partners/payouts/{id}/approve/` | Approve payout | ✅ |
+| PATCH | `/api/admin/partners/payouts/{id}/process/` | Mark as processing | ✅ |
+| PATCH | `/api/admin/partners/payouts/{id}/complete/` | Complete payout | ✅ |
+| PATCH | `/api/admin/partners/payouts/{id}/reject/` | Reject payout | ✅ |
 
 **Query Parameters:**
 ```
@@ -126,13 +128,13 @@ Base Path: `/api/admin/partners/`
 
 **Note:** Admin processes ONLY `CHARGEGHAR_TO_FRANCHISE` and `CHARGEGHAR_TO_VENDOR` payouts.
 
-### 1.5 Analytics Dashboard
+### 1.5 Analytics Dashboard ⏳ PENDING
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/admin/partners/analytics/overview/` | Total partners, revenue, payouts |
-| GET | `/api/admin/partners/analytics/revenue/` | Revenue breakdown by hierarchy |
-| GET | `/api/admin/partners/analytics/top-performers/` | Top stations/partners |
+| Method | Endpoint | Description | Status |
+|--------|----------|-------------|--------|
+| GET | `/api/admin/partners/analytics/overview/` | Total partners, revenue, payouts | ⏳ |
+| GET | `/api/admin/partners/analytics/revenue/` | Revenue breakdown by hierarchy | ⏳ |
+| GET | `/api/admin/partners/analytics/top-performers/` | Top stations/partners | ⏳ |
 
 ---
 
@@ -407,10 +409,27 @@ These existing admin endpoints are reused:
 
 ## Endpoint Summary Count
 
-| Dashboard | Endpoints |
-|-----------|-----------|
-| Admin | 16 |
-| Franchise | 17 |
-| Vendor | 9 |
-| IoT (shared) | 8 |
-| **Total** | **50** |
+| Dashboard | Endpoints | Status |
+|-----------|-----------|--------|
+| Admin Partner Management | 6 | ✅ Implemented |
+| Admin Station Distribution | 3 | ✅ Implemented |
+| Admin Transactions | 2 | ⏳ Pending |
+| Admin Payouts | 6 | ✅ Implemented |
+| Admin Analytics | 3 | ⏳ Pending |
+| **Admin Subtotal** | **20** | **15 Done / 5 Pending** |
+| Franchise | 17 | ⏳ Pending |
+| Vendor | 9 | ⏳ Pending |
+| IoT (shared) | 8 | ⏳ Pending |
+| **Total** | **54** | |
+
+## Implementation Files
+
+### Admin Partner Endpoints (Implemented)
+- **Views:** `api/admin/views/partner_views.py`
+- **Service:** `api/admin/services/admin_partner_service.py`
+- **Serializers:** `api/admin/serializers/partner_serializers.py`
+
+### Partner Auth (Implemented)
+- **Views:** `api/partners/auth/views/`
+- **Services:** `api/partners/auth/services/`
+- **Serializers:** `api/partners/auth/serializers/`

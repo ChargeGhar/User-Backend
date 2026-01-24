@@ -79,6 +79,9 @@ urlpatterns = [
     path("api/", include("api.user.system.urls")),
     path("api/", include("api.user.media.urls")),
     path("api/", include("api.user.advertisements.urls")),
+    
+    # Partner Dashboard APIs
+    path("api/partners/auth/", include("api.partners.auth.urls")),
 ]
 
 if USE_SILK:

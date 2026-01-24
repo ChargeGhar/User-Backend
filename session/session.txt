@@ -1,1012 +1,740 @@
-─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
+ 1 CustomViewRouter with decorator-based registration (@auth_router.register())
+ 2 GenericAPIView + BaseAPIView mixins
+ 3 Consistent URL patterns without trailing slashes in routes
+ 4 @extend_schema decorators for OpenAPI docs
+ 5 handle_service_operation pattern for responses
 
-─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-Now let me verify the models are correct by running a quick syntax check:
-Now let me verify the models are correct by running a quick syntax check:
+Let me update the partners auth app to be consistent:
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-Now let me verify the models are correct by running a quick syntax check:
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  ⬢ Called powershell: 
-      • command: "python -c \"from api.partners.common.models import Partner, StationDistribution, StationRevenueShar...
+  ⬢ Update Todos
+      ◐ Updating views
+      ☐ Update auth URLs to use router.urls
+      ☐ Update apps.py for consistency
+      ☐ Update __init__.py files
+      ☐ Verify everything works
 
-                                                                                                                        
-   Traceback (most recent call last):                                                                                   
-     File "<string>", line 1, in <module>                                                                               
-       from api.partners.common.models import Partner, StationDistribution, StationRevenueShare,                        
-   RevenueDistribution...                                                                                               
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^.   
-   ..                                                                                                                   
-     File "E:\Companies\DEVALAYA\Deva_ChargeGhar\ChargeGhar\api\partners\common\models\__init__.py", line 1, in         
-   <mod...                                                                                                              
-       from .partner import Partner                                                                                     
-     File "E:\Companies\DEVALAYA\Deva_ChargeGhar\ChargeGhar\api\partners\common\models\partner.py", line 2, in          
-   <module>                                                                                                             
-       from api.common.models import BaseModel                                                                          
-     File "E:\Companies\DEVALAYA\Deva_ChargeGhar\ChargeGhar\api\common\models\__init__.py", line 1, in <module>         
-       from .base import BaseModel
-   (9 lines truncated)
-     File "C:\Users\revDev\AppData\Roaming\Python\Python314\site-packages\django\apps\registry.py", line 137, in      
-   che...
-       settings.INSTALLED_APPS
-     File "C:\Users\revDev\AppData\Roaming\Python\Python314\site-packages\django\conf\__init__.py", line 81, in       
-   __ge...
-       self._setup(name)
-       ~~~~~~~~~~~^^^^^^
-     File "C:\Users\revDev\AppData\Roaming\Python\Python314\site-packages\django\conf\__init__.py", line 61, in       
-   _setup
-       raise ImproperlyConfigured(
-       ...<4 lines>...
-       )
-   django.core.exceptions.ImproperlyConfigured: Requested setting INSTALLED_APPS, but settings are not configured.    
-   Y...
+
+─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
+Now let me rewrite the views using the CustomViewRouter pattern:
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⬢ Called create_file: 
+      • file_path: "api/partners/auth/views/login_view.py"
+      • initial_content: "# api/partners/auth/views/login_view.py\n\"\"\"Partner Login View.\"\"\"\n\nfrom __future__...
+      • overwrite: "True"
+  ⬢ Called create_file: 
+      • file_path: "api/partners/auth/views/password_views.py"
+      • initial_content: "# api/partners/auth/views/password_views.py\n\"\"\"Partner Password Management Views.\"\"\"...
+      • overwrite: "True"
+  ⬢ Called create_file: 
+      • file_path: "api/partners/auth/views/token_views.py"
+      • initial_content: "# api/partners/auth/views/token_views.py\n\"\"\"Partner Token Management Views.\"\"\"\n\nfr...
+      • overwrite: "True"
+  ⬢ Called create_file: 
+      • file_path: "api/partners/auth/views/profile_view.py"
+      • initial_content: "# api/partners/auth/views/profile_view.py\n\"\"\"Partner Profile View.\"\"\"\n\nfrom __futu...
+      • overwrite: "True"
+
+  
+   Successfully updated api/partners/auth/views/login_view.py.
+  
+
+
+  
+   Successfully updated api/partners/auth/views/password_views.py.
+  
+
+
+  
+   Successfully updated api/partners/auth/views/token_views.py.
+  
+
+
+  
+   Successfully updated api/partners/auth/views/profile_view.py.
   
 
 
 ─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-Let me try with Django settings configured:
+Now let me update the views __init__.py to merge routers and update the URLs:
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  ⬢ Called powershell:
-      • command: "$env:DJANGO_SETTINGS_MODULE=\"api.config.settings\"; python -c \"import django; django.setup(); fro...
+  ⬢ Called create_file: 
+      • file_path: "api/partners/auth/views/__init__.py"
+      • initial_content: "# api/partners/auth/views/__init__.py\n\"\"\"\nViews package for partners auth app.\nMainta...
+      • overwrite: "True"
+  ⬢ Called create_file: 
+      • file_path: "api/partners/auth/urls.py"
+      • initial_content: "# api/partners/auth/urls.py\n\"\"\"\nPartner Auth URLs\n\nAuthentication endpoints for part...
+      • overwrite: "True"
+
+  ⬢ Update Todos
+      ☑ Update auth views to use CustomViewRouter pattern
+      ◐ Updating URLs
+      ☐ Update apps.py for consistency
+      ☐ Update __init__.py files
+      ☐ Verify everything works
+
+
+        
+   Successfully updated api/partners/auth/views/__init__.py.      
+        
+
+
+        
+   Successfully updated api/partners/auth/urls.py.      
+        
+
+
+─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
+Now let me update the apps.py and init.py files for consistency:
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⬢ Called create_file:
+      • file_path: "api/partners/auth/apps.py"
+      • initial_content: "# api/partners/auth/apps.py\n\"\"\"Partner Auth App Configuration.\"\"\"\nfrom __future__ i...
+      • overwrite: "True"
+  ⬢ Called create_file:
+      • file_path: "api/partners/auth/__init__.py"
+      • initial_content: "# api/partners/auth/__init__.py\n\"\"\"Partner Authentication App.\"\"\"\nfrom __future__ i...
+      • overwrite: "True"
+  ⬢ Called create_file:
+      • file_path: "api/partners/auth/serializers/__init__.py"
+      • initial_content: "# api/partners/auth/serializers/__init__.py\n\"\"\"Partner Auth Serializers.\"\"\"\nfrom __...
+      • overwrite: "True"
+  ⬢ Called create_file:
+      • file_path: "api/partners/auth/services/__init__.py"
+      • initial_content: "# api/partners/auth/services/__init__.py\n\"\"\"Partner Auth Services.\"\"\"\nfrom __future...
+      • overwrite: "True"
+  ⬢ Called create_file:
+      • file_path: "api/partners/auth/repositories/__init__.py"
+      • initial_content: "# api/partners/auth/repositories/__init__.py\n\"\"\"Partner Auth Repositories.\"\"\"\nfrom ...
+
+  ⬢ Update Todos
+      ☑ Update auth views to use CustomViewRouter pattern
+      ☑ Update auth URLs to use router.urls
+      ◐ Updating apps.py
+      ☐ Update __init__.py files
+      ☐ Verify everything works
+
 
   
-   2026-01-24 20:37:31 INFO api.config.settings Serving static files locally
-   2026-01-24 20:37:31 INFO api.config.settings Serving media files locally
-   2026-01-24 20:37:33 INFO api.config.settings Sentry is not initialized
-   2026-01-24 20:37:33 INFO api.config.settings Using Redis for cache
-   2026-01-24 20:37:33 INFO api.config.settings Redis cache configured - connection will be tested on first       
-   use
-   2026-01-24 20:37:34 INFO axes.apps AXES: BEGIN version 8.1.0, blocking by ip_address
-   Traceback (most recent call last):
-     File "<string>", line 1, in <module>
-       import django; django.setup(); from api.partners.common.models import Partner, StationDistribution,
-   StationRe...
-                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^. 
-   ..
-   (1 lines truncated)
-       from .partner import Partner
-     File "E:\Companies\DEVALAYA\Deva_ChargeGhar\ChargeGhar\api\partners\common\models\partner.py", line 5, in        
-   <module>
-       class Partner(BaseModel):
-       ...<228 lines>...
-               return f"{prefix}-{new_num:03d}"
-     File "C:\Users\revDev\AppData\Roaming\Python\Python314\site-packages\django\db\models\base.py", line 136, in     
-   __...
-       raise RuntimeError(
-       ...<3 lines>...
-       )
-   RuntimeError: Model class api.partners.common.models.partner.Partner doesn't declare an explicit app_label and     
-   is...
+   Successfully updated api/partners/auth/apps.py.
+  
+
+
+  
+   Successfully updated api/partners/auth/__init__.py.
+  
+
+
+  
+   Successfully updated api/partners/auth/serializers/__init__.py.
+  
+
+
+  
+   Successfully updated api/partners/auth/services/__init__.py.
+  
+
+
+  
+   Successfully created api/partners/auth/repositories/__init__.py.
   
 
 
 ─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-The models are syntactically correct, but we need to add the app to INSTALLED_APPS. Let me check the settings file and
-add the partners app:
+Now let me update the serializer files to use from __future__ import annotations and add __all__ exports for
+consistency:
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
-  ⬢ Called open_files: 
-      • file_paths: "['api/config/application.py']"
+  ⬢ Called find_and_replace_code: 
+      • file_path: "api/partners/auth/serializers/login_serializers.py"
+      • find: "# api/partners/auth/serializers/login_serializers.py\n\"\"\"Partner Login Serializers.\"\"\"\n\nfrom r...
+      • replace: "# api/partners/auth/serializers/login_serializers.py\n\"\"\"Partner Login Serializers.\"\"\"\nfrom ...
+  ⬢ Called find_and_replace_code: 
+      • file_path: "api/partners/auth/serializers/password_serializers.py"
+      • find: "# api/partners/auth/serializers/password_serializers.py\n\"\"\"Partner Password Management Serializers...
+      • replace: "# api/partners/auth/serializers/password_serializers.py\n\"\"\"Partner Password Management Serializ...
+  ⬢ Called find_and_replace_code: 
+      • file_path: "api/partners/auth/serializers/token_serializers.py"
+      • find: "# api/partners/auth/serializers/token_serializers.py\n\"\"\"Partner Token Management Serializers.\"\"\...
+      • replace: "# api/partners/auth/serializers/token_serializers.py\n\"\"\"Partner Token Management Serializers.\"...
+  ⬢ Called find_and_replace_code: 
+      • file_path: "api/partners/auth/serializers/response_serializers.py"
+      • find: "# api/partners/auth/serializers/response_serializers.py\n\"\"\"Partner Auth Response Serializers.\"\"\...
+      • replace: "# api/partners/auth/serializers/response_serializers.py\n\"\"\"Partner Auth Response Serializers.\"...
 
-  api/config/application.py:
+  ⬢ Update Todos
+      ☑ Update auth views to use CustomViewRouter pattern
+      ☑ Update auth URLs to use router.urls
+      ☑ Update apps.py for consistency
+      ◐ Updating init files
+      ☐ Verify everything works
 
-                                                                                                                        
-    from __future__ import annotations                                                                                  
-                                                                                                                        
-    from os import getenv                                                                                               
-                                                                                                                        
-    from api.config.silk import SILKY_MIDDLEWARE_CLASS, USE_SILK                                                        
-                                                                                                                        
-    PROJECT_NAME = getenv("PROJECT_NAME", "django_template")                                                            
-    PROJECT_VERBOSE_NAME = getenv("PROJECT_VERBOSE_NAME", "Django Template").strip("'\"")                               
-                                                                                                                        
-   (170 lines truncated)                                                                                                
-        'READ_TIMEOUT': int(getenv('DEVICE_API_READ_TIMEOUT', '30')),                                                   
-        'MAX_RETRIES': int(getenv('DEVICE_API_MAX_RETRIES', '2')),                                                      
-                                                                                                                        
-        # Authentication for inter-system communication                                                                 
-        'AUTH_ENABLED': getenv('DEVICE_API_AUTH_ENABLED', 'True').lower() == 'true',                                    
-        'AUTH_USERNAME': getenv('DEVICE_API_AUTH_USERNAME', 'admin'),                                                   
-        'AUTH_PASSWORD': getenv('DEVICE_API_AUTH_PASSWORD', 'Admin@123'),                                               
-        'AUTH_LOGIN_ENDPOINT': getenv('DEVICE_API_AUTH_LOGIN_ENDPOINT', '/api/auth/login'),
-    }
+
+
+  api/partners/auth/serializers/login_serializers.py: 
+
+  
+   --- api/partners/auth/serializers/login_serializers.py
+   +++ api/partners/auth/serializers/login_serializers.py
+   @@ -1,7 +1,10 @@
+    # api/partners/auth/serializers/login_serializers.py
+    """Partner Login Serializers."""
+   +from __future__ import annotations
+  
+    from rest_framework import serializers
+   +
+   +__all__ = ['PartnerLoginSerializer']
+  
+  
+    class PartnerLoginSerializer(serializers.Serializer):
+  
+
+
+
+  api/partners/auth/serializers/password_serializers.py: 
+
+  
+   --- api/partners/auth/serializers/password_serializers.py
+   +++ api/partners/auth/serializers/password_serializers.py
+   @@ -1,7 +1,15 @@
+    # api/partners/auth/serializers/password_serializers.py
+    """Partner Password Management Serializers."""
+   +from __future__ import annotations
+  
+    from rest_framework import serializers
+   +
+   +__all__ = [
+   +    'SetPasswordSerializer',
+   +    'ForgotPasswordSerializer',
+   +    'ResetPasswordSerializer',
+   +    'ChangePasswordSerializer',
+   +]
+  
+  
+    class SetPasswordSerializer(serializers.Serializer):
+  
+
+
+
+  api/partners/auth/serializers/token_serializers.py: 
+
+  
+   --- api/partners/auth/serializers/token_serializers.py
+   +++ api/partners/auth/serializers/token_serializers.py
+   @@ -1,7 +1,10 @@
+    # api/partners/auth/serializers/token_serializers.py
+    """Partner Token Management Serializers."""
+   +from __future__ import annotations
+  
+    from rest_framework import serializers
+   +
+   +__all__ = ['RefreshTokenSerializer', 'LogoutSerializer']
+  
+  
+    class RefreshTokenSerializer(serializers.Serializer):
+  
+
+
+
+  api/partners/auth/serializers/response_serializers.py: 
+
+  
+   --- api/partners/auth/serializers/response_serializers.py
+   +++ api/partners/auth/serializers/response_serializers.py
+   @@ -1,7 +1,15 @@
+    # api/partners/auth/serializers/response_serializers.py
+    """Partner Auth Response Serializers."""
+   +from __future__ import annotations
+  
+    from rest_framework import serializers
+   +
+   +__all__ = [
+   +    'PartnerProfileSerializer',
+   +    'AuthResponseSerializer',
+   +    'TokenRefreshResponseSerializer',
+   +    'MessageResponseSerializer',
+   +]
+  
+  
+    class PartnerProfileSerializer(serializers.Serializer):
   
 
 
 ─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-Now let me add the partners app to INSTALLED_APPS:
+Now let me update the permissions.py and service files to use from __future__ import annotations:
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
   ⬢ Called find_and_replace_code: 
-      • file_path: "api/config/application.py"
-      • find: "    \"api.admin.apps.AdminConfig\",\n    \"api.config.apps.ConfigConfig\",\n    \"api.internal.apps.In...
-      • replace: "    \"api.admin.apps.AdminConfig\",\n    \"api.config.apps.ConfigConfig\",\n    \"api.internal.apps...
+      • file_path: "api/partners/auth/permissions.py"
+      • find: "# api/partners/auth/permissions.py\n\"\"\"\nPartner Permission Classes\n\nBased on partners_auth.md an...
+      • replace: "# api/partners/auth/permissions.py\n\"\"\"\nPartner Permission Classes\n\nBased on partners_auth.md...
+  ⬢ Called find_and_replace_code: 
+      • file_path: "api/partners/auth/services/auth_service.py"
+      • find: "# api/partners/auth/services/auth_service.py\n\"\"\"\nPartner Authentication Service\n\nMain authentic...
+      • replace: "# api/partners/auth/services/auth_service.py\n\"\"\"\nPartner Authentication Service\n\nMain authen...
+  ⬢ Called find_and_replace_code: 
+      • file_path: "api/partners/auth/services/token_service.py"
+      • find: "# api/partners/auth/services/token_service.py\n\"\"\"\nPartner Token Service\n\nHandles JWT token oper...
+      • replace: "# api/partners/auth/services/token_service.py\n\"\"\"\nPartner Token Service\n\nHandles JWT token o...
+  ⬢ Called find_and_replace_code: 
+      • file_path: "api/partners/auth/services/password_service.py"
+      • find: "# api/partners/auth/services/password_service.py\n\"\"\"\nPartner Password Service\n\nHandles password...
+      • replace: "# api/partners/auth/services/password_service.py\n\"\"\"\nPartner Password Service\n\nHandles passw...
 
 
-  api/config/application.py: 
+  api/partners/auth/permissions.py: 
 
-                                                                                                                        
-   --- api/config/application.py                                                                                        
-   +++ api/config/application.py                                                                                        
-   @@ -66,6 +66,8 @@                                                                                                    
-        "api.admin.apps.AdminConfig",                                                                                   
-        "api.config.apps.ConfigConfig",                                                                                 
-        "api.internal.apps.InternalConfig",                                                                             
-   +    # Partnership System                                                                                            
-   +    "api.partners.common.apps.PartnersCommonConfig",                                                                
-    ]                                                                                                                   
-                                                                                                                        
-    # Required for django-allauth                                                                                       
-                                                                                                                        
+        
+   --- api/partners/auth/permissions.py      
+   +++ api/partners/auth/permissions.py      
+   @@ -4,6 +4,7 @@      
+        
+    Based on partners_auth.md and Business Rules BR9, BR10, BR12.      
+    """
+   +from __future__ import annotations
+  
+    from rest_framework.permissions import BasePermission
+  
+  
+
+
+
+  api/partners/auth/services/auth_service.py: 
+
+  
+   --- api/partners/auth/services/auth_service.py
+   +++ api/partners/auth/services/auth_service.py
+   @@ -10,6 +10,7 @@
+  
+    Based on partners_auth.md specification.
+    """
+   +from __future__ import annotations
+  
+    import logging
+    from typing import Dict
+  
+
+
+
+  api/partners/auth/services/token_service.py: 
+
+  
+   --- api/partners/auth/services/token_service.py
+   +++ api/partners/auth/services/token_service.py
+   @@ -7,6 +7,7 @@
+    - Token refresh with partner status validation
+    - Token blacklisting (logout)
+    """
+   +from __future__ import annotations
+  
+    import uuid
+    import logging
+  
+
+
+
+  api/partners/auth/services/password_service.py: 
+
+  
+   --- api/partners/auth/services/password_service.py
+   +++ api/partners/auth/services/password_service.py
+   @@ -7,6 +7,7 @@
+    - Password reset flow
+    - Password change (authenticated)
+    """
+   +from __future__ import annotations
+  
+    import logging
+    from typing import Dict
+  
 
 
 ─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-Now let's verify the models can be imported correctly:
+Now let me verify everything works:
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
   ⬢ Called powershell:
-      • command: "$env:DJANGO_SETTINGS_MODULE=\"api.config.settings\"; python -c \"import django; django.setup(); fro...
+      • command: "$env:DJANGO_SETTINGS_MODULE=\"api.config.settings\"; python -c \"\nimport django; django.setup()\n\...
+
+  ⬢ Update Todos
+      ☑ Update auth views to use CustomViewRouter pattern
+      ☑ Update auth URLs to use router.urls
+      ☑ Update apps.py for consistency
+      ☑ Update __init__.py files
+      ◐ Verifying
+
 
   
-   2026-01-24 20:38:15 INFO api.config.settings Serving static files locally
-   2026-01-24 20:38:15 INFO api.config.settings Serving media files locally
-   2026-01-24 20:38:16 INFO api.config.settings Sentry is not initialized
-   2026-01-24 20:38:16 INFO api.config.settings Using Redis for cache
-   2026-01-24 20:38:16 INFO api.config.settings Redis cache configured - connection will be tested on first       
+   2026-01-24 21:41:19 INFO api.config.settings Serving static files locally
+   2026-01-24 21:41:19 INFO api.config.settings Serving media files locally
+   2026-01-24 21:41:20 INFO api.config.settings Sentry is not initialized
+   2026-01-24 21:41:20 INFO api.config.settings Using Redis for cache
+   2026-01-24 21:41:20 INFO api.config.settings Redis cache configured - connection will be tested on first       
    use
-   2026-01-24 20:38:18 INFO axes.apps AXES: BEGIN version 8.1.0, blocking by ip_address
-   All models imported successfully!
+   2026-01-24 21:41:21 INFO axes.apps AXES: BEGIN version 8.1.0, blocking by ip_address
+   Testing imports...
+     ✓ All auth imports successful
+  
+   Partner Auth Endpoints:
+     ✓ login -> partner-login
+     ✓ set-password -> partner-set-password
+     ✓ forgot-password -> partner-forgot-password
+     ✓ reset-password -> partner-reset-password
+     ✓ change-password -> partner-change-password
+     ✓ refresh -> partner-refresh
+     ✓ logout -> partner-logout
+     ✓ me -> partner-me
+  
+   ✅ All verifications passed!
   
 
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  ⬡ Calling powershell:
-      • command: "python manage.py makemigrations partners --dry-run"
-
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
-Rovo Dev is preparing tool calls...                                                                ctrl+c to interrupt
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
-  ⬡ Calling powershell:
-      • command: "python manage.py makemigrations partners --dry-run"
-
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
-Rovo Dev is preparing tool calls...                                                                ctrl+c to interrupt
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
-Rovo Dev is preparing tool calls...                                                                ctrl+c to interrupt
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
-
-─── Permissions required ───────────────────────────────────────────────────────────────────────────────────────────────
-
-Requesting permission to use tool powershell with command:
-
-```
-python manage.py makemigrations partners --dry-run
-```
-
-Would you like to allow this tool?
-─── Permissions required ───────────────────────────────────────────────────────────────────────────────────────────────
-
-Requesting permission to use tool powershell with command:
-
-```
-python manage.py makemigrations partners --dry-run
-```
-
-Would you like to allow this tool?
-
-Requesting permission to use tool powershell with command:
-
-```
-python manage.py makemigrations partners --dry-run
-```
-
-Would you like to allow this tool?
-```
-python manage.py makemigrations partners --dry-run
-```
-
-Would you like to allow this tool?
-```
-
-Would you like to allow this tool?
-Would you like to allow this tool?
 
 ─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-All models imported successfully. Now let's create the migrations to verify the models are correctly defined:
+Let me also verify the full URL paths are correct:
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⬢ Called powershell:
+      • command: "$env:DJANGO_SETTINGS_MODULE=\"api.config.settings\"; python -c \"\nimport django; django.setup()\nf...
+
+  
+   2026-01-24 21:41:34 INFO api.config.settings Serving static files locally
+   2026-01-24 21:41:34 INFO api.config.settings Serving media files locally
+   2026-01-24 21:41:35 INFO api.config.settings Sentry is not initialized
+   2026-01-24 21:41:35 INFO api.config.settings Using Redis for cache
+   2026-01-24 21:41:35 INFO api.config.settings Redis cache configured - connection will be tested on first       
+   use
+   2026-01-24 21:41:36 INFO axes.apps AXES: BEGIN version 8.1.0, blocking by ip_address
+   2026-01-24 21:41:36 INFO api.config.storage Serving static files locally
+   2026-01-24 21:41:36 INFO api.config.storage Serving media files locally
+   2026-01-24 21:41:37 WARNING api.web.urls S3 is disabled, serving media files locally. Consider using S3.    
+   Full URL Paths:
+     ✓ partner-login: /api/partners/auth/login
+     ✓ partner-set-password: /api/partners/auth/set-password
+     ✓ partner-forgot-password: /api/partners/auth/forgot-password
+     ✓ partner-reset-password: /api/partners/auth/reset-password
+     ✓ partner-change-password: /api/partners/auth/change-password
+     ✓ partner-refresh: /api/partners/auth/refresh
+     ✓ partner-logout: /api/partners/auth/logout
+     ✓ partner-me: /api/partners/auth/me
+  
+
+
+  ⬢ Update Todos
+      ☑ Update auth views to use CustomViewRouter pattern
+      ☑ Update auth URLs to use router.urls
+      ☑ Update apps.py for consistency
+      ☑ Update __init__.py files
+      ☑ Verify everything works
+
+
+─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
+All verifications passed. Let me show the final folder structure:
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
   ⬢ Called powershell: 
-      • command: "python manage.py makemigrations partners --dry-run"
+      • command: "Get-ChildItem -Path api/partners/auth -Recurse -Name | Where-Object { $_ -notlike \"*__pycache__*\"...
 
-                                                                                                                        
-   2026-01-24 20:38:57 INFO api.config.settings Serving static files locally                                     
-   2026-01-24 20:38:57 INFO api.config.settings Serving media files locally
-   2026-01-24 20:38:58 INFO api.config.settings Sentry is not initialized
-   2026-01-24 20:38:58 INFO api.config.settings Using Redis for cache
-   2026-01-24 20:38:58 INFO api.config.settings Redis cache configured - connection will be tested on first       
-   use
-   2026-01-24 20:38:59 INFO axes.apps AXES: BEGIN version 8.1.0, blocking by ip_address
-   2026-01-24 20:39:00 INFO api.config.storage Serving static files locally
-   2026-01-24 20:39:00 INFO api.config.storage Serving media files locally
-   2026-01-24 20:39:00 WARNING api.web.urls S3 is disabled, serving media files locally. Consider using S3.    
-   System check identified some issues:
-   (35 lines truncated)
-       + Create index station_dis_distrib_de1749_idx on field(s) distribution_type of model stationdistribution       
-       + Create index station_dis_is_acti_14c933_idx on field(s) is_active of model stationdistribution
-       + Create constraint valid_distribution_type on model stationdistribution
-       + Create index station_rev_distrib_d4f5fc_idx on field(s) distribution of model stationrevenueshare
-       + Create index station_rev_revenue_da6b76_idx on field(s) revenue_model of model stationrevenueshare
-       + Create constraint valid_revenue_model on model stationrevenueshare
-       + Create constraint percentage_model_must_have_percent on model stationrevenueshare
-       + Create constraint fixed_model_must_have_amount on model stationrevenueshare
-       + Create constraint valid_partner_percent on model stationrevenueshare
-       + Create constraint valid_fixed_amount on model stationrevenueshare
-  
-
-
-─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-The migrations are generated correctly. Now let's also create the migration for the User model's is_partner field:
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  ⬢ Called powershell: 
-      • command: "python manage.py makemigrations users --dry-run"
-
-                                                                                                                        
-   2026-01-24 20:39:17 INFO api.config.settings Serving static files locally                                     
-   2026-01-24 20:39:17 INFO api.config.settings Serving media files locally                                      
-   2026-01-24 20:39:19 INFO api.config.settings Sentry is not initialized                                        
-   2026-01-24 20:39:19 INFO api.config.settings Using Redis for cache                                            
-   2026-01-24 20:39:19 INFO api.config.settings Redis cache configured - connection will be tested on first         
-   2026-01-24 20:39:19 INFO api.config.settings Redis cache configured - connection will be tested on first       
-   use
-   2026-01-24 20:39:20 INFO axes.apps AXES: BEGIN version 8.1.0, blocking by ip_address
-   2026-01-24 20:39:20 INFO api.config.storage Serving static files locally
-   2026-01-24 20:39:20 INFO api.config.storage Serving media files locally
-   2026-01-24 20:39:21 WARNING api.web.urls S3 is disabled, serving media files locally. Consider using S3.    
-   System check identified some issues:
-   (2 lines truncated)
-   ?: (urls.W005) URL namespace 'admin' isn't unique. You may not be able to reverse all URLs in this namespace       
-   ?: settings.ACCOUNT_AUTHENTICATION_METHOD is deprecated, use: settings.ACCOUNT_LOGIN_METHODS = {'email'}
-   ?: settings.ACCOUNT_EMAIL_REQUIRED is deprecated, use: settings.ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*',   
-   ...
-   ?: settings.ACCOUNT_USERNAME_REQUIRED is deprecated, use: settings.ACCOUNT_SIGNUP_FIELDS = ['email*',
-   'password1*...
-   C:\Users\revDev\AppData\Roaming\Python\Python314\site-packages\django\core\management\commands\makemigrations.py:. 
-   ..
-  
-     warnings.warn(
-   Migrations for 'users':
-     api\user\auth\migrations\0010_user_is_partner.py
-       + Add field is_partner to user
-  
-
-
+        
+   repositories      
+   serializers      
+   services      
+   views      
+   apps.py      
+   permissions.py      
+   urls.py      
+   __init__.py      
+   repositories\__init__.py      
+   serializers\login_serializers.py      
+   (3 lines truncated)      
+   serializers\__init__.py      
+   services\auth_service.py      
+   services\password_service.py      
+   services\token_service.py      
+   services\__init__.py      
+   views\login_view.py      
+   views\password_views.py      
+   views\profile_view.py      
+   views\token_views.py      
+   views\__init__.py      
+        
 
 
 ─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-Both migrations are ready. Let me now create the actual migration files (not just dry-run):
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  ⬢ Calling powershell: 4 seconds
-      • command: "python manage.py makemigrations partners users"
-
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
-Rovo Dev is preparing tool calls...                                                                ctrl+c to interrupt
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
-
-─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-Both migrations are ready. Let me now create the actual migration files (not just dry-run):
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  ⬢ Calling powershell: 4 seconds
-      • command: "python manage.py makemigrations partners users"
-
-
-─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-Both migrations are ready. Let me now create the actual migration files (not just dry-run):
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  ⬡ Calling powershell: 5 seconds
-
-─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-
-
-─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-Both migrations are ready. Let me now create the actual migration files (not just dry-run):
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  ⬢ Called powershell:
-      • command: "python manage.py makemigrations partners users"
-
-  
-   2026-01-24 20:39:38 INFO api.config.settings Serving static files locally
-   2026-01-24 20:39:38 INFO api.config.settings Serving media files locally
-   2026-01-24 20:39:39 INFO api.config.settings Sentry is not initialized
-   2026-01-24 20:39:39 INFO api.config.settings Using Redis for cache
-   2026-01-24 20:39:39 INFO api.config.settings Redis cache configured - connection will be tested on first       
-   use
-   2026-01-24 20:39:41 INFO axes.apps AXES: BEGIN version 8.1.0, blocking by ip_address
-   2026-01-24 20:39:41 INFO api.config.storage Serving static files locally
-   2026-01-24 20:39:41 INFO api.config.storage Serving media files locally
-   2026-01-24 20:39:41 WARNING api.web.urls S3 is disabled, serving media files locally. Consider using S3.    
-   System check identified some issues:
-   (35 lines truncated)
-       + Create index station_dis_distrib_de1749_idx on field(s) distribution_type of model stationdistribution       
-       + Create index station_dis_is_acti_14c933_idx on field(s) is_active of model stationdistribution
-       + Create constraint valid_distribution_type on model stationdistribution
-       + Create index station_rev_distrib_d4f5fc_idx on field(s) distribution of model stationrevenueshare
-       + Create index station_rev_revenue_da6b76_idx on field(s) revenue_model of model stationrevenueshare
-       + Create constraint valid_revenue_model on model stationrevenueshare
-       + Create constraint percentage_model_must_have_percent on model stationrevenueshare
-       + Create constraint fixed_model_must_have_amount on model stationrevenueshare
-       + Create constraint valid_partner_percent on model stationrevenueshare
-       + Create constraint valid_fixed_amount on model stationrevenueshare
-  
-
-
-─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-Migrations created successfully. Let me verify the folder structure and show a summary:
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  ⬢ Called expand_folder:
-      • folder_path: "api/partners"
-
-  
-   api/:
-  
-   api/partners/:
-  
-   api/partners/auth/:
-   __init__.py
-  
-   api/partners/common/:
-   __init__.py
-   apps.py
-   (9 lines truncated)
-   payout_request.py
-   revenue_distribution.py
-   station_distribution.py
-   station_revenue_share.py
-  
-   api/partners/franchise/:
-   __init__.py
-  
-   api/partners/vendor/:
-   __init__.py
-  
-
-
-─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-Let me create the migrations __init__.py file that was auto-generated:
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  ⬢ Called powershell:
-      • command: "Get-Content api/partners/common/migrations/__init__.py"
-
-─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-Good, the migrations folder and init file exist. Let me provide a final summary of what was created:
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  ⬢ Called powershell:
-      • command: "Write-Host \"=== MODELS CREATED ===\" -ForegroundColor Green; Get-ChildItem -Path api/partners/comm...
-
-  
-   === MODELS CREATED ===
-   partner.py
-   partner_iot_history.py
-   payout_request.py
-   revenue_distribution.py
-   station_distribution.py
-   station_revenue_share.py
-   __init__.py
-  
-   === MIGRATIONS CREATED ===
-   0001_initial.py
-   __init__.py
-   0010_user_is_partner.py
-  
-
-
-─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-All models created successfully. Here's the complete summary:
-
-
-                                          ✅ Models Implementation Complete
-
-                                                    Created Files
-
-Models (api/partners/common/models/):
-
-
-  File                       Model                 Purpose                                       
- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  partner.py                 Partner               Core entity - Franchise/Vendor with hierarchy
-  station_distribution.py    StationDistribution   Station → Partner assignment
-  station_revenue_share.py   StationRevenueShare   Revenue model (% or Fixed) per vendor
-  revenue_distribution.py    RevenueDistribution   Per-transaction revenue calculation
-  payout_request.py          PayoutRequest         Payout workflow
-  partner_iot_history.py     PartnerIotHistory     IoT action audit log
-  __init__.py                -                     Exports all models
-
-
-Configuration:
-
- • api/partners/common/apps.py - Django app config
- • api/partners/common/__init__.py - Updated
- • api/config/application.py - Added api.partners.common.apps.PartnersCommonConfig to INSTALLED_APPS
-
-Migrations:
-
- • api/partners/common/migrations/0001_initial.py - All 6 partner tables
- • api/user/auth/migrations/0010_user_is_partner.py - Added is_partner field to User model
-
-User Model Updates (api/user/auth/models/user.py):
-
- • Added is_partner field
- • Updated set_password(), check_password(), set_unusable_password(), has_usable_password() to include is_partner
-   check
-
-                                                Key Features in Models
-
- 1 Partner - All constraints for partner_type/vendor_type, hierarchy validation, auto-code generation
- 2 StationDistribution - Helper methods get_station_operator(), get_station_franchise()
- 3 StationRevenueShare - All constraints for PERCENTAGE/FIXED model validation
- 4 RevenueDistribution - Full calculate_shares() method implementing all 5 scenarios, distribute_to_balances() method
- 5 PayoutRequest - Auto payout_type determination, status transition methods (approve(), process(), complete(),
-   reject())
- 6 PartnerIotHistory - check_vendor_free_ejection_available(), can_partner_perform_action() class methods
+The Partner Auth app is now fully consistent with the User Auth app pattern. Here's a summary:
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+                                  ✅ Partner Auth App - Consistency Update Complete
+
+                                       Structure (Now matches api/user/auth/):
+
+```
+api/partners/auth/
+├── __init__.py                    # from __future__ import annotations
+├── apps.py                        # PartnersAuthConfig (label="partners_auth")
+├── permissions.py                 # 10 permission classes
+├── urls.py                        # Uses router.urls pattern
+│
+├── repositories/
+│   └── __init__.py                # Empty (uses common.repositories)
+│
+├── serializers/
+│   ├── __init__.py                # Exports via from .* import *
+│   ├── login_serializers.py       # __all__ exports
+│   ├── password_serializers.py    # __all__ exports
+│   ├── token_serializers.py       # __all__ exports
+│   └── response_serializers.py    # __all__ exports
+│
+├── services/
+│   ├── __init__.py                # Explicit __all__ exports
+│   ├── auth_service.py            # Main orchestrator
+│   ├── password_service.py        # Password operations
+│   └── token_service.py           # JWT/Redis token operations
+│
+└── views/
+    ├── __init__.py                # Merges routers like user/auth
+    ├── login_view.py              # login_router + @decorator pattern
+    ├── password_views.py          # password_router
+    ├── token_views.py             # token_router
+    └── profile_view.py            # profile_router
+```
+
+                                               Key Consistency Updates:
+
+
+  Pattern              Before              After                                    
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  URL Registration     path() in urls.py   CustomViewRouter with @router.register()
+  Views                APIView class       GenericAPIView + BaseAPIView mixin
+  Response Pattern     Direct Response()   handle_service_operation()
+  Imports              Missing             from __future__ import annotations
+  Serializer Exports   Explicit __all__    from .* import * in __init__
+  Rate Limiting        None                @rate_limit() decorator
+  Logging              None                @log_api_call() decorator
+
+
+                                          Partner Auth Endpoints (8 total):
+
+
+  Method   URL Path                             Name                    
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  POST     /api/partners/auth/login             partner-login
+  POST     /api/partners/auth/set-password      partner-set-password
+  POST     /api/partners/auth/forgot-password   partner-forgot-password
+  POST     /api/partners/auth/reset-password    partner-reset-password
+  POST     /api/partners/auth/forgot-password   partner-forgot-password
+  POST     /api/partners/auth/reset-password    partner-reset-password
+  PUT      /api/partners/auth/change-password   partner-change-password
+  POST     /api/partners/auth/refresh           partner-refresh
+  POST     /api/partners/auth/logout            partner-logout
+  POST     /api/partners/auth/logout            partner-logout
+  GET      /api/partners/auth/me                partner-me
+
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+────
 What would you like to do next?
 
+
  1 Apply migrations - Run python manage.py migrate to create tables
- 2 Create admin interface - Register models in Django admin
- 3 Create services - Implement business logic services
- 4 Create API serializers - For the endpoints
+ 2 Create Franchise dashboard endpoints - /api/partner/franchise/ views, serializers, services
+ 3 Create Vendor dashboard endpoints - /api/partner/vendor/ views, serializers, services
+ 4 Add notification templates - Create partner invitation/reset email templates
  5 Something else?
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-Session context: ▮▮▮▮▮▮▮▮▮▮ 196.8K/200K| Tip: use the /prune command to reduce context size
+Session context: ▮▮▮▮▮▮▮▮▮▮ 130.7K/200K| Tip: use the /prune command to reduce context size
 
-                                                                                                                                   
-> if models contains repositary code then move it to repository and be accuate and 100% accuate and lets make repository inside    
-common, vendor, franchaise app respectively and make insie auth permission.py be accuate and 100% accuate towars out plan no       
-assumions and cleear speration so we can implement ecah layer one by one                                                           
 
-─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-You're right. Let me analyze the models and separate the repository logic properly. Let me first review what's in the
-models that should be moved to repositories:
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+> Now configure spectulay.py so i can able to see swagger ui docs be accuare see exting configration flow and do 
+it without overengenrroring and my docker is up and running we will test ()
+
+─── Response ─────────────────────────────────────────────────────────────────────────────────────────────────────
+Let me check the existing spectacular configuration:
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
   ⬢ Called open_files: 
-      • file_paths: "['api/partners/common/models/partner.py', 'api/partners/common/models/station_distribution.py', ...
-
-  api/partners/common/models/partner.py:
-
-                                                                                                                        
-    from django.db import models                                                                                        
-   ...                                                                                                                  
-                                                                                                                        
-
-  api/partners/common/models/station_distribution.py:
-
-                                                                                                                        
-    from django.db import models                                                                                        
-    from api.common.models import BaseModel                                                                             
-                                                                                                                        
-                                                                                                                        
-    class StationDistribution(BaseModel):                                                                               
-        """                                                                                                             
-        StationDistribution - Links stations to partners.                                                               
-                                                                                                                        
-        Distribution Types:                                                                                             
-   (133 lines truncated)                                                                                                
-            """                                                                                                         
-            franchise_dist = cls.objects.filter(                                                                        
-                station=station,
-                is_active=True,
-                distribution_type=cls.DistributionType.CHARGEGHAR_TO_FRANCHISE
-            ).select_related('partner').first()
-  
-  
-            return franchise_dist.partner if franchise_dist else None
-            return franchise_dist.partner if franchise_dist else None
-  
-
-  
-
-  api/partners/common/models/revenue_distribution.py:
-
-  api/partners/common/models/revenue_distribution.py:
-  api/partners/common/models/revenue_distribution.py:
-
-  
-    from django.db import models
-  
-    from django.db import models
-   ...
-    from django.db import models
-   ...
-   ...
-  
-
-  api/partners/common/models/payout_request.py:
-
-  
-    from django.db import models
-   ...
-  
-
-  api/partners/common/models/partner_iot_history.py:
-
-  
-    from django.db import models
-   ...
-  
-
-
-─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-Let me see the full content of the models to identify all repository code:
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  ⬢ Called expand_code_chunks: 
-      • file_path: "api/partners/common/models/partner.py"
-      • line_ranges: "[[0, -1]]"
-  ⬢ Called expand_code_chunks: 
-      • file_path: "api/partners/common/models/revenue_distribution.py"
-      • line_ranges: "[[0, -1]]"
-  ⬢ Called expand_code_chunks: 
-      • file_path: "api/partners/common/models/payout_request.py"
-      • line_ranges: "[[0, -1]]"
-  ⬢ Called expand_code_chunks: 
-      • file_path: "api/partners/common/models/partner_iot_history.py"
-      • line_ranges: "[[0, -1]]"
-
-  api/partners/common/models/partner.py:
-
-                                                                                                                        
-    from django.db import models
-    from api.common.models import BaseModel
-  
-  
-    class Partner(BaseModel):
-        """
-        Partner - Represents Franchise or Vendor in the ChargeGhar system.
-  
-        Hierarchy:
-   (217 lines truncated)
-                    last_num = int(last_partner.code.split('-')[1])
-                    new_num = last_num + 1
-                except (IndexError, ValueError):
-                    new_num = 1
-            else:
-                new_num = 1
-  
-            return f"{prefix}-{new_num:03d}"
-  
-
-
-  api/partners/common/models/revenue_distribution.py:
-
-  
-    from django.db import models
-    from api.common.models import BaseModel
-  
-  
-    class RevenueDistribution(BaseModel):
-        """
-        RevenueDistribution - Per-transaction revenue calculation and allocation.
-  
-        Created when a rental transaction is completed. Calculates and stores
-   (287 lines truncated)
-                    self.vendor.save(update_fields=['balance', 'total_earnings', 'updated_at'])
-  
-                # Mark as distributed
-                self.is_distributed = True
-                self.distributed_at = timezone.now()
-                self.save(update_fields=['is_distributed', 'distributed_at', 'updated_at'])
-  
-            return True
-  
-
-
-  api/partners/common/models/payout_request.py:
-
-  
-    from django.db import models
-    from api.common.models import BaseModel
-    import uuid
-  
-  
-    class PayoutRequest(BaseModel):
-        """
-        PayoutRequest - Payout workflow for partners.
-  
-   (230 lines truncated)
-                self.save(update_fields=['status', 'processed_by', 'processed_at', 'updated_at'])
-  
-        def reject(self, rejected_by, reason):
-            """Reject the payout request"""
-            self.status = self.Status.REJECTED
-            self.processed_by = rejected_by
-            self.rejection_reason = reason
-            self.save(update_fields=['status', 'processed_by', 'rejection_reason', 'updated_at'])
-  
-
-
-  api/partners/common/models/partner_iot_history.py:
-
-  
-    from django.db import models
-    from api.common.models import BaseModel
-  
-  
-    class PartnerIotHistory(BaseModel):
-        """
-        PartnerIotHistory - Audit log for IoT actions performed by partners.
-  
-        Action Permissions:
-   (195 lines truncated)
-  
-            # Vendor cannot perform EJECT through IoT endpoints
-            # (must use rental flow for free ejection)
-            if action_type == cls.ActionType.EJECT:
-                return False
-  
-            # Vendor can perform other actions
-            return True
-  
-
-─── Context limit reached ──────────────────────────────────────────────────────────────────────────────────────────────
-
-Retrying using pruned message history
-
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
-
-─── Response ─────────────────────────────────────────────────────────────────────────────────────────────────────────── 
-Now I have a clear picture of what needs to be moved to repositories. Let me create a todo list and start the
-refactoring:
-
-Repository Code to Extract:
-
- 1 Partner Model:
-    • _generate_code() → Repository
- 2 StationDistribution Model:
-    • get_station_operator() → Repository
-    • get_station_franchise() → Repository
- 3 RevenueDistribution Model:
-    • calculate_shares() → Service (business logic)
-    • distribute_to_balances() → Service (business logic)
- 4 PayoutRequest Model:
-    • _generate_reference_id() → Repository
-    • _determine_payout_type() → Keep in model (simple property derivation)
-    • approve(), process(), complete(), reject() → Service
- 5 PartnerIotHistory Model:
-    • check_vendor_free_ejection_available() → Repository
-    • get_vendor_free_ejection_count_today() → Repository
-    • can_partner_perform_action() → Permission class
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-
-  ⬢ Update Todos
-      ◐ Creating repositories folder structure
-      ☐ Create PartnerRepository
-      ☐ Create StationDistributionRepository
-      ☐ Create RevenueDistributionRepository
-      ☐ Create PayoutRequestRepository
-      ☐ Create PartnerIotHistoryRepository
-      ☐ Clean models - remove repository code
-      ☐ Create permissions.py in auth folder
-
-─── Context limit reached ──────────────────────────────────────────────────────────────────────────────────────────────
-
-Retrying using pruned message history
-
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  ⬢ Called create_file:
-      • file_path: "api/partners/common/repositories/__init__.py"
-      • initial_content: "from .partner_repository import PartnerRepository\nfrom .station_distribution_repository im...
-
-  
-   Successfully created api/partners/common/repositories/__init__.py.
-  
-
-─── Context limit reached ──────────────────────────────────────────────────────────────────────────────────────────────
-
-Retrying using pruned message history
-
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
-  ⬢ Called create_file: 
-      • file_path: "api/partners/common/repositories/partner_repository.py"
-      • initial_content: "from typing import Optional, List\nfrom django.db.models import QuerySet\n\nfrom api.partne...
-
-  ⬢ Update Todos
-      ☑ Create repositories folder structure
-      ◐ Creating PartnerRepository
-      ☐ Create StationDistributionRepository
-      ☐ Create RevenueDistributionRepository
-      ☐ Create PayoutRequestRepository
-      ☐ Create PartnerIotHistoryRepository
-      ☐ Clean models - remove repository code
-      ☐ Create permissions.py in auth folder
-
-
-  
-   Successfully created api/partners/common/repositories/partner_repository.py.
-  
-
-─── Context limit reached ──────────────────────────────────────────────────────────────────────────────────────────────
-
-Retrying using pruned message history
-
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  ⬢ Called create_file:
-      • file_path: "api/partners/common/repositories/station_distribution_repository.py"
-      • initial_content: "from typing import Optional, List\nfrom django.db.models import QuerySet\nfrom django.utils...
-
-  ⬢ Update Todos
-      ☑ Create repositories folder structure
-      ☑ Create PartnerRepository
-      ◐ Creating StationDistributionRepository
-      ☐ Create RevenueDistributionRepository
-      ☐ Create PayoutRequestRepository
-      ☐ Create PartnerIotHistoryRepository
-      ☐ Clean models - remove repository code
-      ☐ Create permissions.py in auth folder
-
-
-  
-   Successfully created api/partners/common/repositories/station_distribution_repository.py.
-  
-
-─── Context limit reached ──────────────────────────────────────────────────────────────────────────────────────────────
-
-Retrying using pruned message history
-
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  ⬢ Called create_file:
-      • file_path: "api/partners/common/repositories/station_revenue_share_repository.py"
-      • initial_content: "from typing import Optional\nfrom django.db.models import QuerySet\n\nfrom api.partners.com...
-  ⬢ Called create_file:
-      • file_path: "api/partners/common/repositories/revenue_distribution_repository.py"
-      • initial_content: "from typing import Optional, List\nfrom decimal import Decimal\nfrom datetime import date, ...
-
-  ⬢ Update Todos
-      ☑ Create repositories folder structure
-      ☑ Create PartnerRepository
-      ☑ Create StationDistributionRepository
-      ◐ Creating RevenueDistributionRepository
-      ☐ Create PayoutRequestRepository
-      ☐ Create PartnerIotHistoryRepository
-      ☐ Clean models - remove repository code
-      ☐ Create permissions.py in auth folder
-
-
-  
-   Successfully created api/partners/common/repositories/station_revenue_share_repository.py.
-  
-
-
-  
-   Successfully created api/partners/common/repositories/revenue_distribution_repository.py.
-  
-
-─── Context limit reached ──────────────────────────────────────────────────────────────────────────────────────────────
-
-Retrying using pruned message history
-
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
-  ⬢ Called create_file: 
-      • file_path: "api/partners/common/repositories/payout_request_repository.py"
-      • initial_content: "from typing import Optional\nfrom decimal import Decimal\nfrom datetime import date\nfrom d...
-
-  ⬢ Update Todos
-      ☑ Create repositories folder structure
-      ☑ Create PartnerRepository
-      ☑ Create StationDistributionRepository
-      ☑ Create RevenueDistributionRepository
-      ◐ Creating PayoutRequestRepository
-      ☐ Create PartnerIotHistoryRepository
-      ☐ Clean models - remove repository code
-      ☐ Create permissions.py in auth folder
-
-
-  
-   Successfully created api/partners/common/repositories/payout_request_repository.py.
-  
-
-─── Context limit reached ──────────────────────────────────────────────────────────────────────────────────────────────
-
-Retrying using pruned message history
-
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
-  ⬢ Called create_file: 
-      • file_path: "api/partners/common/repositories/partner_iot_history_repository.py"
-      • initial_content: "from typing import Optional\nfrom datetime import date\nfrom django.db.models import QueryS...
-
-  ⬢ Update Todos
-      ☑ Create repositories folder structure
-      ☑ Create PartnerRepository
-      ☑ Create StationDistributionRepository
-      ☑ Create RevenueDistributionRepository
-      ☑ Create PayoutRequestRepository
-      ◐ Creating PartnerIotHistoryRepository
-      ☐ Clean models - remove repository code
-      ☐ Create permissions.py in auth folder
-
-
-  
-   Successfully created api/partners/common/repositories/partner_iot_history_repository.py.
-  
-
-─── Context limit reached ──────────────────────────────────────────────────────────────────────────────────────────────
-
-Retrying using pruned message history
-
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-
-─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-Now let me clean up the models by removing the repository code:
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+      • file_paths: "['api/config/spectacular.py']"
+
+  api/config/spectacular.py:
+
+                                                                                                                  
+    """                                                                                                           
+    DRF Spectacular OpenAPI Configuration                                                                         
+    ======================================                                                                        
+                                                                                                                  
+    This configuration lets DRF Spectacular auto-discover all endpoints from URL routing.                         
+    We use @extend_schema decorators in views to provide metadata (operation_id, tags, descriptions).             
+                                                                                                                  
+    No manual endpoint filtering or collision fixes needed - the framework handles it automatically.              
+    """                                                                                                           
+   (47 lines truncated)                                                                                           
+        ],                                                                                                        
+                                                                                                                  
+        # UI Configuration                                                                                        
+        "SWAGGER_UI_SETTINGS": {                                                                                  
+            "deepLinking": True,                                                                                  
+            "persistAuthorization": True,                                                                         
+            "displayOperationId": True,                                                                           
+        },                                                                                                        
+    }                                                                                                             
+                                                                                                                  
+
+
+─── Response ─────────────────────────────────────────────────────────────────────────────────────────────────────
+Now let me add the Partner Auth tag to the existing configuration:
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
   ⬢ Called find_and_replace_code:
-      • file_path: "api/partners/common/models/partner.py"
-      • find: "    def save(self, *args, **kwargs):\n        # Auto-generate code if not set\n        if not self.cod...
-      • replace: "    def save(self, *args, **kwargs):\n        # Code generation is handled by PartnerRepository.cre...
-
-  ⬢ Update Todos
-      ☑ Create repositories folder structure
-      ☑ Create PartnerRepository
-      ☑ Create StationDistributionRepository
-      ☑ Create RevenueDistributionRepository
-      ☑ Create PayoutRequestRepository
-      ☑ Create PartnerIotHistoryRepository
-      ◐ Cleaning models
-      ☐ Create permissions.py in auth folder
+      • file_path: "api/config/spectacular.py"
+      • find: "        {\"name\": \"Admin\", \"description\": \"Administrative operations and analytics\"},\n     
+...
+      • replace: "        {\"name\": \"Admin\", \"description\": \"Administrative operations and analytics\"},\n  
+...
 
 
+  api/config/spectacular.py: 
 
-  api/partners/common/models/partner.py: 
-
-  
-   --- api/partners/common/models/partner.py
-   +++ api/partners/common/models/partner.py
-   @@ -210,25 +210,8 @@
-            return "ChargeGhar"
-  
-        def save(self, *args, **kwargs):
-   -        # Auto-generate code if not set
-   +        # Code generation is handled by PartnerRepository.create()
-   +        # This ensures code is set before save
-            if not self.code:
-   (11 lines truncated)
-   -        if last_partner:
-   -            try:
-   -                last_num = int(last_partner.code.split('-')[1])
-   -                new_num = last_num + 1
-   -            except (IndexError, ValueError):
-   -                new_num = 1
-   -        else:
-   -            new_num = 1
-   -
-   -        return f"{prefix}-{new_num:03d}"
-  
-
-─── Context limit reached ──────────────────────────────────────────────────────────────────────────────────────────────
-
-Retrying using pruned message history
-
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-
-─── Response ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-Now let me clean up the StationDistribution model:
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  ⬢ Called find_and_replace_code:
-      • file_path: "api/partners/common/models/station_distribution.py"
-      • find: "    @property\n    def is_ownership(self):\n        \"\"\"Check if this is ownership assignment (Franc...
-      • replace: "    @property\n    def is_ownership(self):\n        \"\"\"Check if this is ownership assignment (Fr...
+                                                                                                                  
+   --- api/config/spectacular.py                                                                                  
+   +++ api/config/spectacular.py                                                                                  
+   @@ -54,6 +54,7 @@                                                                                              
+            {"name": "Advertisements", "description": "User advertisement request submission and management"},    
+            {"name": "Admin", "description": "Administrative operations and analytics"},                          
+            {"name": "Admin - Advertisements", "description": "Admin advertisement review, approval, and          
+   management"},                                                                                                  
+   +        {"name": "Partner Auth", "description": "Partner authentication (Franchise & Revenue Vendor           
+   dashboard lo...                                                                                                
+        ],                                                                                                        
+                                                                                                                  
+        # UI Configuration                                                                                        
+                                                                                                                  
 
 
-  api/partners/common/models/station_distribution.py: 
+─── Response ─────────────────────────────────────────────────────────────────────────────────────────────────────
+Now let me verify the swagger is working by checking the URL configuration:
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⬢ Called powershell:
+      • command: "$env:DJANGO_SETTINGS_MODULE=\"api.config.settings\"; python -c \"\nimport django;
+django.setup()\nf...
 
-  
-   --- api/partners/common/models/station_distribution.py
-   +++ api/partners/common/models/station_distribution.py
-   @@ -98,53 +98,6 @@
-                self.DistributionType.FRANCHISE_TO_VENDOR
-            ]
-  
-   -    @classmethod
-   -    def get_station_operator(cls, station):
-   -        """
-   -        Get the current operator of a station.
-   (39 lines truncated)
-   -        franchise_dist = cls.objects.filter(
-   -            station=station,
-   -            is_active=True,
-   -            distribution_type=cls.DistributionType.CHARGEGHAR_TO_FRANCHISE
-   -        ).select_related('partner').first()
-   -
-   -        return franchise_dist.partner if franchise_dist else None
-   +    # NOTE: Query methods moved to StationDistributionRepository:
-   +    # - get_station_operator() -> StationDistributionRepository.get_station_operator()
-   +    # - get_station_franchise() -> StationDistributionRepository.get_station_franchise()
-  
-
-─── Context limit reached ──────────────────────────────────────────────────────────────────────────────────────────────
-
-Retrying using pruned message history
-
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
-
-─── Response ─────────────────────────────────────────────────────────────────────────────────────────────────────────── 
-Now let me clean up the RevenueDistribution model by removing the business logic methods:
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
-  ⬢ Called find_and_replace_code: 
-      • file_path: "api/partners/common/models/revenue_distribution.py"
-      • find: "    @property\n    def has_franchise(self):\n        \"\"\"Check if this distribution involves a franc...
-      • replace: "    @property\n    def has_franchise(self):\n        \"\"\"Check if this distribution involves a fr...
+                                                                                                                  
+   2026-01-24 21:49:57 INFO api.config.settings Serving static files locally
+   2026-01-24 21:49:57 INFO api.config.settings Serving media files locally
+   2026-01-24 21:49:58 INFO api.config.settings Sentry is not initialized
+   2026-01-24 21:49:58 INFO api.config.settings Using Redis for cache
+   2026-01-24 21:49:58 INFO api.config.settings Redis cache configured - connection will be tested on first       
+   use                                                                                                            
+   2026-01-24 21:49:59 INFO axes.apps AXES: BEGIN version 8.1.0, blocking by ip_address
+   2026-01-24 21:49:59 INFO api.config.storage Serving static files locally
+   2026-01-24 21:49:59 INFO api.config.storage Serving media files locally
+   2026-01-24 21:50:00 WARNING api.web.urls S3 is disabled, serving media files locally. Consider using           
+   S3.                                                                                                            
+   Swagger URLs:                                                                                                  
+     ✗ schema-swagger-ui: Reverse for 'schema-swagger-ui' not found. 'schema-swagger-ui' is not a valid view      
+   functio...                                                                                                     
+     ✗ schema-redoc: Reverse for 'schema-redoc' not found. 'schema-redoc' is not a valid view function or         
+   pattern name.                                                                                                  
+     ✓ schema: /api/v1/schema/                                                                                    
+                                                                                                                  
+   Partner Auth Endpoints:                                                                                        
+     ✓ partner-login: /api/partners/auth/login                                                                    
+     ✓ partner-me: /api/partners/auth/me                                                                          
+     ✓ partner-logout: /api/partners/auth/logout                                                                  
+                                                                                                                  
 
 
-  api/partners/common/models/revenue_distribution.py: 
+─── Response ─────────────────────────────────────────────────────────────────────────────────────────────────────
+The partner auth endpoints are working. Let me check the web/urls.py to see how swagger UI is configured:
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⬢ Called open_files:
+      • file_paths: "['api/web/urls.py']"
 
-                                                                                                                        
-   --- api/partners/common/models/revenue_distribution.py                                                               
-   +++ api/partners/common/models/revenue_distribution.py                                                               
-   @@ -149,156 +149,6 @@
-            """Check if this distribution involves a vendor"""
-            return self.vendor is not None
-  
-   -    def calculate_shares(self):
-   -        """
-   -        Calculate revenue shares based on station assignment.
-   -
-   (142 lines truncated)
-   -
-   -            # Mark as distributed
-   -            self.is_distributed = True
-   -            self.distributed_at = timezone.now()
-   -            self.save(update_fields=['is_distributed', 'distributed_at', 'updated_at'])
-   -
-   -        return True
-   +    # NOTE: Business logic methods moved to RevenueDistributionService:
-   +    # - calculate_shares() -> RevenueDistributionService.calculate_shares()
-   +    # - distribute_to_balances() -> RevenueDistributionService.distribute_to_balances()
-  
+  api/web/urls.py:
 
-─── Context limit reached ──────────────────────────────────────────────────────────────────────────────────────────────
-
-Retrying using pruned message history
-
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
-
-─── Response ─────────────────────────────────────────────────────────────────────────────────────────────────────────── 
-Now let me clean up the PayoutRequest model:
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
-  ⬢ Called find_and_replace_code: 
-      • file_path: "api/partners/common/models/payout_request.py"
-      • find: "    def save(self, *args, **kwargs):\n        # Auto-generate reference_id if not set\n        if not ...
-      • replace: "    def save(self, *args, **kwargs):\n        # reference_id and payout_type must be set by PayoutR...
+                                                                                                                  
+    from __future__ import annotations                                                                            
+                                                                                                                  
+    import logging                                                                                                
+                                                                                                                  
+    from django.conf import settings                                                                              
+    from django.conf.urls.static import static                                                                    
+    from django.contrib import admin                                                                              
+    from django.http import JsonResponse                                                                          
+    from django.shortcuts import redirect                                                                         
+   (99 lines truncated)                                                                                           
+    def handler403(request, exception=None):                                                                      
+        return JsonResponse({'error': 'Permission denied'}, status=403)                                           
+                                                                                                                  
+    def handler404(request, exception=None):                                                                      
+        return JsonResponse({'error': 'Not found'}, status=404)                                                   
+                                                                                                                  
+    def handler500(request, exception=None):                                                                      
+        return JsonResponse({'error': 'Internal server error'}, status=500)                                       
+                                                                                                                  
 
 
-  api/partners/common/models/payout_request.py: 
+─── Response ─────────────────────────────────────────────────────────────────────────────────────────────────────
+Good! The swagger UI is already configured at /docs/. Let me test it's working correctly with Docker:
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⬢ Called powershell:
+      • command: "curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8000/docs/"
 
-                                                                                                                        
-   --- api/partners/common/models/payout_request.py                                                                     
-   +++ api/partners/common/models/payout_request.py                                                                     
-   @@ -148,37 +148,17 @@
-            return f"{self.reference_id} - {self.partner.business_name} - NPR {self.amount}"
-  
-        def save(self, *args, **kwargs):
-   -        # Auto-generate reference_id if not set
-   +        # reference_id and payout_type must be set by PayoutRequestRepository.create()
-            if not self.reference_id:
-   -            self.reference_id = self._generate_reference_id()
-   (67 lines truncated)
-   -        """Reject the payout request"""
-   -        self.status = self.Status.REJECTED
-   -        self.processed_by = rejected_by
-   -        self.rejection_reason = reason
-   -        self.save(update_fields=['status', 'processed_by', 'rejection_reason', 'updated_at'])
-   +    # NOTE: Status transition methods moved to PayoutService:
-   +    # - approve() -> PayoutService.approve()
-   +    # - process() -> PayoutService.process()
-   +    # - complete() -> PayoutService.complete()
-   +    # - reject() -> PayoutService.reject()
-  
+                                                                                                                  
+   Invoke-WebRequest : Missing an argument for parameter 'SessionVariable'. Specify a parameter of type           
+   'System.String' and try again.                                                                                 
+   At line:1 char:39                                                                                              
+   + $ErrorActionPreference = 'Stop'; curl -s -o /dev/null -w "%{http_code ...                                    
+   +                                       ~~                                                                     
+       + CategoryInfo          : InvalidArgument: (:) [Invoke-WebRequest], ParentContainsErrorRecordException     
+       + FullyQualifiedErrorId : MissingArgument,Microsoft.PowerShell.Commands.InvokeWebRequestCommand            
+                                                                                                                  
+
+  ⬢ Called powershell:
+      • command: "Invoke-WebRequest -Uri \"http://localhost:8000/docs/\" -Method GET -UseBasicParsing |
+Select-Object...
+
+                                                                                                                  
+   Invoke-WebRequest : Unable to connect to the remote server                                                     
+   At line:1 char:34                                                                                              
+   + ... e = 'Stop'; Invoke-WebRequest -Uri "http://localhost:8000/docs/" -Met ...                                
+   +                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                                    
+       + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest)                     
+   [Invoke-WebRequest],                                                                                           
+      WebException                                                                                                
+       + FullyQualifiedErrorId :                                                                                  
+   WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeWebRequestComman                             
+      d                                                                                                           
+                                                                                                                  
 
 
-─── You've reached your Rovo Dev credit limit ──────────────────────────────────────────────────────────────────────────
+─── Response ─────────────────────────────────────────────────────────────────────────────────────────────────────
+Let me check if Docker is running and on which port:
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⬢ Called powershell:
+      • command: "docker ps"
 
-Your Rovo Dev usage resets in 25d 15h 33m. Extra usage is not available on your Standard trial. Upgrade plan
+                                                                                                                  
+   CONTAINER ID   IMAGE                      COMMAND                  CREATED          STATUS          PORTS      
+   ...                                                                                                            
+   8f347e0716d5   powerbank_local-celery     "make run.celery.prod"   12 minutes ago   Up 12 minutes              
+   ...                                                                                                            
+   66a0ff2039f7   powerbank_local-api        "make migrate run.se…"   12 minutes ago   Up 12 minutes              
+   0.0.0.0:8010-...                                                                                               
+   730d0963723f   edoburu/pgbouncer:latest   "/entrypoint.sh /usr…"   12 days ago      Up 18 minutes   5432/tcp   
+   ...                                                                                                            
+   69a3e61bd36c   postgres:16                "docker-entrypoint.s…"   12 days ago      Up 18 minutes   5432/tcp   
+   ...                                                                                                            
+   2289fbaeefe3   rabbitmq:3.13-management   "docker-entrypoint.s…"   12 days ago      Up 18 minutes              
+   0.0.0.0:15672...                                                                                               
+   8a27826250a8   redis:latest               "docker-entrypoint.s…"   12 days ago      Up 18 minutes                 0.0.0.0:6379-...                                                                                                                                                                                                                                                                                                                                   
 
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-                                                                                                                                   
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────           
-> █                                                                                                                                
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────           
-Use ctrl+d
+─── Response ─────────────────────────────────────────────────────────────────────────────────────────────────────
+The API is running on port 8010. Let me test the swagger docs:
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⬢ Called powershell:
+      • command: "Invoke-WebRequest -Uri \"http://localhost:8010/docs/\" -Method GET -UseBasicParsing |
+Select-Object...
+
+                                                                                                                  
+                                                                                                                  
+   StatusCode                                                                                                     
+   ----------                                                                                                     
+          200                                                                                                     
+                                                                                                                  
+
