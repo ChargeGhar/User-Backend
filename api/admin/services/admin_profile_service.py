@@ -142,6 +142,25 @@ class AdminProfileService(CRUDService):
                 code="profile_not_found"
             )
         
+        # Get user profile data
+        profile_data = {}
+        try:
+            profile = user.profile
+            profile_data = {
+                "full_name": profile.full_name,
+                "date_of_birth": str(profile.date_of_birth) if profile.date_of_birth else None,
+                "address": profile.address,
+                "avatar_url": profile.avatar_url,
+            }
+        except Exception:
+            # Profile may not exist
+            profile_data = {
+                "full_name": None,
+                "date_of_birth": None,
+                "address": None,
+                "avatar_url": None,
+            }
+        
         return {
             'user_id': str(user.id),
             'email': user.email,
@@ -150,7 +169,9 @@ class AdminProfileService(CRUDService):
             'is_active': admin_profile.is_active,
             'is_super_admin': admin_profile.is_super_admin,
             'created_at': admin_profile.created_at,
-            'permissions': self._get_permissions(admin_profile)
+            'permissions': self._get_permissions(admin_profile),
+            # User profile data
+            'profile': profile_data,
         }
     
     def _get_permissions(self, admin_profile: AdminProfile) -> Dict[str, bool]:

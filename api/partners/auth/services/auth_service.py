@@ -160,6 +160,26 @@ class PartnerAuthService(BaseService):
     
     def _serialize_partner(self, partner: Partner) -> Dict:
         """Serialize partner for API response."""
+        # Get user profile data
+        user = partner.user
+        profile_data = {}
+        try:
+            profile = user.profile
+            profile_data = {
+                "full_name": profile.full_name,
+                "date_of_birth": str(profile.date_of_birth) if profile.date_of_birth else None,
+                "address": profile.address,
+                "avatar_url": profile.avatar_url,
+            }
+        except Exception:
+            # Profile may not exist
+            profile_data = {
+                "full_name": None,
+                "date_of_birth": None,
+                "address": None,
+                "avatar_url": None,
+            }
+        
         return {
             "id": str(partner.id),
             "partner_type": partner.partner_type,
@@ -171,6 +191,8 @@ class PartnerAuthService(BaseService):
             "status": partner.status,
             "balance": str(partner.balance),
             "total_earnings": str(partner.total_earnings),
+            # User profile data
+            "profile": profile_data,
         }
     
     def _send_setup_email(self, partner: Partner, token: str) -> None:

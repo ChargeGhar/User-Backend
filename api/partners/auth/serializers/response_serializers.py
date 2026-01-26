@@ -12,6 +12,14 @@ __all__ = [
 ]
 
 
+class UserProfileDataSerializer(serializers.Serializer):
+    """Nested serializer for user profile data."""
+    full_name = serializers.CharField(allow_null=True, read_only=True)
+    date_of_birth = serializers.CharField(allow_null=True, read_only=True)
+    address = serializers.CharField(allow_null=True, read_only=True)
+    avatar_url = serializers.URLField(allow_null=True, read_only=True)
+
+
 class PartnerProfileSerializer(serializers.Serializer):
     """Response serializer for partner profile."""
     id = serializers.UUIDField(read_only=True)
@@ -32,6 +40,8 @@ class PartnerProfileSerializer(serializers.Serializer):
         decimal_places=2,
         read_only=True
     )
+    # User profile data
+    profile = UserProfileDataSerializer(read_only=True)
 
 
 class AuthResponseSerializer(serializers.Serializer):
