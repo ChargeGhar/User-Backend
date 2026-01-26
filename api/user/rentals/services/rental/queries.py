@@ -58,11 +58,11 @@ class RentalQueryMixin:
         return queryset
     
     def get_active_rental(self, user) -> Optional[Rental]:
-        """Get user's active rental"""
+        """Get user's active rental (including overdue rentals that haven't been returned yet)"""
         try:
             return Rental.objects.filter(
                 user=user,
-                status__in=['PENDING', 'PENDING_POPUP', 'ACTIVE']
+                status__in=['PENDING', 'PENDING_POPUP', 'ACTIVE', 'OVERDUE']
             ).select_related('station', 'package', 'power_bank').first()
         except Exception as e:
             self.handle_service_error(e, "Failed to get active rental")

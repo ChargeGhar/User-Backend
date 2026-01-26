@@ -180,12 +180,13 @@ class RentalStartMixin:
         
         active_rental = Rental.objects.filter(
             user=user,
-            status__in=['PENDING', 'PENDING_POPUP', 'ACTIVE']
+            status__in=['PENDING', 'PENDING_POPUP', 'ACTIVE', 'OVERDUE']
         ).first()
         
         if active_rental:
             raise ServiceException(
-                detail="You already have an active rental",
+                detail="You already have an active rental" if active_rental.status != 'OVERDUE' 
+                       else "You have an overdue rental. Please return it first",
                 code="active_rental_exists"
             )
     
