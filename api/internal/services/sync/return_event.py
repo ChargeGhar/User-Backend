@@ -58,7 +58,11 @@ class ReturnEventMixin:
             
             # Find active rental for this powerbank
             from api.user.rentals.models import Rental
-            active_rental = Rental.objects.filter(power_bank=powerbank, status='ACTIVE').first()
+            # Rental may already be marked OVERDUE by scheduler or real-time checks
+            active_rental = Rental.objects.filter(
+                power_bank=powerbank,
+                status__in=['ACTIVE', 'OVERDUE'],
+            ).first()
             
             if not active_rental:
                 self.log_warning(f"No active rental found for powerbank {pb_serial}")

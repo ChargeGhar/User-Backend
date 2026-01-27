@@ -25,8 +25,11 @@ class RentalReturnMixin:
         try:
             rental = Rental.objects.select_for_update().get(id=rental_id)
             
-            if rental.status != 'ACTIVE':
-                self.log_warning(f"Return already processed for rental {rental.rental_code} (status: {rental.status})")
+            # Returns can come in after the system has already marked the rental OVERDUE
+            if rental.status not in ['ACTIVE', 'OVERDUE']:
+                self.log_warning(
+                    f"Return already processed for rental {rental.rental_code} (status: {rental.status})"
+                )
                 return rental
             
             return_station = Station.objects.get(serial_number=return_station_sn)
