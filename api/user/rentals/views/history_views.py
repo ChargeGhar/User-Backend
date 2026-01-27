@@ -29,7 +29,8 @@ logger = logging.getLogger(__name__)
     responses={200: BaseResponseSerializer}
 )
 class RentalHistoryView(GenericAPIView, BaseAPIView):
-    serializer_class = serializers.RentalListSerializer
+    # Return each history item in the same shape as the active rental response
+    serializer_class = serializers.RentalDetailSerializer
     permission_classes = [IsAuthenticated]
     
     @extend_schema(

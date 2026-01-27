@@ -45,33 +45,21 @@ class RentalPackageListSerializer(serializers.ModelSerializer):
 
 class RentalListSerializer(serializers.ModelSerializer):
     """
-    Optimized serializer for rental history list.
-    Used in: GET /api/rentals/history
+    Deprecated (kept for backward compatibility):
+    History now returns `RentalDetailSerializer` for consistent item format.
     """
     station_name = serializers.CharField(source='station.station_name', read_only=True)
     package_name = serializers.CharField(source='package.name', read_only=True)
-    status_display = serializers.SerializerMethodField()
-    formatted_amount = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = Rental
         fields = [
-            'id', 
-            'rental_code', 
-            'status', 
-            'status_display',
-            'payment_status', 
-            'started_at', 
+            'id',
+            'rental_code',
+            'status',
+            'payment_status',
+            'started_at',
             'ended_at',
-            'station_name', 
-            'package_name', 
-            'formatted_amount'
+            'station_name',
+            'package_name',
         ]
-    
-    @extend_schema_field(serializers.CharField)
-    def get_status_display(self, obj) -> str:
-        return obj.get_status_display()
-    
-    @extend_schema_field(serializers.CharField)
-    def get_formatted_amount(self, obj) -> str:
-        return f"NPR {obj.amount_paid:,.2f}"

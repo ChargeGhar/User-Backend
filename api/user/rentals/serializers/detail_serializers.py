@@ -25,6 +25,9 @@ class RentalDetailSerializer(serializers.ModelSerializer):
     return_station_name = serializers.CharField(source='return_station.station_name', read_only=True)
     package_name = serializers.CharField(source='package.name', read_only=True)
     power_bank_serial = serializers.CharField(source='power_bank.serial_number', read_only=True)
+
+    station_location = serializers.SerializerMethodField()
+    return_station_location = serializers.SerializerMethodField()
     
     formatted_amount_paid = serializers.SerializerMethodField()
     formatted_overdue_amount = serializers.SerializerMethodField()
@@ -55,7 +58,9 @@ class RentalDetailSerializer(serializers.ModelSerializer):
             'formatted_amount_paid', 'formatted_overdue_amount',
             'current_overdue_amount', 'estimated_total_cost', 'minutes_overdue',
             'formatted_current_overdue', 'formatted_estimated_total',
-            'station_name', 'return_station_name', 'package_name', 'power_bank_serial',
+            'station_name', 'station_location',
+            'return_station_name', 'return_station_location',
+            'package_name', 'power_bank_serial',
             'duration_used', 'time_remaining', 'is_overdue',
             'is_returned_on_time', 'timely_return_bonus_awarded',
         ]
@@ -122,6 +127,48 @@ class RentalDetailSerializer(serializers.ModelSerializer):
         if obj.status not in ['ACTIVE', 'OVERDUE']:
             return False
         return timezone.now() > obj.due_at if obj.due_at else False
+
+    @extend_schema_field(
+        {
+            'type': 'object',
+            'properties': {
+                'latitude': {'type': 'number', 'nullable': True},
+                'longitude': {'type': 'number', 'nullable': True},
+                'address': {'type': 'string', 'nullable': True},
+            },
+            'nullable': True,
+        }
+    )
+    def get_station_location(self, obj):
+        station = getattr(obj, 'station', None)
+        if not station:
+            return None
+        return {
+            'latitude': float(station.latitude) if station.latitude is not None else None,
+            'longitude': float(station.longitude) if station.longitude is not None else None,
+            'address': station.address,
+        }
+
+    @extend_schema_field(
+        {
+            'type': 'object',
+            'properties': {
+                'latitude': {'type': 'number', 'nullable': True},
+                'longitude': {'type': 'number', 'nullable': True},
+                'address': {'type': 'string', 'nullable': True},
+            },
+            'nullable': True,
+        }
+    )
+    def get_return_station_location(self, obj):
+        station = getattr(obj, 'return_station', None)
+        if not station:
+            return None
+        return {
+            'latitude': float(station.latitude) if station.latitude is not None else None,
+            'longitude': float(station.longitude) if station.longitude is not None else None,
+            'address': station.address,
+        }
 
 
 class RentalExtensionSerializer(serializers.ModelSerializer):

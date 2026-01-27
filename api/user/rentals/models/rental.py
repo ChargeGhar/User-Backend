@@ -75,15 +75,14 @@ class Rental(BaseModel):
         overdue_duration = hypothetical_end - self.due_at
         overdue_minutes = int(overdue_duration.total_seconds() / 60)
         
-        # Get active config or default
-        config = LateFeeConfiguration.objects.filter(is_active=True).first()
+        # Get active config (cached) or fall back to simple calculation
+        config = LateFeeService.get_active_configuration()
+        normal_rate = self.package.price / (self.package.duration_minutes or 1)
+
         if not config:
-            # Fallback to old helper logic if no config
-            from api.common.utils.helpers import get_package_rate_per_minute
-            package_rate = get_package_rate_per_minute(self.package)
-            return LateFeeService.calculate_late_fee(None, package_rate, overdue_minutes)
-            
-        return LateFeeService.calculate_late_fee(config, self.package.price / (self.package.duration_minutes or 1), overdue_minutes)
+            return LateFeeService.calculate_late_fee(None, normal_rate, overdue_minutes)
+
+        return LateFeeService.calculate_late_fee(config, normal_rate, overdue_minutes)
     
     @property
     def estimated_total_cost(self):
