@@ -81,19 +81,52 @@ class RentalStartMixin:
             )
             
             if popup_success:
-                # Popup successful - activate rental
+                # Popup successful - activate rental.
+                # IMPORTANT: device returns the actual dispensed powerbank serial.
+                # We must align Rental.power_bank with that serial, otherwise return events
+                # (which identify by power_bank_serial) won't be able to complete the rental.
+                if not popup_result_sn:
+                    raise ServiceException(
+                        detail="Device popup succeeded but returned no powerbank serial",
+                        code="popup_sn_missing",
+                    )
+
+                # Lock and fetch the actual dispensed powerbank by serial
+                actual_power_bank = PowerBank.objects.select_for_update().filter(
+                    serial_number=popup_result_sn,
+                ).first()
+
+                if not actual_power_bank:
+                    raise ServiceException(
+                        detail=f"PowerBank with serial {popup_result_sn} not found",
+                        code="powerbank_not_found",
+                    )
+
+                # Validate station relationship (must belong to same station at the time of popup)
+                if actual_power_bank.current_station_id and actual_power_bank.current_station_id != station.id:
+                    raise ServiceException(
+                        detail="PowerBank does not belong to the requested station",
+                        code="powerbank_station_mismatch",
+                    )
+
+                # Keep rental.slot consistent with the actual dispensed powerbank's slot (if known)
+                if actual_power_bank.current_slot_id:
+                    rental.slot = actual_power_bank.current_slot
+
+                rental.power_bank = actual_power_bank
+
                 from api.user.stations.services import PowerBankService
                 powerbank_service = PowerBankService()
-                powerbank_service.assign_power_bank_to_rental(power_bank, rental)
-                
+                powerbank_service.assign_power_bank_to_rental(actual_power_bank, rental)
+
                 rental.status = 'ACTIVE'
                 rental.started_at = timezone.now()
                 rental.rental_metadata['popup_sn'] = popup_result_sn
-                rental.save(update_fields=['status', 'started_at', 'rental_metadata'])
-                
+                rental.save(update_fields=['status', 'started_at', 'rental_metadata', 'power_bank', 'slot'])
+
                 self._schedule_reminder_notification(user, rental)
-                self._send_rental_started_notification(user, power_bank, station)
-                
+                self._send_rental_started_notification(user, actual_power_bank, station)
+
                 self.log_info(f"Rental started: {rental.rental_code} by {user.username}")
             else:
                 # Popup failed or timed out - rental stays in PENDING_POPUP

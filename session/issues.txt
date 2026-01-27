@@ -1,0 +1,207 @@
+powerbank_celery-1         | 2026-01-27 18:34:26 INFO celery.worker.strategy Task notifications.send_notification[b928a6e6-22c0-43db-b0ec-eb6e55ccb275] received
+powerbank_rabbitmq-1       | 2026-01-27 12:49:26.135715+00:00 [info] <0.1054.0> accepting AMQP connection <0.1054.0> (172.19.0.7:52098 -> 172.19.0.3:5672)
+powerbank_rabbitmq-1       | 2026-01-27 12:49:26.138743+00:00 [info] <0.1054.0> connection <0.1054.0> (172.19.0.7:52098 -> 172.19.0.3:5672): user 'powerbank' authenticated and granted access to vhost '/'
+powerbank_celery-1         | 2026-01-27 18:34:26 INFO api.user.points.tasks Points awarded async: Sudeep +50 (ON_TIME_RETURN)
+powerbank_celery-1         | 2026-01-27 18:34:26 INFO celery.app.trace Task points.award_points[54aa6910-62a3-45fc-9260-fefb07b92b0c] succeeded in 0.040907121263444424s: {'status': 'success', 'user_id': '5', 'points_awarded': 50, 'new_balance': 640, 'transaction_id': '3c55b408-e9e2-4b7f-9c41-2e51b03d1069'}
+powerbank_celery-1         | 2026-01-27 18:34:26 INFO celery.worker.strategy Task notifications.send_notification[9c368c22-85d4-4359-9db2-cdeeb46c764b] received
+powerbank_celery-1         | 2026-01-27 18:34:26 ERROR api.user.notifications.services.fcm FCM message send failed: ('invalid_grant: Invalid JWT Signature.', {'error': 'invalid_grant', 'error_description': 'Invalid JWT Signature.'})
+powerbank_celery-1         | 2026-01-27 18:34:26 INFO api.user.notifications.services.notify Notification sent to Sudeep: rental_completed
+powerbank_celery-1         | 2026-01-27 18:34:26 INFO api.user.notifications.tasks Notification sent async: rental_completed to Sudeep
+powerbank_celery-1         | 2026-01-27 18:34:26 INFO celery.app.trace Task notifications.send_notification[b928a6e6-22c0-43db-b0ec-eb6e55ccb275] succeeded in 0.08675789553672075s: {'status': 'success', 'notification_id': '5d08dd23-c1ef-4281-88d3-292926144de5', 'user_id': '5', 'template_slug': 'rental_completed'}
+powerbank_celery-1         | 2026-01-27 18:34:26 INFO celery.worker.strategy Task notifications.send_notification[ecb7e262-a499-409b-b04c-47d76149ac9f] received
+powerbank_celery-1         | 2026-01-27 18:34:26 INFO api.user.notifications.services.fcm Firebase initialized from base64 credentials
+powerbank_celery-1         | 2026-01-27 18:34:26 ERROR api.user.notifications.services.fcm FCM message send failed: ('invalid_grant: Invalid JWT Signature.', {'error': 'invalid_grant', 'error_description': 'Invalid JWT Signature.'})
+powerbank_celery-1         | 2026-01-27 18:34:26 INFO api.user.notifications.services.notify Notification sent to Sudeep: points_earned
+powerbank_celery-1         | 2026-01-27 18:34:26 INFO api.user.notifications.tasks Notification sent async: points_earned to Sudeep
+powerbank_celery-1         | 2026-01-27 18:34:26 INFO celery.app.trace Task notifications.send_notification[ecb7e262-a499-409b-b04c-47d76149ac9f] succeeded in 0.08771711681038141s: {'status': 'success', 'notification_id': '287403c0-9631-4091-ace2-ab4a820f0b44', 'user_id': '5', 'template_slug': 'points_earned'}
+powerbank_celery-1         | 2026-01-27 18:34:26 ERROR api.user.notifications.services.fcm FCM message send failed: ('invalid_grant: Invalid JWT Signature.', {'error': 'invalid_grant', 'error_description': 'Invalid JWT Signature.'})
+powerbank_celery-1         | 2026-01-27 18:34:26 INFO api.user.notifications.services.notify Notification sent to Sudeep: points_earned
+powerbank_celery-1         | 2026-01-27 18:34:26 INFO api.user.notifications.tasks Notification sent async: points_earned to Sudeep
+powerbank_celery-1         | 2026-01-27 18:34:26 INFO celery.app.trace Task notifications.send_notification[9c368c22-85d4-4359-9db2-cdeeb46c764b] succeeded in 0.34806371945887804s: {'status': 'success', 'notification_id': 'e0c5cdd4-6d6a-43ca-a69c-b3d7a54ca886', 'user_id': '5', 'template_slug': 'points_earned'}
+powerbank_api-1            | 2026-01-27 18:34:32 INFO api.common.decorators API call success
+powerbank_api-1            | 2026-01-27 18:35:03 INFO api.common.decorators API call success
+powerbank_celery_beat-1    | 2026-01-27 18:35:09 INFO celery.beat Scheduler: Sending due task check-overdue-rentals (api.user.rentals.tasks.check_overdue_rentals)
+powerbank_celery_beat-1    | 2026-01-27 18:36:09 INFO celery.beat Scheduler: Sending due task check-overdue-rentals (api.user.rentals.tasks.check_overdue_rentals)
+powerbank_api-1            | 2026-01-27 18:36:47 INFO api.user.payments.services.rental_payment Rental payment processed: XJOBCGD6 for user Sudeep
+powerbank_api-1            | 2026-01-27 18:36:47 INFO libs.chargeghar_client.base BaseClient initialized - Base URL: https://api.chargeghar.com
+powerbank_api-1            | 2026-01-27 18:36:47 INFO libs.chargeghar_client.base BaseClient initialized - Base URL: https://api.chargeghar.com
+powerbank_api-1            | 2026-01-27 18:36:47 INFO libs.chargeghar_client.base BaseClient initialized - Base URL: https://api.chargeghar.com
+powerbank_api-1            | 2026-01-27 18:36:47 INFO libs.chargeghar_client.base Token expired or invalid, re-authenticating...
+powerbank_api-1            | 2026-01-27 18:36:47 INFO libs.chargeghar_client.base Authenticating with Spring API: https://api.chargeghar.com/api/auth/login
+powerbank_api-1            | 2026-01-27 18:36:47 DEBUG urllib3.connectionpool Starting new HTTPS connection (1): api.chargeghar.com:443
+powerbank_api-1            | 2026-01-27 18:36:47 DEBUG urllib3.connectionpool https://api.chargeghar.com:443 "POST /api/auth/login HTTP/11" 200 None
+powerbank_api-1            | 2026-01-27 18:36:47 INFO libs.chargeghar_client.base Successfully authenticated with Spring API
+powerbank_api-1            | 2026-01-27 18:36:47 DEBUG libs.chargeghar_client.base GET https://api.chargeghar.com/popup_sn - Params: {'rentboxSN': '864601069946994', 'singleSN': '40818048'}
+powerbank_api-1            | 2026-01-27 18:36:47 DEBUG urllib3.connectionpool Starting new HTTPS connection (1): api.chargeghar.com:443
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG urllib3.connectionpool https://api.chargeghar.com:443 "GET /popup_sn?rentboxSN=864601069946994&singleSN=40818048 HTTP/11" 200 None
+powerbank_api-1            | 2026-01-27 18:36:50 INFO api.user.stations.services.device_api_service Popup specific success: station=864601069946994, powerbank=40818048, slot=1
+powerbank_api-1            | 2026-01-27 18:36:50 INFO api.user.stations.services.power_bank_service Power bank 40818052 assigned to rental XJOBCGD6
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG celery.utils.functional 
+powerbank_api-1            | def accumulate(self, *args, **kwargs):
+powerbank_api-1            |     return 1
+powerbank_api-1            | 
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG celery.utils.functional 
+powerbank_api-1            | def chord(self, header, body, partial_args=0, interval=1, countdown=2, max_retries=3, eager=4, **kwargs):
+powerbank_api-1            |     return 1
+powerbank_api-1            | 
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG celery.utils.functional 
+powerbank_api-1            | def send_scheduled_notification_task(self, user_id, template_slug, context=0, schedule_time=1):
+powerbank_api-1            |     return 1
+powerbank_api-1            | 
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG celery.utils.functional 
+powerbank_api-1            | def unlock_chord(self, group_id, callback, interval=0, max_retries=1, result=2, Result=3, GroupResult=4, result_from_tuple=5, **kwargs):
+powerbank_api-1            |     return 1
+powerbank_api-1            | 
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG celery.utils.functional 
+powerbank_api-1            | def send_bulk_notifications_task(self, user_ids, template_slug, context=0):
+powerbank_api-1            |     return 1
+powerbank_api-1            | 
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG celery.utils.functional 
+powerbank_api-1            | def verify_popup_completion(self, rental_id, station_sn, expected_powerbank_sn=0):
+powerbank_api-1            |     return 1
+powerbank_api-1            | 
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG celery.utils.functional 
+powerbank_api-1            | def xmap(task, it):
+powerbank_api-1            |     return 1
+powerbank_api-1            | 
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG celery.utils.functional 
+powerbank_api-1            | def xstarmap(task, it):
+powerbank_api-1            |     return 1
+powerbank_api-1            | 
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG celery.utils.functional 
+powerbank_api-1            | def cleanup_old_notifications_task(self, days=0):
+powerbank_api-1            |     return 1
+powerbank_api-1            | 
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG celery.utils.functional 
+powerbank_api-1            | def chunks(task, it, n):
+powerbank_api-1            |     return 1
+powerbank_api-1            | 
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG celery.utils.functional 
+powerbank_api-1            | def send_otp_task(self, identifier, otp, purpose=0, expiry_minutes=1):
+powerbank_api-1            |     return 1
+powerbank_api-1            | 
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG celery.utils.functional 
+powerbank_api-1            | def optimize_power_bank_distribution(self):
+powerbank_api-1            |     return 1
+powerbank_api-1            | 
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG celery.utils.functional 
+powerbank_api-1            | def check_offline_stations(self):
+powerbank_api-1            |     return 1
+powerbank_api-1            | 
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG celery.utils.functional 
+powerbank_api-1            | def send_notification_task(self, user_id, template_slug, context=0):
+powerbank_api-1            |     return 1
+powerbank_api-1            | 
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG celery.utils.functional 
+powerbank_api-1            | def group(self, tasks, result, group_id, partial_args, add_to_parent=0):
+powerbank_api-1            |     return 1
+powerbank_api-1            | 
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG celery.utils.functional 
+powerbank_api-1            | def backend_cleanup():
+powerbank_api-1            |     return 1
+powerbank_api-1            | 
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG celery.utils.functional 
+powerbank_api-1            | def update_station_popularity_score(self):
+powerbank_api-1            |     return 1
+powerbank_api-1            | 
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG celery.utils.functional 
+powerbank_api-1            | def chain(*args, **kwargs):
+powerbank_api-1            |     return 1
+powerbank_api-1            | 
+powerbank_rabbitmq-1       | 2026-01-27 12:51:50.584230+00:00 [info] <0.1093.0> accepting AMQP connection <0.1093.0> (172.19.0.6:60418 -> 172.19.0.3:5672)
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG amqp Start from server, version: 0.9, properties: {'capabilities': {'publisher_confirms': True, 'exchange_exchange_bindings': True, 'basic.nack': True, 'consumer_cancel_notify': True, 'connection.blocked': True, 'consumer_priorities': True, 'authentication_failure_close': True, 'per_consumer_qos': True, 'direct_reply_to': True}, 'cluster_name': 'rabbit@75796e809f58', 'copyright': 'Copyright (c) 2007-2024 Broadcom Inc and/or its subsidiaries', 'information': 'Licensed under the MPL 2.0. Website: https://rabbitmq.com', 'platform': 'Erlang/OTP 26.2.5.16', 'product': 'RabbitMQ', 'version': '3.13.7'}, mechanisms: [b'PLAIN', b'AMQPLAIN'], locales: ['en_US']
+powerbank_rabbitmq-1       | 2026-01-27 12:51:50.586727+00:00 [info] <0.1093.0> connection <0.1093.0> (172.19.0.6:60418 -> 172.19.0.3:5672): user 'powerbank' authenticated and granted access to vhost '/'
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG amqp using channel_id: 1
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG amqp Channel open
+powerbank_celery-1         | 2026-01-27 18:36:50 INFO celery.worker.strategy Task notifications.send_notification[09f83786-09d8-4f8a-89c3-0d71df15b9d8] received
+powerbank_api-1            | 2026-01-27 18:36:50 INFO api.user.rentals.services.rental Rental started: XJOBCGD6 by Sudeep
+powerbank_celery-1         | 2026-01-27 18:36:50 INFO celery.worker.strategy Task notifications.send_notification[3be0d707-bd64-416d-bfa5-8e0d8a34f024] received
+powerbank_api-1            | 2026-01-27 18:36:50 INFO api.common.decorators API call success
+powerbank_celery-1         | 2026-01-27 18:36:50 ERROR api.user.notifications.services.fcm FCM message send failed: ('invalid_grant: Invalid JWT Signature.', {'error': 'invalid_grant', 'error_description': 'Invalid JWT Signature.'})
+powerbank_celery-1         | 2026-01-27 18:36:50 INFO api.user.notifications.services.notify Notification sent to Sudeep: rental_started
+powerbank_celery-1         | 2026-01-27 18:36:50 INFO api.user.notifications.tasks Notification sent async: rental_started to Sudeep
+powerbank_celery-1         | 2026-01-27 18:36:50 INFO celery.app.trace Task notifications.send_notification[3be0d707-bd64-416d-bfa5-8e0d8a34f024] succeeded in 0.08179034199565649s: {'status': 'success', 'notification_id': '94cdbb59-6f0f-4de8-82d1-02968e6aecd1', 'user_id': '5', 'template_slug': 'rental_started'}
+powerbank_celery_beat-1    | 2026-01-27 18:37:09 INFO celery.beat Scheduler: Sending due task check-overdue-rentals (api.user.rentals.tasks.check_overdue_rentals)
+powerbank_api-1            | 2026-01-27 18:37:57 INFO api.common.utils.signature Generated signature for payload length: 338, timestamp: 1769518377
+powerbank_api-1            | 2026-01-27 18:37:57 INFO api.common.utils.signature Signature validation successful for timestamp 1769518377
+powerbank_api-1            | 2026-01-27 18:37:57 INFO api.internal.views.station_data_view Received IoT data sync request: type=returned
+powerbank_api-1            | 2026-01-27 18:37:57 WARNING api.internal.services.sync No active rental found for powerbank 40818048
+powerbank_api-1            | 2026-01-27 18:37:57 INFO api.internal.views.station_data_view Return event processed: {'message': 'PowerBank location updated, no active rental found', 'power_bank_serial': '40818048', 'station_serial': '864601069946994', 'slot_number': 4}
+powerbank_api-1            | 2026-01-27 18:37:57 INFO api.common.decorators API call success
+powerbank_celery_beat-1    | 2026-01-27 18:38:09 INFO celery.beat Scheduler: Sending due task check-overdue-rentals (api.user.rentals.tasks.check_overdue_rentals)
+
+i-1            | def update_station_popularity_score(self):
+powerbank_api-1            |     return 1
+powerbank_api-1            | 
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG celery.utils.functional 
+powerbank_api-1            | def chain(*args, **kwargs):
+powerbank_api-1            |     return 1
+powerbank_api-1            | 
+powerbank_rabbitmq-1       | 2026-01-27 12:51:50.584230+00:00 [info] <0.1093.0> accepting AMQP connection <0.1093.0> (172.19.0.6:60418 -> 172.19.0.3:5672)
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG amqp Start from server, version: 0.9, properties: {'capabilities': {'publisher_confirms': True, 'exchange_exchange_bindings': True, 'basic.nack': True, 'consumer_cancel_notify': True, 'connection.blocked': True, 'consumer_priorities': True, 'authentication_failure_close': True, 'per_consumer_qos': True, 'direct_reply_to': True}, 'cluster_name': 'rabbit@75796e809f58', 'copyright': 'Copyright (c) 2007-2024 Broadcom Inc and/or its subsidiaries', 'information': 'Licensed under the MPL 2.0. Website: https://rabbitmq.com', 'platform': 'Erlang/OTP 26.2.5.16', 'product': 'RabbitMQ', 'version': '3.13.7'}, mechanisms: [b'PLAIN', b'AMQPLAIN'], locales: ['en_US']
+powerbank_rabbitmq-1       | 2026-01-27 12:51:50.586727+00:00 [info] <0.1093.0> connection <0.1093.0> (172.19.0.6:60418 -> 172.19.0.3:5672): user 'powerbank' authenticated and granted access to vhost '/'
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG amqp using channel_id: 1
+powerbank_api-1            | 2026-01-27 18:36:50 DEBUG amqp Channel open
+powerbank_celery-1         | 2026-01-27 18:36:50 INFO celery.worker.strategy Task notifications.send_notification[09f83786-09d8-4f8a-89c3-0d71df15b9d8] received
+powerbank_api-1            | 2026-01-27 18:36:50 INFO api.user.rentals.services.rental Rental started: XJOBCGD6 by Sudeep
+powerbank_celery-1         | 2026-01-27 18:36:50 INFO celery.worker.strategy Task notifications.send_notification[3be0d707-bd64-416d-bfa5-8e0d8a34f024] received
+powerbank_api-1            | 2026-01-27 18:36:50 INFO api.common.decorators API call success
+powerbank_celery-1         | 2026-01-27 18:36:50 ERROR api.user.notifications.services.fcm FCM message send failed: ('invalid_grant: Invalid JWT Signature.', {'error': 'invalid_grant', 'error_description': 'Invalid JWT Signature.'})
+powerbank_celery-1         | 2026-01-27 18:36:50 INFO api.user.notifications.services.notify Notification sent to Sudeep: rental_started
+powerbank_celery-1         | 2026-01-27 18:36:50 INFO api.user.notifications.tasks Notification sent async: rental_started to Sudeep
+powerbank_celery-1         | 2026-01-27 18:36:50 INFO celery.app.trace Task notifications.send_notification[3be0d707-bd64-416d-bfa5-8e0d8a34f024] succeeded in 0.08179034199565649s: {'status': 'success', 'notification_id': '94cdbb59-6f0f-4de8-82d1-02968e6aecd1', 'user_id': '5', 'template_slug': 'rental_started'}
+powerbank_celery_beat-1    | 2026-01-27 18:37:09 INFO celery.beat Scheduler: Sending due task check-overdue-rentals (api.user.rentals.tasks.check_overdue_rentals)
+powerbank_api-1            | 2026-01-27 18:37:57 INFO api.common.utils.signature Generated signature for payload length: 338, timestamp: 1769518377
+powerbank_api-1            | 2026-01-27 18:37:57 INFO api.common.utils.signature Signature validation successful for timestamp 1769518377
+powerbank_api-1            | 2026-01-27 18:37:57 INFO api.internal.views.station_data_view Received IoT data sync request: type=returned
+powerbank_api-1            | 2026-01-27 18:37:57 WARNING api.internal.services.sync No active rental found for powerbank 40818048
+powerbank_api-1            | 2026-01-27 18:37:57 INFO api.internal.views.station_data_view Return event processed: {'message': 'PowerBank location updated, no active rental found', 'power_bank_serial': '40818048', 'station_serial': '864601069946994', 'slot_number': 4}
+powerbank_api-1            | 2026-01-27 18:37:57 INFO api.common.decorators API call success
+powerbank_celery_beat-1    | 2026-01-27 18:38:09 INFO celery.beat Scheduler: Sending due task check-overdue-rentals (api.user.rentals.tasks.check_overdue_rentals)
+powerbank_api-1            | 2026-01-27 18:38:19 INFO api.common.decorators API call success
+powerbank_api-1            | 2026-01-27 18:38:27 INFO api.common.decorators API call success
+powerbank_api-1            | 2026-01-27 18:38:47 INFO api.common.decorators API call success
+powerbank_api-1            | 2026-01-27 18:38:53 INFO api.common.decorators API call success
+powerbank_db-1             | 2026-01-27 12:53:57.354 UTC [27] LOG:  checkpoint starting: time
+powerbank_api-1            | 2026-01-27 18:38:57 INFO api.common.decorators API call success
+powerbank_db-1             | 2026-01-27 12:54:05.305 UTC [27] LOG:  checkpoint complete: wrote 81 buffers (0.5%); 0 WAL file(s) added, 0 removed, 0 recycled; write=7.937 s, sync=0.008 s, total=7.952 s; sync files=57, longest=0.002 s, average=0.001 s; distance=314 kB, estimate=314 kB
+powerbank_api-1            | 2026-01-27 18:39:05 ERROR api.user.rentals.services.rental Failed to start rental: You already have an active rental
+powerbank_api-1            | 2026-01-27 18:39:05 ERROR api.common.mixins.service Service operation failed: You already have an active rental
+powerbank_api-1            | 2026-01-27 18:39:05 WARNING api.common.decorators API call error
+powerbank_api-1            | 2026-01-27 18:39:05 WARNING django.request Bad Request: /api/rentals/start
+powerbank_celery_beat-1    | 2026-01-27 18:39:09 INFO celery.beat Scheduler: Sending due task check-offline-stations (api.user.stations.tasks.check_offline_stations)
+powerbank_celery_beat-1    | 2026-01-27 18:39:09 INFO celery.beat Scheduler: Sending due task check-overdue-rentals (api.user.rentals.tasks.check_overdue_rentals)
+powerbank_api-1            | 2026-01-27 18:39:19 INFO api.common.decorators API call success
+powerbank_api-1            | 2026-01-27 18:39:30 ERROR api.user.rentals.services.rental Failed to start rental: You already have an active rental
+powerbank_api-1            | 2026-01-27 18:39:30 ERROR api.common.mixins.service Service operation failed: You already have an active rental
+powerbank_api-1            | 2026-01-27 18:39:30 WARNING api.common.decorators API call error
+powerbank_api-1            | 2026-01-27 18:39:30 WARNING django.request Bad Request: /api/rentals/start
+powerbank_api-1            | 2026-01-27 18:39:31 INFO api.common.decorators API call success
+powerbank_celery_beat-1    | 2026-01-27 18:40:09 INFO celery.beat Scheduler: Sending due task check-overdue-rentals (api.user.rentals.tasks.check_overdue_rentals)
+powerbank_celery_beat-1    | 2026-01-27 18:41:09 INFO celery.beat Scheduler: Sending due task check-overdue-rentals (api.user.rentals.tasks.check_overdue_rentals)
+powerbank_api-1            | 2026-01-27 18:41:32 INFO api.common.utils.signature Generated signature for payload length: 1676, timestamp: 1769518592
+powerbank_api-1            | 2026-01-27 18:41:32 INFO api.common.utils.signature Signature validation successful for timestamp 1769518592
+powerbank_api-1            | 2026-01-27 18:41:32 INFO api.internal.views.station_data_view Received IoT data sync request: type=full
+powerbank_api-1            | 2026-01-27 18:41:32 INFO api.internal.services.sync Updated station 864601069946994
+powerbank_api-1            | 2026-01-27 18:41:32 INFO api.internal.services.sync Updated 4 slots for station 864601069946994
+powerbank_api-1            | 2026-01-27 18:41:32 INFO api.internal.services.sync Updated 2 powerbanks for station 864601069946994
+powerbank_api-1            | 2026-01-27 18:41:32 INFO api.internal.services.sync Station sync completed for 864601069946994: 4 slots, 2 powerbanks
+powerbank_api-1            | 2026-01-27 18:41:32 INFO api.internal.views.station_data_view Station sync successful: {'station_id': 'fbcaf260-850e-4231-958d-e48241d28f9a', 'station_serial': '864601069946994', 'slots_updated': 4, 'powerbanks_updated': 2, 'timestamp': '2026-01-27T12:56:32.104903+00:00'}
+powerbank_api-1            | 2026-01-27 18:41:32 INFO api.common.decorators API call success
+powerbank_celery_beat-1    | 2026-01-27 18:42:09 INFO celery.beat Scheduler: Sending due task check-overdue-rentals (api.user.rentals.tasks.check_overdue_rentals)
+powerbank_api-1            | 2026-01-27 18:42:28 INFO api.common.decorators API call success
+powerbank_api-1            | 2026-01-27 18:42:28 INFO api.common.decorators API call success
+powerbank_api-1            | 2026-01-27 18:42:30 INFO api.common.decorators API call success
+powerbank_api-1            | 2026-01-27 18:42:40 INFO api.common.decorators API call success
+powerbank_api-1            | 2026-01-27 18:42:54 ERROR api.user.rentals.services.rental Failed to start rental: You already have an active rental
+powerbank_api-1            | 2026-01-27 18:42:54 ERROR api.common.mixins.service Service operation failed: You already have an active rental
+powerbank_api-1            | 2026-01-27 18:42:54 WARNING api.common.decorators API call error
+powerbank_api-1            | 2026-01-27 18:42:54 WARNING django.request Bad Request: /api/rentals/start
+powerbank_api-1            | 2026-01-27 18:43:09 INFO api.common.decorators API call success
+powerbank_celery_beat-1    | 2026-01-27 18:43:09 INFO celery.beat Scheduler: Sending due task check-overdue-rentals (api.user.rentals.tasks.check_overdue_rentals)
+powerbank_api-1            | 2026-01-27 18:43:10 INFO api.common.decorators API call success
+powerbank_api-1            | 2026-01-27 18:43:15 INFO api.common.decorators API call success
+powerbank_api-1            | 2026-01-27 18:43:49 INFO api.common.decorators API call success
+
+this is into producttion not local
+	XJOBCGD6	+9779869251732	Station 6994	Active	Paid	Jan. 27, 2026, 6:36 p.m.	Jan. 27, 2026, 7:36 p.m.	-
