@@ -219,7 +219,7 @@ class RentalStartMixin:
         if active_rental:
             raise ServiceException(
                 detail="You already have an active rental" if active_rental.status != 'OVERDUE' 
-                       else "You have an overdue rental. Please return it first",
+                       else "You have an overdue rental. Please clear payment first.",
                 code="active_rental_exists"
             )
     

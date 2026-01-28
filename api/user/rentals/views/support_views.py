@@ -93,7 +93,7 @@ class RentalPayDueView(GenericAPIView, BaseAPIView):
                 }
             )
 
-            # Note: Rental status and overdue_amount are already updated by the payment service
+            # Note: Rental status, payment_status, and overdue_amount are updated by the payment service
 
             return {
                 'transaction_id': transaction.transaction_id,

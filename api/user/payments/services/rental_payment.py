@@ -110,10 +110,11 @@ class RentalPaymentService(BaseService):
                     transaction_obj
                 )
 
-            # Clear rental dues and overdue amounts
+            # Clear rental dues, overdue amounts, and complete the rental
             rental.overdue_amount = Decimal('0')
             rental.payment_status = 'PAID'
-            rental.save(update_fields=['overdue_amount', 'payment_status', 'updated_at'])
+            rental.status = 'COMPLETED'
+            rental.save(update_fields=['overdue_amount', 'payment_status', 'status', 'updated_at'])
 
             self.log_info(f"Rental due paid: {rental.rental_code} for user {user.username} - amount: {total_amount}")
             return transaction_obj
