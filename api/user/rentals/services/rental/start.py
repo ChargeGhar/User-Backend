@@ -211,9 +211,12 @@ class RentalStartMixin:
                 code="rental_prerequisites_not_met"
             )
         
+        from django.db.models import Q
         active_rental = Rental.objects.filter(
-            user=user,
-            status__in=['PENDING', 'PENDING_POPUP', 'ACTIVE', 'OVERDUE']
+            user=user
+        ).filter(
+            Q(status__in=['PENDING', 'PENDING_POPUP', 'ACTIVE']) |
+            Q(status='OVERDUE', ended_at__isnull=True)
         ).first()
         
         if active_rental:
