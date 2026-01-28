@@ -51,7 +51,9 @@ class RentalReturnMixin:
                 'overdue_amount', 'payment_status'
             ])
             
-            if rental.payment_status == 'PENDING':
+            # Only auto-collect for on-time returns or POSTPAID
+            # For late returns, keep status as OVERDUE until user manually pays
+            if rental.payment_status == 'PENDING' and rental.is_returned_on_time:
                 self._auto_collect_payment(rental)
             
             self._return_powerbank_to_station(rental, return_station, return_slot)
