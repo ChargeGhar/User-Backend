@@ -60,12 +60,9 @@ class RentalQueryMixin:
     def get_active_rental(self, user) -> Optional[Rental]:
         """Get user's active rental (including overdue rentals that haven't been returned yet)"""
         try:
-            from django.db.models import Q
             return Rental.objects.filter(
-                user=user
-            ).filter(
-                Q(status__in=['PENDING', 'PENDING_POPUP', 'ACTIVE']) |
-                Q(status='OVERDUE', ended_at__isnull=True)
+                user=user,
+                status__in=['PENDING', 'PENDING_POPUP', 'ACTIVE', 'OVERDUE']
             ).select_related('station', 'package', 'power_bank').first()
         except Exception as e:
             self.handle_service_error(e, "Failed to get active rental")
@@ -89,12 +86,9 @@ class RentalQueryMixin:
     
     def _get_basic_counts(self, rentals) -> Dict[str, int]:
         """Get basic rental counts"""
-        from django.db.models import Q
         return {
             'total_rentals': rentals.count(),
-            'completed_rentals': rentals.filter(
-                Q(status='COMPLETED') | Q(status='OVERDUE', ended_at__isnull=False)
-            ).count(),
+            'completed_rentals': rentals.filter(status='COMPLETED').count(),
             'active_rentals': rentals.filter(status__in=['PENDING', 'PENDING_POPUP', 'ACTIVE']).count(),
             'cancelled_rentals': rentals.filter(status='CANCELLED').count(),
         }
@@ -109,9 +103,8 @@ class RentalQueryMixin:
     
     def _get_time_stats(self, rentals, completed_count: int) -> Dict[str, Any]:
         """Get time-based statistics"""
-        from django.db.models import Q
         completed_with_time = rentals.filter(
-            Q(status='COMPLETED') | Q(status='OVERDUE', ended_at__isnull=False),
+            status='COMPLETED',
             started_at__isnull=False,
             ended_at__isnull=False
         )

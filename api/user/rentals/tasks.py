@@ -54,10 +54,10 @@ def check_overdue_rentals(self):
 def calculate_overdue_charges(self):
     """Calculate and apply overdue charges for late returns"""
     try:
-        # Find overdue rentals that are still active (not returned yet)
+        # Find overdue rentals that haven't been charged yet
         overdue_rentals = Rental.objects.filter(
             status='OVERDUE',
-            ended_at__isnull=True  # Only process rentals still in use
+            overdue_amount=0  # Not yet charged
         )
         
         charged_count = 0
@@ -106,13 +106,12 @@ def calculate_overdue_charges(self):
 def auto_complete_abandoned_rentals(self):
     """Auto-complete rentals that have been overdue for too long"""
     try:
-        # Find rentals overdue for more than 24 hours that haven't been returned
+        # Find rentals overdue for more than 24 hours
         cutoff_time = timezone.now() - timezone.timedelta(hours=24)
         
         abandoned_rentals = Rental.objects.filter(
             status='OVERDUE',
-            due_at__lt=cutoff_time,
-            ended_at__isnull=True  # Only process rentals not yet returned
+            due_at__lt=cutoff_time
         )
         
         completed_count = 0
@@ -231,9 +230,8 @@ def cleanup_old_rental_data(self):
         # Clean up old completed rentals (older than 2 years)
         two_years_ago = timezone.now() - timezone.timedelta(days=730)
         
-        from django.db.models import Q
         old_rentals = Rental.objects.filter(
-            Q(status='COMPLETED') | Q(status='OVERDUE', ended_at__isnull=False),
+            status='COMPLETED',
             ended_at__lt=two_years_ago,
             payment_status='PAID'  # Only clean up fully paid rentals
         )

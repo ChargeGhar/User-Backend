@@ -113,13 +113,7 @@ class RentalPaymentService(BaseService):
             # Clear rental dues and overdue amounts
             rental.overdue_amount = Decimal('0')
             rental.payment_status = 'PAID'
-            
-            # If rental was returned late (status=OVERDUE and ended_at is set), mark as COMPLETED
-            if rental.status == 'OVERDUE' and rental.ended_at is not None:
-                rental.status = 'COMPLETED'
-                rental.save(update_fields=['overdue_amount', 'payment_status', 'status', 'updated_at'])
-            else:
-                rental.save(update_fields=['overdue_amount', 'payment_status', 'updated_at'])
+            rental.save(update_fields=['overdue_amount', 'payment_status', 'updated_at'])
 
             self.log_info(f"Rental due paid: {rental.rental_code} for user {user.username} - amount: {total_amount}")
             return transaction_obj

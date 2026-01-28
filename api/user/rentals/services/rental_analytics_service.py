@@ -91,15 +91,12 @@ class RentalAnalyticsService(BaseService):
     
     def _calculate_basic_stats(self, rentals) -> Dict[str, int]:
         """Calculate basic rental count statistics"""
-        from django.db.models import Q
         return {
             'total_rentals': rentals.count(),
             'active_rentals': rentals.filter(status='ACTIVE').count(),
-            'completed_rentals': rentals.filter(
-                Q(status='COMPLETED') | Q(status='OVERDUE', ended_at__isnull=False)
-            ).count(),
+            'completed_rentals': rentals.filter(status='COMPLETED').count(),
             'cancelled_rentals': rentals.filter(status='CANCELLED').count(),
-            'overdue_rentals': rentals.filter(status='OVERDUE', ended_at__isnull=True).count(),
+            'overdue_rentals': rentals.filter(status='OVERDUE').count(),
         }
     
     def _calculate_revenue_stats(self, rentals) -> Dict[str, Decimal]:
@@ -116,9 +113,8 @@ class RentalAnalyticsService(BaseService):
     
     def _calculate_duration_stats(self, rentals) -> Dict[str, float]:
         """Calculate rental duration statistics"""
-        from django.db.models import Q
         completed = rentals.filter(
-            Q(status='COMPLETED') | Q(status='OVERDUE', ended_at__isnull=False),
+            status='COMPLETED',
             started_at__isnull=False,
             ended_at__isnull=False
         )
@@ -140,10 +136,7 @@ class RentalAnalyticsService(BaseService):
     
     def _calculate_return_rate(self, rentals) -> Dict[str, float]:
         """Calculate timely return rate"""
-        from django.db.models import Q
-        completed = rentals.filter(
-            Q(status='COMPLETED') | Q(status='OVERDUE', ended_at__isnull=False)
-        ).count()
+        completed = rentals.filter(status='COMPLETED').count()
         
         if completed == 0:
             return {'timely_return_rate': 0.0}

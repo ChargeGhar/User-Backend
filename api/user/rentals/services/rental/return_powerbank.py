@@ -35,11 +35,10 @@ class RentalReturnMixin:
             return_station = Station.objects.get(serial_number=return_station_sn)
             return_slot = return_station.slots.get(slot_number=return_slot_number)
             
+            rental.status = 'COMPLETED'
             rental.ended_at = timezone.now()
             rental.return_station = return_station
             rental.is_returned_on_time = rental.ended_at <= rental.due_at
-            
-            rental.status = 'COMPLETED' if rental.is_returned_on_time else 'OVERDUE'
             
             if rental.package.payment_model == 'POSTPAID':
                 self._calculate_postpayment_charges(rental)
@@ -51,9 +50,7 @@ class RentalReturnMixin:
                 'overdue_amount', 'payment_status'
             ])
             
-            # Only auto-collect for on-time returns or POSTPAID
-            # For late returns, keep status as OVERDUE until user manually pays
-            if rental.payment_status == 'PENDING' and rental.is_returned_on_time:
+            if rental.payment_status == 'PENDING':
                 self._auto_collect_payment(rental)
             
             self._return_powerbank_to_station(rental, return_station, return_slot)
