@@ -47,6 +47,15 @@ from .coupon_serializers import (
     UpdateCouponStatusSerializer,
 )
 
+# From discount_serializers.py
+from .discount_serializers import (
+    CreateDiscountSerializer,
+    DiscountDetailSerializer,
+    DiscountFiltersSerializer,
+    DiscountListSerializer,
+    UpdateDiscountSerializer,
+)
+
 # From kyc_serializers.py
 from .kyc_serializers import (
     UpdateKYCStatusSerializer,
@@ -192,6 +201,10 @@ __all__ = [
     "CouponListSerializer",
     "CreateAchievementSerializer",
     "CreateCouponSerializer",
+    "CreateDiscountSerializer",
+    "DiscountDetailSerializer",
+    "DiscountFiltersSerializer",
+    "DiscountListSerializer",
     "CreateLateFeeConfigurationSerializer",
     "CreatePaymentMethodSerializer",
     "CreateRentalPackageSerializer",
@@ -226,6 +239,7 @@ __all__ = [
     "TransactionsQuerySerializer",
     "TransactionsResponseSerializer",
     "UpdateCouponStatusSerializer",
+    "UpdateDiscountSerializer",
     "UpdateKYCStatusSerializer",
     "UpdateLateFeeConfigurationSerializer",
     "UpdatePaymentMethodSerializer",

@@ -55,6 +55,26 @@ class RentalStartMixin:
             # Get powerbank from DB for validation (will be confirmed by device)
             power_bank, slot = self._get_available_power_bank_and_slot(station)
             
+            # Check for applicable discount
+            discount = None
+            actual_price = package.price
+            discount_amount = Decimal('0')
+            try:
+                from api.user.promotions.services import DiscountService
+                discount = DiscountService.get_applicable_discount(station_sn, package_id, user)
+                
+                if discount:
+                    discount_amount, actual_price = DiscountService.calculate_discounted_price(
+                        package.price, discount.discount_percent
+                    )
+                    self.log_info(
+                        f"Discount applied: {discount.discount_percent}% off, "
+                        f"original: {package.price}, final: {actual_price}"
+                    )
+            except Exception as e:
+                self.log_warning(f"Failed to check discount: {e}. Continuing with original price.")
+                discount = None
+            
             # Create rental in PENDING_POPUP status
             rental = Rental.objects.create(
                 user=user,
@@ -66,12 +86,20 @@ class RentalStartMixin:
                 status='PENDING_POPUP',
                 due_at=timezone.now() + timezone.timedelta(minutes=package.duration_minutes),
                 amount_paid=Decimal('0')
+                ,
+                rental_metadata={'discount': {
+                    'discount_id': str(discount.id),
+                    'original_price': str(package.price),
+                    'discount_percent': str(discount.discount_percent),
+                    'discount_amount': str(discount_amount),
+                    'final_price': str(actual_price)
+                }} if discount else {}
             )
             
             # Process prepayment before popup
             if package.payment_model == 'PREPAID':
-                self._process_prepayment(user, package, rental)
-                rental.amount_paid = package.price
+                self._process_prepayment(user, package, rental, actual_price)
+                rental.amount_paid = actual_price
                 rental.payment_status = 'PAID'
                 rental.save(update_fields=['amount_paid', 'payment_status'])
             
@@ -123,6 +151,18 @@ class RentalStartMixin:
                 rental.started_at = timezone.now()
                 rental.rental_metadata['popup_sn'] = popup_result_sn
                 rental.save(update_fields=['status', 'started_at', 'rental_metadata', 'power_bank', 'slot'])
+                
+                # Record discount usage after successful activation
+                if discount:
+                    try:
+                        from api.user.promotions.services import DiscountService
+                        DiscountService.apply_discount(discount, user, rental, package.price)
+                        self.log_info(f"Discount usage recorded for rental {rental.rental_code}")
+                        
+                        # Send discount notification
+                        self._send_discount_notification(user, rental, discount, package.price, actual_price)
+                    except Exception as e:
+                        self.log_warning(f"Failed to record discount usage: {e}")
 
                 self._schedule_reminder_notification(user, rental)
                 self._send_rental_started_notification(user, actual_power_bank, station)
@@ -272,16 +312,18 @@ class RentalStartMixin:
         
         return power_bank, slot
     
-    def _process_prepayment(self, user, package: RentalPackage, rental=None):
+    def _process_prepayment(self, user, package: RentalPackage, rental=None, amount: Decimal = None):
         """Process pre-payment for rental"""
         from api.user.payments.services import PaymentCalculationService, RentalPaymentService
         
+        payment_amount = amount if amount is not None else package.price
+
         calc_service = PaymentCalculationService()
         payment_options = calc_service.calculate_payment_options(
             user=user,
             scenario='pre_payment',
             package_id=str(package.id),
-            amount=package.price
+            amount=payment_amount
         )
         
         if not payment_options['is_sufficient']:

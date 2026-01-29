@@ -189,7 +189,7 @@ print('   2. API Access: Email + OTP')
 # Function to load fixtures for an app with retry logic
 load_fixtures() {
     local app_name=$1
-    local fixtures_dir="api/$app_name/fixtures"
+    local fixtures_dir="api/user/$app_name/fixtures"
     local max_retries=3
 
     if [[ -d "$fixtures_dir" ]]; then
@@ -275,7 +275,7 @@ load_fixtures() {
 # Function to load fixtures with smart dependency ordering
 load_fixtures_smart() {
     local app_name=$1
-    local fixtures_dir="api/$app_name/fixtures"
+    local fixtures_dir="api/user/$app_name/fixtures"
 
     if [[ -d "$fixtures_dir" ]]; then
         print_step "Smart loading fixtures for $app_name..."

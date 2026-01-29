@@ -19,6 +19,7 @@ from .admin_refund_service import AdminRefundService
 from .admin_notification_service import AdminNotificationService
 from .admin_system_service import AdminSystemService
 from .admin_content_service import AdminContentService
+from .admin_discount_service import AdminDiscountService
 from .admin_withdrawal_service import AdminWithdrawalService
 from .admin_profile_service import AdminProfileService
 from .admin_rental_service import AdminRentalService
@@ -35,6 +36,7 @@ __all__ = [
     "AdminAchievementService",
     "AdminAnalyticsService",
     "AdminContentService",
+    "AdminDiscountService",
     "AdminLeaderboardService",
     "AdminNotificationService",
     "AdminPaymentService",

@@ -162,7 +162,7 @@ def main():
     
     # Process apps in order
     for app_label in APPS_IN_ORDER:
-        fixtures_dir = f"api/{app_label}/fixtures"
+        fixtures_dir = f"api/user/{app_label}/fixtures"
         if os.path.isdir(fixtures_dir):
             print(f"📦 Processing fixtures for {app_label}...")
             

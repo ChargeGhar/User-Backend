@@ -18,6 +18,12 @@ class RentalPackageListSerializer(serializers.ModelSerializer):
     formatted_price = serializers.SerializerMethodField()
     payment_model_display = serializers.SerializerMethodField()
     
+    # Discount fields
+    has_discount = serializers.SerializerMethodField()
+    discount_percent = serializers.SerializerMethodField()
+    original_price = serializers.SerializerMethodField()
+    discounted_price = serializers.SerializerMethodField()
+    
     class Meta:
         model = RentalPackage
         fields = [
@@ -29,7 +35,11 @@ class RentalPackageListSerializer(serializers.ModelSerializer):
             'payment_model',
             'is_active', 
             'formatted_price',
-            'payment_model_display'
+            'payment_model_display',
+            'has_discount',
+            'discount_percent',
+            'original_price',
+            'discounted_price',
         ]
     
     @extend_schema_field(serializers.CharField)
@@ -41,6 +51,40 @@ class RentalPackageListSerializer(serializers.ModelSerializer):
         if obj.payment_model == 'PREPAID':
             return "Pay Before Use"
         return "Pay After Use"
+    
+    @extend_schema_field(serializers.BooleanField)
+    def get_has_discount(self, obj) -> bool:
+        """Check if package has discount for current station"""
+        discounts = self.context.get('discounts', {})
+        return str(obj.id) in discounts
+    
+    @extend_schema_field(serializers.DecimalField(max_digits=5, decimal_places=2))
+    def get_discount_percent(self, obj):
+        """Get discount percentage if available"""
+        discounts = self.context.get('discounts', {})
+        discount = discounts.get(str(obj.id))
+        return float(discount.discount_percent) if discount else None
+    
+    @extend_schema_field(serializers.DecimalField(max_digits=10, decimal_places=2))
+    def get_original_price(self, obj):
+        """Get original price if discount exists"""
+        if self.get_has_discount(obj):
+            return float(obj.price)
+        return None
+    
+    @extend_schema_field(serializers.DecimalField(max_digits=10, decimal_places=2))
+    def get_discounted_price(self, obj):
+        """Get discounted price if discount exists"""
+        discounts = self.context.get('discounts', {})
+        discount = discounts.get(str(obj.id))
+        
+        if discount:
+            from api.user.promotions.services import DiscountService
+            _, final_price = DiscountService.calculate_discounted_price(
+                obj.price, discount.discount_percent
+            )
+            return float(final_price)
+        return None
 
 
 class RentalListSerializer(serializers.ModelSerializer):

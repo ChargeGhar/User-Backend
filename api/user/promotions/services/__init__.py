@@ -12,9 +12,11 @@ from __future__ import annotations
 
 from .coupon_service import CouponService
 from .promotion_analytics_service import PromotionAnalyticsService
+from .discount_service import DiscountService
 
 # Backward compatibility - all services available at package level
 __all__ = [
     "CouponService",
     "PromotionAnalyticsService",
+    "DiscountService",
 ]

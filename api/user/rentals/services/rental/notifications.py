@@ -70,3 +70,23 @@ class RentalNotificationMixin:
                 }],
                 eta=reminder_time
             )
+    
+    def _send_discount_notification(self, user, rental, discount, original_price, final_price) -> None:
+        """Send discount applied notification"""
+        try:
+            from api.user.notifications.services import notify
+            from decimal import Decimal
+            discount_amount = Decimal(str(original_price)) - Decimal(str(final_price))
+            notify(
+                user,
+                'discount_applied',
+                async_send=True,
+                rental_code=rental.rental_code,
+                discount_percent=float(discount.discount_percent),
+                original_price=float(original_price),
+                discount_amount=float(discount_amount),
+                final_price=float(final_price),
+                station_name=discount.station.station_name
+            )
+        except Exception as e:
+            self.log_error(f"Failed to send discount notification: {str(e)}")

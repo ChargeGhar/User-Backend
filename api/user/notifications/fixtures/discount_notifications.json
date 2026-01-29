@@ -1,0 +1,30 @@
+[
+  {
+    "model": "notifications.notificationtemplate",
+    "pk": 100,
+    "fields": {
+      "name": "Discount Applied",
+      "slug": "discount_applied",
+      "notification_type": "promotion",
+      "title_template": "🎉 Discount Applied!",
+      "message_template": "You saved NPR {{discount_amount}}! Your rental {{rental_code}} at {{station_name}} got {{discount_percent}}% off. Original: NPR {{original_price}}, You paid: NPR {{final_price}}",
+      "is_active": true,
+      "created_at": "2025-09-13T10:00:00Z",
+      "updated_at": "2025-09-13T10:00:00Z"
+    }
+  },
+  {
+    "model": "notifications.notificationrule",
+    "pk": 100,
+    "fields": {
+      "notification_type": "discount_applied",
+      "send_in_app": true,
+      "send_push": true,
+      "send_sms": false,
+      "send_email": false,
+      "is_critical": false,
+      "created_at": "2025-09-13T10:00:00Z",
+      "updated_at": "2025-09-13T10:00:00Z"
+    }
+  }
+]

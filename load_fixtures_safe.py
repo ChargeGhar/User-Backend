@@ -137,7 +137,7 @@ def main() -> None:
     base_dir = os.path.dirname(os.path.abspath(__file__))
 
     for app_label in APPS_IN_ORDER:
-        fixtures_dir = os.path.join(base_dir, "api", app_label, "fixtures")
+        fixtures_dir = os.path.join(base_dir, "api", "user", app_label, "fixtures")
         if not os.path.isdir(fixtures_dir):
             continue
 
