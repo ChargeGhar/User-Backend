@@ -138,3 +138,28 @@ class AdminDiscountDetailView(GenericAPIView, BaseAPIView):
             "Discount deleted successfully",
             "Failed to delete discount"
         )
+
+
+@discount_router.register(r"admin/discounts/<uuid:discount_id>/analytics", name="admin-discount-analytics")
+@extend_schema(tags=["Admin - Discounts"])
+class AdminDiscountAnalyticsView(GenericAPIView, BaseAPIView):
+    permission_classes = [IsStaffPermission]
+    
+    @extend_schema(
+        summary="Get Discount Analytics",
+        description="Get usage analytics for a discount",
+        responses={200: BaseResponseSerializer}
+    )
+    @log_api_call()
+    def get(self, request: Request, discount_id: str) -> Response:
+        """Get discount analytics"""
+        def operation():
+            service = AdminDiscountService()
+            analytics = service.get_discount_analytics(discount_id)
+            return analytics
+        
+        return self.handle_service_operation(
+            operation,
+            "Analytics retrieved successfully",
+            "Failed to retrieve analytics"
+        )
