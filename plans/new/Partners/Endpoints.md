@@ -87,8 +87,7 @@ Base Path: `/api/admin/partners/`
 
 | Method | Endpoint | Description | Status |
 |--------|----------|-------------|--------|
-| GET | `/api/admin/partners/transactions/` | All partner transactions | ⏳ |
-| GET | `/api/admin/partners/transactions/summary/` | Aggregated stats | ⏳ |
+| GET | `/api/admin/partners/revenue` | All partner transactions | ⏳ |
 
 **Query Parameters:**
 ```
@@ -148,8 +147,8 @@ Base Path: `/api/partner/franchise/`
 
 | Method | Endpoint | Description | Tables Affected |
 |--------|----------|-------------|-----------------|
-| GET | `/api/partner/franchise/profile/` | Own franchise profile | `partners` |
-| PATCH | `/api/partner/franchise/profile/` | Update contact info | `partners` |
+| GET | `/api/partners/auth/me` | Own franchise/vendor profile | `partners` | Already impleneted
+| GET    | `/api/partner/iot/history` Get own IoT History | `partner_iot_history` |
 | GET | `/api/partner/franchise/dashboard/` | Summary stats | `partners`, `revenue_distributions` |
 
 **GET /dashboard/ Response:**
@@ -203,8 +202,7 @@ Base Path: `/api/partner/franchise/`
 
 | Method | Endpoint | Description | Tables Affected |
 |--------|----------|-------------|-----------------|
-| GET | `/api/partner/franchise/transactions/` | Own stations' transactions | `revenue_distributions` |
-| GET | `/api/partner/franchise/transactions/summary/` | Aggregated by period | `revenue_distributions` |
+| GET | `/api/partner/franchise/revenue/` | Own stations' transactions | `revenue_distributions` |
 
 **Query Parameters:**
 ```
@@ -258,8 +256,8 @@ Base Path: `/api/partner/vendor/`
 
 | Method | Endpoint | Description | Tables Affected |
 |--------|----------|-------------|-----------------|
-| GET | `/api/partner/vendor/profile/` | Own vendor profile | `partners` |
-| PATCH | `/api/partner/vendor/profile/` | Update contact info | `partners` |
+| GET | `/api/partners/auth/me` | Own franchise/vendor profile | `partners` | Already impleneted
+| GET    | `/api/partner/iot/history` Get own IoT History | `partner_iot_history` |
 | GET | `/api/partner/vendor/dashboard/` | Summary stats | `partners`, `revenue_distributions` |
 
 **GET /dashboard/ Response:**
@@ -291,8 +289,7 @@ Base Path: `/api/partner/vendor/`
 
 | Method | Endpoint | Description | Tables Affected |
 |--------|----------|-------------|-----------------|
-| GET | `/api/partner/vendor/transactions/` | Own station transactions | `revenue_distributions` |
-| GET | `/api/partner/vendor/transactions/summary/` | Aggregated by period | `revenue_distributions` |
+| GET | `/api/partner/vendor/revenue/` | Own station transactions | `revenue_distributions` |
 
 **Query Parameters:**
 ```
@@ -328,20 +325,20 @@ Base Path: `/api/partner/vendor/`
 
 ## 4. IoT Endpoints (Shared)
 
-Base Path: `/api/partner/iot/`
+Base Path: `/api/internal/iot/`
 
 **Authentication:** Any partner (Franchise or Vendor) with valid station access.
 
 | Method | Endpoint | Description | Tables Affected | Permission |
 |--------|----------|-------------|-----------------|------------|
-| GET | `/api/partner/iot/history/` | Own IoT action history | `partner_iot_history` | All |
-| POST | `/api/partner/iot/reboot/` | Reboot station | `partner_iot_history` | All |
-| POST | `/api/partner/iot/check/` | Check station status | `partner_iot_history` | All |
-| POST | `/api/partner/iot/wifi/scan/` | Scan WiFi networks | `partner_iot_history` | All |
-| POST | `/api/partner/iot/wifi/connect/` | Connect to WiFi | `partner_iot_history` | All |
-| POST | `/api/partner/iot/volume/` | Adjust volume | `partner_iot_history` | All |
-| POST | `/api/partner/iot/mode/` | Switch SIM/WiFi mode | `partner_iot_history` | All |
-| POST | `/api/partner/iot/eject/` | Eject powerbank | `partner_iot_history` | Franchise only |
+| GET | `/api/internal/iot/history/` | Own IoT action history | `partner_iot_history` | All |
+| POST | `/api/internal/iot/reboot/` | Reboot station | `partner_iot_history` | All |
+| POST | `/api/internal/iot/check/` | Check station status | `partner_iot_history` | All |
+| POST | `/api/internal/iot/wifi/scan/` | Scan WiFi networks | `partner_iot_history` | All |
+| POST | `/api/internal/iot/wifi/connect/` | Connect to WiFi | `partner_iot_history` | All |
+| POST | `/api/internal/iot/volume/` | Adjust volume | `partner_iot_history` | All |
+| POST | `/api/internal/iot/mode/` | Switch SIM/WiFi mode | `partner_iot_history` | All |
+| POST | `/api/internal/iot/eject/` | Eject powerbank | `partner_iot_history` | Franchise only |
 
 **IoT Request (all actions):**
 ```json

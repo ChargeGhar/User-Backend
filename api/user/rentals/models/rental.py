@@ -189,6 +189,79 @@ class RentalLocation(BaseModel):
         return f"{self.rental.rental_code} - {self.latitude}, {self.longitude}"
 
 
+class RentalSwap(BaseModel):
+    """
+    RentalSwap - Log of powerbank swaps within a rental.
+    
+    Tracks when user exchanges a powerbank for a different one
+    at the same station within the swap window.
+    """
+    SWAP_REASON_CHOICES = [
+        ('LOW_BATTERY', 'Low Battery'),
+        ('DEFECTIVE', 'Defective Powerbank'),
+        ('WRONG_CABLE', 'Wrong Cable Type'),
+        ('OTHER', 'Other'),
+    ]
+    
+    rental = models.ForeignKey(
+        Rental, 
+        on_delete=models.CASCADE, 
+        related_name='swaps'
+    )
+    original_station = models.ForeignKey(
+        'stations.Station', 
+        on_delete=models.CASCADE,
+        related_name='rental_swaps'
+    )
+    
+    # Old powerbank
+    old_powerbank = models.ForeignKey(
+        'stations.PowerBank',
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='swapped_from'
+    )
+    old_slot = models.ForeignKey(
+        'stations.StationSlot',
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='swapped_from'
+    )
+    old_battery_level = models.IntegerField()
+    
+    # New powerbank
+    new_powerbank = models.ForeignKey(
+        'stations.PowerBank',
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='swapped_to'
+    )
+    new_slot = models.ForeignKey(
+        'stations.StationSlot',
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='swapped_to'
+    )
+    new_battery_level = models.IntegerField()
+    
+    # Swap details
+    swap_reason = models.CharField(max_length=50, choices=SWAP_REASON_CHOICES, default='OTHER')
+    description = models.TextField(null=True, blank=True)
+    swapped_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'rental_swaps'
+        verbose_name = 'Rental Swap'
+        verbose_name_plural = 'Rental Swaps'
+        indexes = [
+            models.Index(fields=['rental', 'swapped_at']),
+            models.Index(fields=['original_station', 'swapped_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.rental.rental_code} - Swap #{self.pk}"
+
+
 class RentalPackage(BaseModel):
     """
     RentalPackage - Rental duration packages

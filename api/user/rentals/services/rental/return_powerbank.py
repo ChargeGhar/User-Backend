@@ -37,11 +37,15 @@ class RentalReturnMixin:
             rental.ended_at = timezone.now()
             rental.return_station = return_station
             rental.is_returned_on_time = rental.ended_at <= rental.due_at
-            rental.status = 'COMPLETED' if rental.is_returned_on_time else 'OVERDUE'
+            # Rental is returned, mark as COMPLETED regardless of timing
+            # Late fees tracked via overdue_amount, not status
+            rental.status = 'COMPLETED'
             
             if rental.package.payment_model == 'POSTPAID':
                 self._calculate_postpayment_charges(rental)
-            elif not rental.is_returned_on_time:
+            
+            # Calculate late fees for any late return (PREPAID or POSTPAID)
+            if not rental.is_returned_on_time:
                 self._calculate_overdue_charges(rental)
             
             rental.save(update_fields=[
@@ -111,10 +115,17 @@ class RentalReturnMixin:
             if payment_options['is_sufficient']:
                 payment_service = RentalPaymentService()
                 try:
-                    payment_service.pay_rental_due(
+                    transaction = payment_service.pay_rental_due(
                         rental.user, rental, payment_options['payment_breakdown']
                     )
                     self.log_info(f"Auto-collected NPR {total_due} for rental {rental.rental_code}")
+                    
+                    # Update PENDING transaction if exists
+                    self._update_pending_transaction(rental, transaction)
+                    
+                    # Trigger revenue distribution for POSTPAID
+                    self._trigger_revenue_distribution(rental, transaction)
+                    
                 except Exception as e:
                     self.log_warning(f"Auto-collection failed for {rental.rental_code}: {str(e)}")
                     self._notify_payment_failed(rental, total_due)
@@ -134,14 +145,57 @@ class RentalReturnMixin:
             rental.power_bank, return_station, return_slot, rental=rental
         )
     
+    def _update_pending_transaction(self, rental: Rental, payment_transaction) -> None:
+        """Update PENDING transaction to SUCCESS if exists"""
+        pending_transaction_id = rental.rental_metadata.get('pending_transaction_id')
+        if not pending_transaction_id:
+            return
+        
+        try:
+            from api.user.payments.models import Transaction
+            pending_tx = Transaction.objects.get(
+                id=pending_transaction_id,
+                status='PENDING'
+            )
+            pending_tx.status = 'SUCCESS'
+            pending_tx.amount = payment_transaction.amount
+            pending_tx.payment_method_type = payment_transaction.payment_method_type
+            pending_tx.save(update_fields=['status', 'amount', 'payment_method_type'])
+            
+            self.log_info(
+                f"Updated PENDING transaction {pending_tx.transaction_id} to SUCCESS"
+            )
+        except Exception as e:
+            self.log_warning(
+                f"Failed to update PENDING transaction for rental {rental.rental_code}: {str(e)}"
+            )
+    
+    def _trigger_revenue_distribution(self, rental: Rental, transaction) -> None:
+        """Trigger revenue distribution for POSTPAID rental"""
+        try:
+            from api.partners.common.services import RevenueDistributionService
+            
+            rev_service = RevenueDistributionService()
+            distribution = rev_service.create_revenue_distribution(transaction, rental)
+            
+            if distribution:
+                self.log_info(
+                    f"Revenue distribution created for POSTPAID rental {rental.rental_code}: "
+                    f"distribution_id={distribution.id}"
+                )
+        except Exception as e:
+            # Log but don't fail the return - revenue can be recalculated
+            self.log_warning(
+                f"Failed to create revenue distribution for {rental.rental_code}: {str(e)}"
+            )
+    
     def _award_completion_points(self, rental: Rental) -> None:
         """Award points for rental completion"""
         from api.user.points.services import award_points
-        from api.user.system.models import AppConfig
+        from api.user.system.services import AppConfigService
         
-        completion_points = int(AppConfig.objects.filter(
-            key='POINTS_RENTAL_COMPLETE', is_active=True
-        ).values_list('value', flat=True).first() or 5)
+        config_service = AppConfigService()
+        completion_points = int(config_service.get_config_cached('POINTS_RENTAL_COMPLETE', 5))
         
         award_points(
             rental.user, completion_points, 'RENTAL',
@@ -152,9 +206,7 @@ class RentalReturnMixin:
         )
         
         if rental.is_returned_on_time and not rental.timely_return_bonus_awarded:
-            timely_bonus = int(AppConfig.objects.filter(
-                key='POINTS_TIMELY_RETURN', is_active=True
-            ).values_list('value', flat=True).first() or 50)
+            timely_bonus = int(config_service.get_config_cached('POINTS_TIMELY_RETURN', 50))
             
             award_points(
                 rental.user, timely_bonus, 'ON_TIME_RETURN',

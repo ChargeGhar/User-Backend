@@ -55,6 +55,9 @@ SPECTACULAR_SETTINGS = {
         {"name": "Admin", "description": "Administrative operations and analytics"},
         {"name": "Admin - Advertisements", "description": "Admin advertisement review, approval, and management"},
         {"name": "Partner Auth", "description": "Partner authentication (Franchise & Revenue Vendor dashboard login)"},
+        {"name": "Partner - Franchise", "description": "Franchise dashboard (vendors, revenue, payouts)"},
+        {"name": "Partner - Vendor", "description": "Vendor dashboard (station, revenue, payouts)"},
+        {"name": "Partner - IoT", "description": "Partner IoT action history"},
     ],
     
     # UI Configuration

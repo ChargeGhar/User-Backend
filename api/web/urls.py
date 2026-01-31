@@ -82,8 +82,10 @@ urlpatterns = [
     
     # Partner Dashboard APIs
     path("api/partners/auth/", include("api.partners.auth.urls")),
+    path("api/", include("api.partners.franchise.urls")),
+    path("api/", include("api.partners.vendor.urls")),
+    path("api/", include("api.partners.common.urls")),
 ]
-
 if USE_SILK:
     urlpatterns.append(path("silk/", include("silk.urls")))
 

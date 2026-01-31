@@ -32,6 +32,7 @@ from .action_serializers import (
     RentalPayDueSerializer,
     RentalIssueCreateSerializer,
     RentalLocationUpdateSerializer,
+    RentalSwapSerializer,
 )
 
 # Filter serializers
@@ -61,6 +62,7 @@ __all__ = [
     "RentalPayDueSerializer",
     "RentalIssueCreateSerializer",
     "RentalLocationUpdateSerializer",
+    "RentalSwapSerializer",
     # Filter
     "RentalHistoryFilterSerializer",
     # Stats

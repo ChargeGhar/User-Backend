@@ -159,3 +159,38 @@ class RentalLocationUpdateSerializer(serializers.Serializer):
         if not -180 <= value <= 180:
             raise serializers.ValidationError("Longitude must be between -180 and 180")
         return value
+
+
+class RentalSwapSerializer(serializers.Serializer):
+    """
+    Request serializer for powerbank swap.
+    Used in: POST /api/rentals/{id}/swap
+    """
+    reason = serializers.ChoiceField(
+        choices=['LOW_BATTERY', 'DEFECTIVE', 'WRONG_CABLE', 'OTHER'],
+        default='OTHER',
+        required=False,
+        help_text="Reason for swap request"
+    )
+    description = serializers.CharField(
+        max_length=500,
+        required=False,
+        allow_blank=True,
+        help_text="Optional description of the issue"
+    )
+    powerbank_sn = serializers.CharField(
+        max_length=50,
+        required=False,
+        allow_blank=True,
+        help_text="Optional: Specific powerbank serial number to swap to"
+    )
+    
+    def validate_description(self, value):
+        if value:
+            return value.strip()
+        return ""
+    
+    def validate_powerbank_sn(self, value):
+        if value:
+            return value.strip()
+        return None

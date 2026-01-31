@@ -12,6 +12,7 @@ from .start import RentalStartMixin
 from .cancel import RentalCancelMixin
 from .extend import RentalExtendMixin
 from .return_powerbank import RentalReturnMixin
+from .swap import RentalSwapMixin
 from .queries import RentalQueryMixin
 from .notifications import RentalNotificationMixin
 
@@ -22,6 +23,7 @@ class RentalService(
     RentalCancelMixin,
     RentalExtendMixin,
     RentalReturnMixin,
+    RentalSwapMixin,
     RentalQueryMixin,
     CRUDService
 ):
@@ -33,6 +35,7 @@ class RentalService(
         - cancel_rental(rental_id, user, reason) -> Rental
         - extend_rental(rental_id, user, package_id) -> RentalExtension
         - return_power_bank(rental_id, return_station_sn, return_slot_number) -> Rental
+        - swap_powerbank(rental_id, user, reason, description) -> Rental
         - get_user_rentals(user, filters) -> Dict
         - get_active_rental(user) -> Optional[Rental]
         - get_rental_stats(user) -> Dict

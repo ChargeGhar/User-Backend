@@ -1,9 +1,6 @@
-# api/partners/common/views/__init__.py
-"""
-Partner Common Views.
+# Partner common views
+from .iot_history_view import partner_iot_router
 
-Note: Auth views are in api.partners.auth.views
-"""
-
-__all__ = []
-
+__all__ = [
+    'partner_iot_router',
+]

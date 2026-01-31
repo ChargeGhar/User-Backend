@@ -80,7 +80,7 @@ def process_return(rental, return_battery_level):
         rental.is_under_5_min = True
         rental.hardware_issue_reported = True
         # Trigger notification to admin
-        notify_admin_potential_issue(rental)
+        notify(---)
     
     rental.save()
 ```

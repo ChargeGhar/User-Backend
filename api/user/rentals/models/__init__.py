@@ -1,4 +1,4 @@
-from .rental import Rental, RentalExtension, RentalIssue, RentalLocation, RentalPackage
+from .rental import Rental, RentalExtension, RentalIssue, RentalLocation, RentalPackage, RentalSwap
 from .late_fee import LateFeeConfiguration
 
 __all__ = [
@@ -7,5 +7,6 @@ __all__ = [
     'RentalIssue',
     'RentalLocation',
     'RentalPackage',
+    'RentalSwap',
     'LateFeeConfiguration',
 ]

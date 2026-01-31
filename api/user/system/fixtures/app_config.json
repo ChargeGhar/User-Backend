@@ -260,6 +260,50 @@
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
+  },
+  {
+    "model": "system.appconfig",
+    "fields": {
+      "key": "NO_CHARGE_RENTAL_CANCELLATION_TIME",
+      "value": "5",
+      "description": "Free cancellation window in minutes (no fee charged if cancelled within this time)",
+      "is_active": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "system.appconfig",
+    "fields": {
+      "key": "SWAPPING_MAX_TIME",
+      "value": "5",
+      "description": "Maximum time in minutes within which user can swap powerbank to different one",
+      "is_active": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "system.appconfig",
+    "fields": {
+      "key": "PLATFORM_VAT_PERCENT",
+      "value": "13",
+      "description": "VAT percentage deducted by ChargeGhar on all transactions (Nepal standard 13%)",
+      "is_active": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "system.appconfig",
+    "fields": {
+      "key": "PLATFORM_SERVICE_CHARGE_PERCENT",
+      "value": "2.5",
+      "description": "Service charge percentage deducted by ChargeGhar on all transactions",
+      "is_active": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
   }
 ]
 

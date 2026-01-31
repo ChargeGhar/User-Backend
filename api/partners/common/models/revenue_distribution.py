@@ -122,7 +122,29 @@ class RevenueDistribution(BaseModel):
         default=dict,
         help_text='Detailed breakdown of calculation for audit'
     )
-
+    
+    # Reversal tracking
+    is_reversal = models.BooleanField(
+        default=False,
+        help_text='Is this a reversal distribution (negative amounts for refunds)?'
+    )
+    reversed_distribution = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reversals',
+        help_text='Original distribution being reversed (for refunds)'
+    )
+    reversal_reason = models.CharField(
+        max_length=50,
+        blank=True,
+        choices=[
+            ('FULL_REFUND', 'Full Refund'),
+            ('PARTIAL_REFUND', 'Partial Refund'),
+        ],
+        help_text='Reason for reversal'
+    )
     class Meta:
         db_table = 'revenue_distributions'
         verbose_name = 'Revenue Distribution'

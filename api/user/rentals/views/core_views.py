@@ -91,13 +91,13 @@ class RentalCancelView(GenericAPIView, BaseAPIView):
             serializer.is_valid(raise_exception=True)
             
             service = RentalService()
-            rental = service.cancel_rental(
+            result = service.cancel_rental(
                 rental_id=rental_id,
                 user=request.user,
                 reason=serializer.validated_data.get('reason', '')
             )
             
-            response_serializer = serializers.RentalDetailSerializer(rental)
+            response_serializer = serializers.RentalDetailSerializer(result['rental'])
             return response_serializer.data
         
         return self.handle_service_operation(
@@ -187,5 +187,58 @@ class RentalActiveView(GenericAPIView, BaseAPIView):
             operation,
             success_message="Active rental retrieved" if operation() else "No active rental",
             error_message="Failed to get active rental"
+        )
+
+
+@core_router.register(r"rentals/<str:rental_id>/swap", name="rental-swap")
+@extend_schema(
+    tags=["Rentals"],
+    summary="Swap Powerbank",
+    description="Swap current powerbank for a different one at same station",
+    responses={200: BaseResponseSerializer}
+)
+class RentalSwapView(GenericAPIView, BaseAPIView):
+    """
+    Swap powerbank within active rental.
+    
+    Rules:
+    - Must be within SWAPPING_MAX_TIME (5 min) from rental start
+    - User must return current powerbank to same station first
+    - Daily swap limit = available powerbanks at station
+    - No payment involved
+    """
+    serializer_class = serializers.RentalSwapSerializer
+    permission_classes = [IsAuthenticated]
+    
+    @extend_schema(
+        summary="Swap Powerbank",
+        description="Exchange current powerbank for a different one at the same station",
+        request=serializers.RentalSwapSerializer,
+        responses={200: BaseResponseSerializer}
+    )
+    @rate_limit(max_requests=5, window_seconds=60)  # Max 5 swap attempts per minute
+    @log_api_call(include_request_data=True)
+    def post(self, request: Request, rental_id: str) -> Response:
+        """Swap powerbank"""
+        def operation():
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            
+            service = RentalService()
+            rental = service.swap_powerbank(
+                rental_id=rental_id,
+                user=request.user,
+                reason=serializer.validated_data.get('reason', 'OTHER'),
+                description=serializer.validated_data.get('description', ''),
+                powerbank_sn=serializer.validated_data.get('powerbank_sn')
+            )
+            
+            response_serializer = serializers.RentalDetailSerializer(rental)
+            return response_serializer.data
+        
+        return self.handle_service_operation(
+            operation,
+            success_message="Powerbank swapped successfully",
+            error_message="Failed to swap powerbank"
         )
 

@@ -46,6 +46,9 @@ class RevenueDistributionRepository:
         franchise_share: Decimal = Decimal('0'),
         vendor_id: Optional[str] = None,
         vendor_share: Decimal = Decimal('0'),
+        is_reversal: bool = False,
+        reversed_distribution_id: Optional[str] = None,
+        reversal_reason: str = '',
         calculation_details: Optional[dict] = None
     ) -> RevenueDistribution:
         """Create a new revenue distribution"""
@@ -62,9 +65,11 @@ class RevenueDistributionRepository:
             franchise_share=franchise_share,
             vendor_id=vendor_id,
             vendor_share=vendor_share,
-            calculation_details=calculation_details or {}
+            calculation_details=calculation_details or {},
+            is_reversal=is_reversal,
+            reversed_distribution_id=reversed_distribution_id,
+            reversal_reason=reversal_reason
         )
-    
     @staticmethod
     def mark_as_distributed(distribution_id: str) -> Optional[RevenueDistribution]:
         """Mark a distribution as distributed to partner balances"""

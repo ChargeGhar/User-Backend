@@ -692,11 +692,81 @@
       "name": "Rental Reminder",
       "slug": "rental_reminder",
       "notification_type": "rental",
-      "title_template": "⏰ Rental Ending Soon - {{rental_code}}",
+      "title_template": "Rental Ending Soon - {{rental_code}}",
       "message_template": "Reminder: Your rental {{rental_code}} is due at {{due_time}}. Please return your powerbank to any ChargeGhar station to avoid additional charges.",
       "is_active": true,
       "created_at": "2025-11-06T08:15:00Z",
       "updated_at": "2025-11-06T08:15:00Z"
+    }
+  },
+  {
+    "model": "notifications.notificationtemplate",
+    "pk": 51,
+    "fields": {
+      "name": "Rental Cancelled - Free",
+      "slug": "rental_cancelled_free",
+      "notification_type": "rental",
+      "title_template": "Rental Cancelled",
+      "message_template": "Your rental {{rental_code}} has been cancelled. Full refund of Rs. {{refund_amount}} has been processed to your wallet.",
+      "is_active": true,
+      "created_at": "2026-01-30T10:00:00Z",
+      "updated_at": "2026-01-30T10:00:00Z"
+    }
+  },
+  {
+    "model": "notifications.notificationtemplate",
+    "pk": 52,
+    "fields": {
+      "name": "Rental Cancelled - Late",
+      "slug": "rental_cancelled_late",
+      "notification_type": "rental",
+      "title_template": "Rental Cancelled - Late Fee Applied",
+      "message_template": "Your rental {{rental_code}} has been cancelled. Late cancellation fee of Rs. {{cancellation_fee}} applied. Refund amount: Rs. {{refund_amount}}.",
+      "is_active": true,
+      "created_at": "2026-01-30T10:00:00Z",
+      "updated_at": "2026-01-30T10:00:00Z"
+    }
+  },
+  {
+    "model": "notifications.notificationtemplate",
+    "pk": 53,
+    "fields": {
+      "name": "Rental Cancelled - POSTPAID",
+      "slug": "rental_cancelled_postpaid",
+      "notification_type": "rental",
+      "title_template": "Rental Cancelled - Fee Charged",
+      "message_template": "Your rental {{rental_code}} has been cancelled. A late cancellation fee of Rs. {{cancellation_fee}} has been deducted from your wallet.",
+      "is_active": true,
+      "created_at": "2026-01-30T10:00:00Z",
+      "updated_at": "2026-01-30T10:00:00Z"
+    }
+  },
+  {
+    "model": "notifications.notificationtemplate",
+    "pk": 54,
+    "fields": {
+      "name": "Payment Due Settled",
+      "slug": "payment_due_settled",
+      "notification_type": "payment",
+      "title_template": "Payment Dues Settled",
+      "message_template": "Your outstanding dues of Rs. {{amount}} for rental {{rental_code}} have been settled. Thank you for using ChargeGhar!",
+      "is_active": true,
+      "created_at": "2026-01-30T10:00:00Z",
+      "updated_at": "2026-01-30T10:00:00Z"
+    }
+  },
+  {
+    "model": "notifications.notificationtemplate",
+    "pk": 55,
+    "fields": {
+      "name": "Rental Swapped",
+      "slug": "rental_swapped",
+      "notification_type": "rental",
+      "title_template": "Powerbank Swapped Successfully",
+      "message_template": "Your powerbank for rental {{rental_code}} has been swapped successfully. Old: {{old_powerbank}}, New: {{new_powerbank}}. No additional charges applied.",
+      "is_active": true,
+      "created_at": "2026-01-30T10:00:00Z",
+      "updated_at": "2026-01-30T10:00:00Z"
     }
   }
 ]

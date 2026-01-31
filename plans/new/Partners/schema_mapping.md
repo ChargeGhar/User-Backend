@@ -222,6 +222,9 @@ This helps identify gaps, redundancies, and ensures 100% accuracy before impleme
 | `is_distributed` | System (default FALSE) | System (on balance update) | Pending distribution |
 | `distributed_at` | Never (on creation) | System (on balance update) | Audit |
 | `calculation_details` | System (JSON breakdown) | Never | Audit |
+| `is_reversal` | System (default FALSE) | Never | Reversal queries |
+| `reversed_distribution_id` | System (on reversal creation) | Never | Audit trail |
+| `reversal_reason` | System (on reversal creation) | Never | Audit trail |
 
 ### System Trigger: On Transaction Complete
 
