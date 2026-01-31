@@ -44,6 +44,12 @@ class Rental(BaseModel):
     timely_return_bonus_awarded = models.BooleanField(default=False)
     rental_metadata = models.JSONField(default=dict)
 
+    # Battery lifecycle tracking
+    start_battery_level = models.IntegerField(null=True, blank=True)
+    return_battery_level = models.IntegerField(null=True, blank=True)
+    is_under_5_min = models.BooleanField(default=False)
+    hardware_issue_reported = models.BooleanField(default=False)
+
     class Meta:
         db_table = "rentals"
         verbose_name = "Rental"

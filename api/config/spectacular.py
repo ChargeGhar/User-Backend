@@ -42,7 +42,6 @@ SPECTACULAR_SETTINGS = {
         {"name": "Authentication - Session", "description": "Session management (logout, token refresh)"},
         {"name": "Authentication - Profile", "description": "User profile and account management"},
         {"name": "Authentication - KYC", "description": "KYC document submission and verification"},
-        {"name": "Authentication - Device", "description": "Device registration for push notifications"},
         {"name": "Stations", "description": "Charging station discovery, favorites, and issue reporting"},
         {"name": "Notifications", "description": "Real-time user notifications and alerts"},
         {"name": "Payments", "description": "Wallet management, transactions, and payment gateways"},
@@ -57,7 +56,7 @@ SPECTACULAR_SETTINGS = {
         {"name": "Partner Auth", "description": "Partner authentication (Franchise & Revenue Vendor dashboard login)"},
         {"name": "Partner - Franchise", "description": "Franchise dashboard (vendors, revenue, payouts)"},
         {"name": "Partner - Vendor", "description": "Vendor dashboard (station, revenue, payouts)"},
-        {"name": "Partner - IoT", "description": "Partner IoT action history"},
+        {"name": "Partner - Common", "description": "Partner Common API Endpoints"},
     ],
     
     # UI Configuration

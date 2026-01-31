@@ -154,36 +154,20 @@ class PartnerIoTService(BaseService):
             filters: Dict with action_type, start_date, end_date, page, page_size
             
         Returns:
-            Dict with count, next, previous, results
+            Dict with results and pagination metadata
         """
-        # Build filter dict
-        query_filters = {
-            'partner_id': str(partner.id)
-        }
+        from api.common.utils.helpers import paginate_queryset
         
-        if filters.get('action_type'):
-            query_filters['action_type'] = filters['action_type']
-        
-        if filters.get('start_date'):
-            query_filters['created_at__gte'] = filters['start_date']
-        
-        if filters.get('end_date'):
-            query_filters['created_at__lte'] = filters['end_date']
-        
-        # Get history
-        history = PartnerIotHistoryRepository.filter_history(query_filters)
+        # Get history using repository
+        history = PartnerIotHistoryRepository.get_by_partner(
+            partner_id=str(partner.id),
+            action_type=filters.get('action_type'),
+            start_date=filters.get('start_date'),
+            end_date=filters.get('end_date')
+        )
         
         # Pagination
-        from django.core.paginator import Paginator
-        page_size = filters.get('page_size', 20)
         page = filters.get('page', 1)
+        page_size = filters.get('page_size', 20)
         
-        paginator = Paginator(history, page_size)
-        page_obj = paginator.get_page(page)
-        
-        return {
-            'count': paginator.count,
-            'next': page_obj.has_next(),
-            'previous': page_obj.has_previous(),
-            'results': list(page_obj.object_list)
-        }
+        return paginate_queryset(history, page, page_size)

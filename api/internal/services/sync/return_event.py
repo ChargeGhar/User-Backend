@@ -5,9 +5,11 @@ from __future__ import annotations
 
 from typing import Dict, Any
 from django.db import transaction
+import time
 
 from api.common.services.base import ServiceException
 from api.user.stations.models import Station, StationSlot, PowerBank
+from api.internal.services.iot_sync_log_service import IoTSyncLogService
 
 
 class ReturnEventMixin:
@@ -24,6 +26,12 @@ class ReturnEventMixin:
         Returns:
             Summary of return processing
         """
+        start_time = time.time()
+        station = None
+        log_status = 'SUCCESS'
+        error_message = None
+        result = {}
+        
         try:
             self._validate_return_data(data)
             
@@ -67,22 +75,43 @@ class ReturnEventMixin:
             if not active_rental:
                 self.log_warning(f"No active rental found for powerbank {pb_serial}")
                 self._update_powerbank_location(powerbank, station, slot, battery_level)
-                return {
+                result = {
                     'message': 'PowerBank location updated, no active rental found',
                     'power_bank_serial': pb_serial,
                     'station_serial': station_serial,
                     'slot_number': slot_number
                 }
+                return result
             
             result = self._process_rental_return(active_rental, station, slot, powerbank, battery_level)
             
             self.log_info(f"Return event processed successfully for rental {active_rental.rental_code}")
             return result
             
-        except ServiceException:
+        except ServiceException as e:
+            log_status = 'FAILED'
+            error_message = str(e)
             raise
         except Exception as e:
+            log_status = 'FAILED'
+            error_message = str(e)
             self.handle_service_error(e, "Failed to process return event")
+        finally:
+            # Log sync operation
+            if station:
+                duration_ms = int((time.time() - start_time) * 1000)
+                device_data = data.get('device', {})
+                IoTSyncLogService.log_sync(
+                    station=station,
+                    device_uuid=device_data.get('imei', device_data.get('serial_number', 'unknown')),
+                    sync_type='RETURNED',
+                    direction='INBOUND',
+                    request_payload=data,
+                    response_payload=result,
+                    status=log_status,
+                    error_message=error_message,
+                    duration_ms=duration_ms
+                )
     
     def _update_powerbank_location(self, powerbank: PowerBank, station: Station, slot: StationSlot, battery_level: int) -> None:
         """Update powerbank location and status"""

@@ -29,6 +29,9 @@ from .admin_points_service import AdminPointsService
 from .admin_achievement_service import AdminAchievementService
 from .admin_referral_service import AdminReferralService
 from .admin_leaderboard_service import AdminLeaderboardService
+from .admin_iot_service import AdminIoTService
+from .admin_revenue_service import AdminRevenueService
+from .admin_iot_monitoring_service import AdminIoTMonitoringService
 
 
 # Backward compatibility - all services available at package level
@@ -37,6 +40,8 @@ __all__ = [
     "AdminAnalyticsService",
     "AdminContentService",
     "AdminDiscountService",
+    "AdminIoTMonitoringService",
+    "AdminIoTService",
     "AdminLeaderboardService",
     "AdminNotificationService",
     "AdminPaymentService",
@@ -46,6 +51,7 @@ __all__ = [
     "AdminReferralService",
     "AdminRefundService",
     "AdminRentalService",
+    "AdminRevenueService",
     "AdminStationService",
     "AdminSystemService",
     "AdminUserService",

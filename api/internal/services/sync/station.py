@@ -8,9 +8,11 @@ from decimal import Decimal
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.db import transaction
+import time
 
 from api.common.services.base import ServiceException
 from api.user.stations.models import Station, StationSlot, PowerBank
+from api.internal.services.iot_sync_log_service import IoTSyncLogService
 
 
 class StationSyncMixin:
@@ -27,6 +29,12 @@ class StationSyncMixin:
         Returns:
             Summary of sync operation
         """
+        start_time = time.time()
+        station = None
+        log_status = 'SUCCESS'
+        error_message = None
+        result = {}
+        
         try:
             self._validate_sync_data(data)
             
@@ -41,6 +49,10 @@ class StationSyncMixin:
             slots_updated = self._sync_slots(station, slots_data)
             powerbanks_updated = self._sync_powerbanks(station, powerbanks_data)
             
+            # Track status change
+            new_status = self.STATION_STATUS_MAP.get(device_data.get('status', 'OFFLINE'), 'OFFLINE')
+            IoTSyncLogService.track_status_change(station, new_status, 'SYNC')
+            
             result = {
                 'station_id': str(station.id),
                 'station_serial': station.serial_number,
@@ -52,10 +64,30 @@ class StationSyncMixin:
             self.log_info(f"Station sync completed for {serial_number}: {slots_updated} slots, {powerbanks_updated} powerbanks")
             return result
             
-        except ServiceException:
+        except ServiceException as e:
+            log_status = 'FAILED'
+            error_message = str(e)
             raise
         except Exception as e:
+            log_status = 'FAILED'
+            error_message = str(e)
             self.handle_service_error(e, "Failed to sync station data")
+        finally:
+            # Log sync operation
+            if station:
+                duration_ms = int((time.time() - start_time) * 1000)
+                device_data = data.get('device', {})
+                IoTSyncLogService.log_sync(
+                    station=station,
+                    device_uuid=device_data.get('imei', device_data.get('serial_number', 'unknown')),
+                    sync_type='FULL',
+                    direction='INBOUND',
+                    request_payload=data,
+                    response_payload=result,
+                    status=log_status,
+                    error_message=error_message,
+                    duration_ms=duration_ms
+                )
     
     def _sync_station(self, device_data: Dict, station_data: Dict) -> Station:
         """Update or create Station record"""

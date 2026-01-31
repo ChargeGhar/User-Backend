@@ -22,6 +22,10 @@ class PowerBank(BaseModel):
     battery_level = models.IntegerField(default=100)
     hardware_info = models.JSONField(default=dict)
     last_updated = models.DateTimeField(auto_now=True)
+
+    # Battery lifecycle stats
+    total_cycles = models.DecimalField(max_digits=8, decimal_places=4, default=0)
+    total_rentals = models.IntegerField(default=0)
     
     current_station = models.ForeignKey(Station, on_delete=models.SET_NULL, null=True, blank=True)
     current_slot = models.ForeignKey(StationSlot, on_delete=models.SET_NULL, null=True, blank=True)

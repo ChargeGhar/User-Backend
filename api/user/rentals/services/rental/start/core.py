@@ -176,6 +176,10 @@ class RentalStartMixin:
             rental.slot = actual_power_bank.current_slot
         
         rental.power_bank = actual_power_bank
+
+        # Capture start battery level
+        rental.start_battery_level = actual_power_bank.battery_level
+        rental.save(update_fields=['power_bank', 'slot', 'start_battery_level'])
         
         # Assign powerbank to rental
         activate_rental_powerbank(rental, actual_power_bank)
@@ -184,7 +188,7 @@ class RentalStartMixin:
         rental.status = 'ACTIVE'
         rental.started_at = timezone.now()
         rental.rental_metadata['popup_sn'] = popup_result_sn
-        rental.save(update_fields=['status', 'started_at', 'rental_metadata', 'power_bank', 'slot'])
+        rental.save(update_fields=['status', 'started_at', 'rental_metadata'])
         
         # Post-activation tasks
         

@@ -1,0 +1,404 @@
+
+ analyse and be 1005 cauate regarding how every senus need to be update in wheich which buiones logic also we need to create transaction of reantal when start and respectively w=by being 100% accuate about record of E:\Companies\DEVALAYA\Deva_ChargeGhar\ChargeGhar\api\partners\common\models\revenue_distribution.py. Lets make the plane to update the existeing gaps and issues i mention befire we move for the implrnation of partners others remeing endpoints. make sure to make make md file for plan at forst so i can review it so that we go into 100% accuate way without hampering any thinsg and making 0 mistakes
+additinla conttex:
+my docker is running at (
+PS E:\Companies\DEVALAYA\Deva_ChargeGhar\ChargeGhar> docker compose up -d
+[+] Running 9/9
+ ✔ Container powerbank_local-migrations-1     Started                                                                                                      3.1s
+  3.1s
+ ✔ Container powerbank_local-fixtures-1       Started                                                                                                      2.8s
+ ✔ Container powerbank_local-api-1            Started                                                                                                      2.8s
+ ✔ Container powerbank_local-db-1             Started                                                                                                      0.7s
+ ✔ Container powerbank_local-redis-1          Started                                                                                                      0.7s
+ ✔ Container powerbank_local-rabbitmq-1       Started                                                                                                      0.7s
+ ✔ Container powerbank_local-pgbouncer-1      Started                                                                                                      0.4s
+ ✔ Container powerbank_local-celery-1         Started                                                                                                      0.4s
+PS E:\Companies\DEVALAYA\Deva_ChargeGhar\ChargeGhar>
+
+
+                                                     docker ps
+CONTAINER ID   IMAGE                           COMMAND                  CREATED          STATUS          PORTS                                             NAMES
+1b327c40b95b   powerbank_local-api             "make migrate run.se…"   14 seconds ago   Up 12 seconds   0.0.0.0:8010->80/tcp, [::]:8010->80/tcp           powerbank_local-api-1
+bb668a2fe9b5   powerbank_local-fixtures        "make loadfixtures"      14 seconds ago   Up 12 seconds                                                     powerbank_local-fixtures-1
+bc69c9c429c1   powerbank_local-collectstatic   "make collectstatic"     15 seconds ago   Up 13 seconds                                                     powerbank_local-collectstatic-1
+5af956a12b74   powerbank_local-migrations      "make migrate"           15 seconds ago   Up 13 seconds                                                     powerbank_local-migrations-1
+d075f5171c7b   powerbank_local-celery          "make run.celery.prod"   25 hours ago     Up 12 seconds                                                     powerbank_local-celery-1
+0abd747773df   edoburu/pgbouncer:latest        "/entrypoint.sh /usr…"   3 days ago       Up 13 seconds   5432/tcp                                          powerbank_local-pgbouncer-1
+a2d5a6be0900   rabbitmq:3.13-management        "docker-entrypoint.s…"   3 days ago       Up 14 seconds   0.0.0.0:15672->15672/tcp, [::]:15672->15672/tcp   powerbank_local-rabbitmq-1
+d5a73e4c059a   postgres:16                     "docker-entrypoint.s…"   3 days ago       Up 14 seconds   5432/tcp                                          powerbank_local-db-1
+258acd2a7f9e   redis:latest                    "docker-entrypoint.s…"   3 days ago       Up 14 seconds   0.0.0.0:6379->6379/tcp, [::]:6379->6379/tcp       powerbank_local-redis-1
+PS E:\Companies\DEVALAYA\Deva_ChargeGhar\ChargeGhar>
+)
+
+
+
+
+According to We planned E:\Companies\DEVALAYA\Deva_ChargeGhar\ChargeGhar\plans\new\Partners\*.md my
+api/admin/partners/* all edpoints are logically fit and 100% correct and all are working but the endpoion we make
+indside api/partners/franchaise/vendor app we need to do crossverify each and every endpoiont towards our buiness
+rulrs and current logical problem and bugs and issue and my docker is up and running (PS
+E:\Companies\DEVALAYA\Deva_ChargeGhar\ChargeGhar> docker ps
+  CONTAINER ID   IMAGE                           COMMAND                  CREATED          STATUS          PORTS
+NAMES
+  286ce22a1230   powerbank_local-celery          "make run.celery.prod"   31 seconds ago   Up 26 seconds
+powerbank_local-celery-1
+  ce9d2822e444   powerbank_local-api             "make migrate run.se…"   31 seconds ago   Up 26 seconds
+0.0.0.0:8010->80/tcp, [::]:8010->80/tcp           powerbank_local-api-1
+  a6ef7b04169e   powerbank_local-fixtures        "make loadfixtures"      31 seconds ago   Up 26 seconds
+powerbank_local-fixtures-1
+  f8824db6f1ab   powerbank_local-migrations      "make migrate"           56 seconds ago   Up 27 seconds
+powerbank_local-migrations-1
+  997a188fd448   powerbank_local-collectstatic   "make collectstatic"     56 seconds ago   Up 27 seconds
+powerbank_local-collectstatic-1
+  0abd747773df   edoburu/pgbouncer:latest        "/entrypoint.sh /usr…"   3 days ago       Up 27 seconds   5432/tcp
+powerbank_local-pgbouncer-1
+  a2d5a6be0900   rabbitmq:3.13-management        "docker-entrypoint.s…"   3 days ago       Up 28 seconds
+0.0.0.0:15672->15672/tcp, [::]:15672->15672/tcp   powerbank_local-rabbitmq-1
+  d5a73e4c059a   postgres:16                     "docker-entrypoint.s…"   3 days ago       Up 27 seconds   5432/tcp
+powerbank_local-db-1
+  258acd2a7f9e   redis:latest                    "docker-entrypoint.s…"   3 days ago       Up 27 seconds
+0.0.0.0:6379->6379/tcp, [::]:6379->6379/tcp       powerbank_local-redis-1
+  PS E:\Companies\DEVALAYA\Deva_ChargeGhar\ChargeGhar> ) How you will do test user admin endpoiont of login to get
+tokenn (curl -X 'POST' \
+    'http://localhost:8010/api/admin/login' \
+    -H 'accept: application/json' \
+    -H 'Content-Type: multipart/form-data' \
+    -H 'X-CSRFTOKEN: Lc2vB50LokwNya98P9qyN0C7jddcAFaUtXvOHd4Us6wWI7niiFP5AtCRoClzjPl3' \
+    -F 'email=janak@powerbank.com' \
+    -F 'password=5060'
+  Request URL
+  http://localhost:8010/api/admin/login
+  Server response
+  Code  Details
+  200
+  Response body
+  Download
+  {
+    "success": true,
+    "message": "Admin login successful",
+    "data": {
+      "user_id": "2",
+      "access_token":
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzcyNDI5MDU3LCJpYXQiOjE3Njk4MzcwNTcsImp0
+aSI6ImNmMTVjODBiYzIxNTQ4OGJhNDEwMjc2ZDNhYmNjOWMzIiwidXNlcl9pZCI6IjIiLCJpc3MiOiJDaGFyZ2VHaGFyLUFQSSAgICJ9.YjUMD_k86rjEK
+yr3DsIIDh19A9AVcrg8ocgS8y2jsOs",
+      "refresh_token":
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc3NzYxMzA1NywiaWF0IjoxNzY5ODM3MDU3LCJq
+dGkiOiI4NmE1NTY5MDZmMzU0ZWM1YTQ3MmYzOGZhYmM4Njk0ZCIsInVzZXJfaWQiOiIyIiwiaXNzIjoiQ2hhcmdlR2hhci1BUEkgICAifQ.fJNWx9bzDvQ
+OVZhiX4fCURhj_-hejTNQSpv3y7nkCJw",
+      "user": {
+        "id": "2",
+        "email": "janak@powerbank.com",
+        "username": "janak",
+        "is_staff": true,
+        "is_superuser": true,
+        "role": "super_admin"
+      },
+      "message": "Admin login successful"
+    }
+  }) be 100% accuate how we need to do the task and idneify the gaps by testing first befire modifiying to grab the
+actual propblem and how both part need to wrok as need to be and make ssure the austh devie endpoint can update and
+create the record because fcm token will push to our becaked by frintent be  100% accuate what i am telling and do
+accuately without any assumopotuion and here is the partner franchasie login (curl -X 'POST' \
+    'http://localhost:8010/api/partners/auth/login' \
+    -H 'accept: application/json' \
+    -H 'Content-Type: multipart/form-data' \
+    -H 'X-CSRFTOKEN: Lc2vB50LokwNya98P9qyN0C7jddcAFaUtXvOHd4Us6wWI7niiFP5AtCRoClzjPl3' \
+    -F 'email=janak@powerbank.com' \
+    -F 'password=5060'
+  Request URL
+  http://localhost:8010/api/partners/auth/login
+  Server response
+  Code  Details
+  200
+  Response body
+  Download
+  {
+    "success": true,
+    "message": "Login successful",
+    "data": {
+      "access_token":
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzcyNDI5MTUxLCJpYXQiOjE3Njk4MzcxNTEsImp0
+aSI6IjIzM2JmMmRhOGQ0ZTRhNTNhZDBiYzVhYTA4YmQwYWMyIiwidXNlcl9pZCI6IjIiLCJpc3MiOiJDaGFyZ2VHaGFyLUFQSSAgICJ9.8ifo_UAD9CJ-D
+K8tN27J8hU4LrNuNMbnLvUDfFrojwo",
+      "refresh_token":
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc3NzYxMzE1MSwiaWF0IjoxNzY5ODM3MTUxLCJq
+dGkiOiI0OWEzYmRhZjFiMzU0MDNjYTRhZGNkZTVkODMxODA4ZiIsInVzZXJfaWQiOiIyIiwiaXNzIjoiQ2hhcmdlR2hhci1BUEkgICAifQ.sjQgB84crgd
+C8w1DIW050LA656uTzvNZNa-E4w_JuWs",
+      "partner": {
+        "id": "21ed806d-365a-4019-9372-9fd00ff8b738",
+        "partner_type": "FRANCHISE",
+        "vendor_type": null,
+        "code": "FR-001",
+        "business_name": "Pro Boy",
+        "contact_phone": "9866214494",
+        "contact_email": "janak@powerbank.com",
+        "status": "ACTIVE",
+        "balance": "0.00",
+        "total_earnings": "0.00",
+        "profile": {
+          "full_name": "string",
+          "date_of_birth": "2026-01-07",
+          "address": "string",
+          "avatar_url": "http://localhost:8010/docs/#/Authentication/api_users_profile_update"
+        }
+      }
+    }
+  }) make sure to create vendor from admin (POST
+  /api/admin/partners/vendor
+  Create Vendor
+  api_admin_partners_vendor_create
+
+
+  Create a new ChargeGhar-level vendor partner with station assignment
+
+  Parameters
+  Try it out
+  No parameters
+
+  Request body
+
+  multipart/form-data
+  user_id *
+  integer
+  Existing user ID to link as partner
+
+  vendor_type *
+  string
+  REVENUE vendors have dashboard access and earnings
+
+  REVENUE - REVENUE
+  NON_REVENUE - NON_REVENUE
+  business_name *
+  string
+  contact_phone *
+  string
+  contact_email
+  string($email)
+  address
+  string
+  station_id *
+  string($uuid)
+  Single station UUID to assign to vendor
+
+  revenue_model
+  string
+  Revenue model type (required for REVENUE vendors)
+
+  PERCENTAGE - PERCENTAGE
+  FIXED - FIXED
+  partner_percent
+  string($decimal)
+  Vendor's % share (required if revenue_model=PERCENTAGE)
+
+  fixed_amount
+  string($decimal)
+
+> According to We planned E:\Companies\DEVALAYA\Deva_ChargeGhar\ChargeGhar\plans\new\Partners\*.md my
+api/admin/partners/* all edpoints are logically fit and 100% correct and all are working but the endpoion we make
+indside api/partners/franchaise/vendor app we need to do crossverify each and every endpoiont towards our buiness rulrs
+and current logical problem and bugs and issue and my docker is up and running (PS
+E:\Companies\DEVALAYA\Deva_ChargeGhar\ChargeGhar> docker ps
+CONTAINER ID   IMAGE                           COMMAND                  CREATED          STATUS          PORTS
+NAMES
+286ce22a1230   powerbank_local-celery          "make run.celery.prod"   31 seconds ago   Up 26 seconds
+powerbank_local-celery-1
+ce9d2822e444   powerbank_local-api             "make migrate run.se…"   31 seconds ago   Up 26 seconds
+0.0.0.0:8010->80/tcp, [::]:8010->80/tcp           powerbank_local-api-1
+a6ef7b04169e   powerbank_local-fixtures        "make loadfixtures"      31 seconds ago   Up 26 seconds
+powerbank_local-fixtures-1
+f8824db6f1ab   powerbank_local-migrations      "make migrate"           56 seconds ago   Up 27 seconds
+powerbank_local-migrations-1
+997a188fd448   powerbank_local-collectstatic   "make collectstatic"     56 seconds ago   Up 27 seconds
+powerbank_local-collectstatic-1
+0abd747773df   edoburu/pgbouncer:latest        "/entrypoint.sh /usr…"   3 days ago       Up 27 seconds   5432/tcp
+powerbank_local-pgbouncer-1
+a2d5a6be0900   rabbitmq:3.13-management        "docker-entrypoint.s…"   3 days ago       Up 28 seconds
+0.0.0.0:15672->15672/tcp, [::]:15672->15672/tcp   powerbank_local-rabbitmq-1
+d5a73e4c059a   postgres:16                     "docker-entrypoint.s…"   3 days ago       Up 27 seconds   5432/tcp
+powerbank_local-db-1
+258acd2a7f9e   redis:latest                    "docker-entrypoint.s…"   3 days ago       Up 27 seconds
+0.0.0.0:6379->6379/tcp, [::]:6379->6379/tcp       powerbank_local-redis-1
+PS E:\Companies\DEVALAYA\Deva_ChargeGhar\ChargeGhar> ) How you will do test user admin endpoiont of login to get tokenn
+(curl -X 'POST' \
+  'http://localhost:8010/api/admin/login' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: multipart/form-data' \
+  -H 'X-CSRFTOKEN: Lc2vB50LokwNya98P9qyN0C7jddcAFaUtXvOHd4Us6wWI7niiFP5AtCRoClzjPl3' \
+  -F 'email=janak@powerbank.com' \
+  -F 'password=5060'
+Request URL
+http://localhost:8010/api/admin/login
+Server response
+Code    Details
+200
+Response body
+Download
+{
+  "success": true,
+  "message": "Admin login successful",
+  "data": {
+    "user_id": "2",
+    "access_token":
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzcyNDI5MDU3LCJpYXQiOjE3Njk4MzcwNTcsImp0aS
+I6ImNmMTVjODBiYzIxNTQ4OGJhNDEwMjc2ZDNhYmNjOWMzIiwidXNlcl9pZCI6IjIiLCJpc3MiOiJDaGFyZ2VHaGFyLUFQSSAgICJ9.YjUMD_k86rjEKyr3D
+sIIDh19A9AVcrg8ocgS8y2jsOs",
+    "refresh_token":
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc3NzYxMzA1NywiaWF0IjoxNzY5ODM3MDU3LCJqdG
+kiOiI4NmE1NTY5MDZmMzU0ZWM1YTQ3MmYzOGZhYmM4Njk0ZCIsInVzZXJfaWQiOiIyIiwiaXNzIjoiQ2hhcmdlR2hhci1BUEkgICAifQ.fJNWx9bzDvQOVZh
+iX4fCURhj_-hejTNQSpv3y7nkCJw",
+    "user": {
+      "id": "2",
+      "email": "janak@powerbank.com",
+      "username": "janak",
+      "is_staff": true,
+      "is_superuser": true,
+      "role": "super_admin"
+    },
+    "message": "Admin login successful"
+  }
+}) be 100% accuate how we need to do the task and idneify the gaps by testing first befire modifiying to grab the actual
+propblem and how both part need to wrok as need to be and make ssure the austh devie endpoint can update and create the
+record because fcm token will push to our becaked by frintent be  100% accuate what i am telling and do accuately
+without any assumopotuion and here is the partner franchasie login (curl -X 'POST' \
+  'http://localhost:8010/api/partners/auth/login' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: multipart/form-data' \
+  -H 'X-CSRFTOKEN: Lc2vB50LokwNya98P9qyN0C7jddcAFaUtXvOHd4Us6wWI7niiFP5AtCRoClzjPl3' \
+  -F 'email=janak@powerbank.com' \
+  -F 'password=5060'
+Request URL
+http://localhost:8010/api/partners/auth/login
+Server response
+Code    Details
+200
+Response body
+Download
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "access_token":
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzcyNDI5MTUxLCJpYXQiOjE3Njk4MzcxNTEsImp0aS
+I6IjIzM2JmMmRhOGQ0ZTRhNTNhZDBiYzVhYTA4YmQwYWMyIiwidXNlcl9pZCI6IjIiLCJpc3MiOiJDaGFyZ2VHaGFyLUFQSSAgICJ9.8ifo_UAD9CJ-DK8tN
+27J8hU4LrNuNMbnLvUDfFrojwo",
+    "refresh_token":
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc3NzYxMzE1MSwiaWF0IjoxNzY5ODM3MTUxLCJqdG
+kiOiI0OWEzYmRhZjFiMzU0MDNjYTRhZGNkZTVkODMxODA4ZiIsInVzZXJfaWQiOiIyIiwiaXNzIjoiQ2hhcmdlR2hhci1BUEkgICAifQ.sjQgB84crgdC8w1
+DIW050LA656uTzvNZNa-E4w_JuWs",
+    "partner": {
+      "id": "21ed806d-365a-4019-9372-9fd00ff8b738",
+      "partner_type": "FRANCHISE",
+      "vendor_type": null,
+      "code": "FR-001",
+      "business_name": "Pro Boy",
+      "contact_phone": "9866214494",
+      "contact_email": "janak@powerbank.com",
+      "status": "ACTIVE",
+      "balance": "0.00",
+      "total_earnings": "0.00",
+      "profile": {
+        "full_name": "string",
+        "date_of_birth": "2026-01-07",
+        "address": "string",
+        "avatar_url": "http://localhost:8010/docs/#/Authentication/api_users_profile_update"
+      }
+    }
+  }
+}) make sure to create vendor from admin (POST
+/api/admin/partners/vendor
+Create Vendor
+api_admin_partners_vendor_create
+
+
+Create a new ChargeGhar-level vendor partner with station assignment
+
+Parameters
+Try it out
+No parameters
+
+Request body
+
+multipart/form-data
+user_id *
+integer
+Existing user ID to link as partner
+
+vendor_type *
+string
+REVENUE vendors have dashboard access and earnings
+
+REVENUE - REVENUE
+NON_REVENUE - NON_REVENUE
+business_name *
+string
+contact_phone *
+string
+contact_email
+string($email)
+address
+string
+station_id *
+string($uuid)
+Single station UUID to assign to vendor
+
+revenue_model
+string
+Revenue model type (required for REVENUE vendors)
+
+PERCENTAGE - PERCENTAGE
+FIXED - FIXED
+partner_percent
+string($decimal)
+Vendor's % share (required if revenue_model=PERCENTAGE)
+
+fixed_amount
+string($decimal)
+Fixed monthly amount (required if revenue_model=FIXED)
+
+password
+string
+Initial password (required for REVENUE vendors)
+
+notes
+string
+Responses
+Code    Description     Links
+200
+Media type
+
+application/json
+Controls Accept header.
+Example Value
+Schema
+{
+  "success": true,
+  "message": "string",
+  "data": "string",
+  "timestamp": "2026-01-31T05:27:02.803Z"
+}) when the trun of vendor testing come in make sure you are 100% accuate without any assumptions so that we can test
+accautely payouts hirarcy, ststion distrbution hirarcy, betweern chargeghar as admin, franchaise, vendors, subvendors
+without going peoject beyoud and realying on and false positive algirithm and wrong logic what need to be think like 17
+yrs professional
+
+
+Our goal is to alanaye all our plan see the admin impnation of partners for 100% accaute lifecycle so we can focus on each app of franchaise by being 100% accaurate.
+steps:
+- anayse admin partners impnenattion wheich is already done
+- analyse the E:\Companies\DEVALAYA\Deva_ChargeGhar\ChargeGhar\api\partners\common app all repositories, servues, models sp we can be 100% accaute without duplicationg the things and being inconstency
+- See all the endopinns that we we planned E:\Companies\DEVALAYA\Deva_ChargeGhar\ChargeGhar\plans\new\Partners\Endpoints.md and onto phase 1 we weoll go with franchaiose and review all the planned files E:\Companies\DEVALAYA\Deva_ChargeGhar\ChargeGhar\plans\new\Partners\*.md so you get all the gaps fillesd before making algorithm of servic layer for specific endpoint.
+[Interation] {
+- make/update todo.md for franscie impenetation pick 1 enadpoin and and do paln into E:\Companies\DEVALAYA\Deva_ChargeGhar\ChargeGhar\plans\new\Partners\imp\<new file_for sinle endpoint>.md and cross verify it with the business rules and scham mappings and other planned files to eliminate all the gaps.
+}
+- tell me for review i will review it and we will move for implemenation after i agreed.
+
+
+For new just analyse the codebase and see all the exing things related to paryenerts and get the lyfecycle contex and be 100% accaute regaringes rules and logic and the we will follow our steps after your verifications.
+
+Rules:
+- no assumotuons, 0 assumptions
+- no inconstency
+= no duplicacy
+= no beyoud of the rulles
+= 100% accuate databse and service and repositoring flow based on our rules and plans (if any gap found fill it withput any assumptim)
+- always do recursevely crossverify before yo gonna make assumtions 

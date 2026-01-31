@@ -34,6 +34,9 @@ from .achievement_admin_views import achievement_admin_router
 from .referral_admin_views import referral_admin_router
 from .ad_views import admin_ads_router
 from .partner_views import partner_admin_router
+from .admin_iot_views import admin_iot_router
+from .admin_revenue_views import admin_revenue_router
+from .admin_iot_monitoring_views import admin_iot_monitoring_router
 
 # Merge all sub-routers
 # IMPORTANT: Order matters! More specific routes must come before generic ones
@@ -68,6 +71,9 @@ for sub_router in [
     achievement_admin_router,
     admin_ads_router,
     partner_admin_router,  # Partner management
+    admin_iot_router,  # IoT history
+    admin_revenue_router,  # Revenue distributions
+    admin_iot_monitoring_router,  # IoT monitoring
 ]:
     router._paths.extend(sub_router._paths)
     router._drf_router.registry.extend(sub_router._drf_router.registry)

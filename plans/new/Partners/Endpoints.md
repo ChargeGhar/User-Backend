@@ -194,9 +194,8 @@ Base Path: `/api/partner/franchise/`
 |--------|----------|-------------|-----------------|
 | GET | `/api/partner/franchise/stations/` | Own stations list | `station_distributions`, `stations` |
 | GET | `/api/partner/franchise/stations/{id}/` | Station details | `stations`, `station_distributions` |
-| GET | `/api/partner/franchise/stations/unassigned/` | Stations without vendor assigned | `station_distributions` |
 
-**Note:** Franchise assigns stations to vendors during vendor creation only.
+**Note:** Franchise assigns stations to vendors during vendor creation only. Use ?has_vendor=false filter on list endpoint to see unassigned stations.
 
 ### 2.4 Transactions
 

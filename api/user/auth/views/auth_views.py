@@ -138,7 +138,7 @@ class CustomTokenRefreshView(GenericAPIView, BaseAPIView):
 
 @auth_router.register(r"auth/device", name="auth-device")
 @extend_schema(
-    tags=["Authentication - Device"],
+    tags=["Authentication - Biometric"],
     summary="Register Device",
     responses={200: BaseResponseSerializer}
 )

@@ -13,14 +13,14 @@ from api.common.mixins import BaseAPIView
 from api.common.routers import CustomViewRouter
 from api.partners.auth.permissions import HasDashboardAccess
 from api.partners.common.services import PartnerIoTService
-from api.partners.vendor.serializers import IoTHistorySerializer
+from api.partners.common.serializers.iot_serializers import IoTHistorySerializer
 
 partner_iot_router = CustomViewRouter()
 
 
 @partner_iot_router.register(r"partner/iot/history", name="partner-iot-history")
 @extend_schema(
-    tags=["Partner - IoT"],
+    tags=["Partner - Common"],
     summary="Get IoT History",
     description="Get partner IoT action history",
     responses={200: IoTHistorySerializer(many=True)}
@@ -33,7 +33,7 @@ class PartnerIoTHistoryView(GenericAPIView, BaseAPIView):
     def get(self, request: Request) -> Response:
         """Get IoT action history"""
         def operation():
-            partner = request.user.partner
+            partner = request.user.partner_profile
             service = PartnerIoTService()
             
             filters = {
