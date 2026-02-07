@@ -7,7 +7,7 @@ x-common: &common
       max-size: "10m"
       max-file: "3"
   networks:
-    - powerbank_main
+    - cg_main
   restart: unless-stopped
 
 services:
@@ -59,7 +59,7 @@ services:
     environment:
       POSTGRES_INITDB_ARGS: --auth=scram-sha-256
     volumes:
-      - powerbank_postgres_data:/var/lib/postgresql/data
+      - cg_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -78,7 +78,7 @@ services:
     image: redis:7-alpine
     container_name: cg-redis
     volumes:
-      - powerbank_redis_data:/data
+      - cg_redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 15s
@@ -101,7 +101,7 @@ services:
         RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-powerbank}
         RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
     volumes:
-      - powerbank_rabbitmq_data:/var/lib/rabbitmq
+      - cg_rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 30s
@@ -182,12 +182,12 @@ services:
     restart: "no"
 
 networks:
-  powerbank_main:
+  cg_main:
     driver: bridge
 
 volumes:
-  powerbank_postgres_data:
-  powerbank_redis_data:
-  powerbank_rabbitmq_data:
+  cg_postgres_data:
+  cg_redis_data:
+  cg_rabbitmq_data:
   static_volume:
   celery_beat_data:
