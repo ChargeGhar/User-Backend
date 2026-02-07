@@ -141,10 +141,10 @@ sed -i 's|CELERY_TASK_ALWAYS_EAGER=true|CELERY_TASK_ALWAYS_EAGER=false|' .env
 sed -i 's|CELERY_TASK_EAGER_PROPAGATES=true|CELERY_TASK_EAGER_PROPAGATES=false|' .env
 sed -i 's|CELERY_TASK_IGNORE_RESULT=true|CELERY_TASK_IGNORE_RESULT=false|' .env
 # Update service names to match production docker-compose
-sed -i 's|POSTGRES_HOST=pgbouncer|POSTGRES_HOST=powerbank_db|' .env
-sed -i 's|POSTGRES_HOST=db|POSTGRES_HOST=powerbank_db|' .env
-sed -i 's|REDIS_HOST=redis|REDIS_HOST=powerbank_redis|' .env
-sed -i 's|RABBITMQ_HOST=rabbitmq|RABBITMQ_HOST=powerbank_rabbitmq|' .env
+sed -i 's|POSTGRES_HOST=pgbouncer|POSTGRES_HOST=db|' .env
+sed -i 's|POSTGRES_HOST=.*|POSTGRES_HOST=db|' .env
+sed -i 's|REDIS_HOST=.*|REDIS_HOST=redis|' .env
+sed -i 's|RABBITMQ_HOST=.*|RABBITMQ_HOST=rabbitmq|' .env
 sed -i 's|BASE_URL=http://localhost:8010|BASE_URL=https://main.chargeghar.com|' .env
 # Update frontend URL for production redirects
 sed -i 's|FRONTEND_URL=.*|FRONTEND_URL=https://chargeghar.app|' .env
@@ -199,11 +199,11 @@ sleep 30
 
 # Check migration status
 print_step "Checking migration status..."
-if docker-compose -f "$DOCKER_COMPOSE_FILE" ps powerbank_migrations | grep -q "Exit 0"; then
+if docker-compose -f "$DOCKER_COMPOSE_FILE" ps migrations | grep -q "Exit 0"; then
     print_status "Migrations completed successfully"
-elif docker-compose -f "$DOCKER_COMPOSE_FILE" ps powerbank_migrations | grep -q "Exit"; then
+elif docker-compose -f "$DOCKER_COMPOSE_FILE" ps migrations | grep -q "Exit"; then
     print_error "Migrations failed! Checking logs..."
-    docker-compose -f "$DOCKER_COMPOSE_FILE" logs powerbank_migrations
+    docker-compose -f "$DOCKER_COMPOSE_FILE" logs migrations
     exit 1
 else
     print_step "Migrations still running, waiting..."
@@ -212,7 +212,7 @@ fi
 
 # Ensure static files are collected
 print_step "Collecting static files..."
-docker-compose -f "$DOCKER_COMPOSE_FILE" exec -T powerbank_api python manage.py collectstatic --noinput || true
+docker-compose -f "$DOCKER_COMPOSE_FILE" exec -T api python manage.py collectstatic --noinput || true
 
 # Show container status
 print_step "Container Status:"
@@ -220,7 +220,7 @@ docker-compose -f "$DOCKER_COMPOSE_FILE" ps
 
 # Check for any failed services (excluding successful one-time services)
 print_step "Checking for failed services..."
-FAILED_SERVICES=$(docker-compose -f "$DOCKER_COMPOSE_FILE" ps --filter "status=exited" --format "table {{.Service}}\t{{.Status}}" | grep -v "SERVICE" | grep -v "Exit 0" | grep -v "powerbank_migrations" | grep -v "powerbank_collectstatic" || true)
+FAILED_SERVICES=$(docker-compose -f "$DOCKER_COMPOSE_FILE" ps --filter "status=exited" --format "table {{.Service}}\t{{.Status}}" | grep -v "SERVICE" | grep -v "Exit 0" | grep -v "migrations" | grep -v "collectstatic" || true)
 if [[ -n "$FAILED_SERVICES" ]]; then
     print_error "Some services failed:"
     echo "$FAILED_SERVICES"
@@ -231,8 +231,8 @@ else
     print_status "All services are running successfully!"
     
     # Check one-time services completed successfully
-    MIGRATION_STATUS=$(docker-compose -f "$DOCKER_COMPOSE_FILE" ps powerbank_migrations --format "{{.Status}}" | grep "Exit 0" || echo "")
-    COLLECTSTATIC_STATUS=$(docker-compose -f "$DOCKER_COMPOSE_FILE" ps powerbank_collectstatic --format "{{.Status}}" | grep "Exit 0" || echo "")
+    MIGRATION_STATUS=$(docker-compose -f "$DOCKER_COMPOSE_FILE" ps migrations --format "{{.Status}}" | grep "Exit 0" || echo "")
+    COLLECTSTATIC_STATUS=$(docker-compose -f "$DOCKER_COMPOSE_FILE" ps collectstatic --format "{{.Status}}" | grep "Exit 0" || echo "")
     
     if [[ -n "$MIGRATION_STATUS" ]]; then
         print_status "✅ Database migrations completed successfully"
@@ -247,7 +247,7 @@ fi
 print_step "Loading fixtures..."
 if [[ -f "load-fixtures-safe.sh" ]] && [[ -f "load-fixtures.sh" ]]; then
     # Check if database already has data (indicating existing deployment)
-    DB_HAS_DATA=$(docker-compose -f "$DOCKER_COMPOSE_FILE" exec -T powerbank_api python manage.py shell -c "
+    DB_HAS_DATA=$(docker-compose -f "$DOCKER_COMPOSE_FILE" exec -T api python manage.py shell -c "
 from django.contrib.auth import get_user_model
 from api.stations.models import Station
 User = get_user_model()
@@ -289,11 +289,11 @@ API_PORT=$(grep "API_PORT" .env | cut -d '=' -f2 | tr -d ' ')
 SERVER_IP=$(hostname -I | awk '{print $1}')
 
 print_step ""
-print_status "🎉 PowerBank Django Deployment Completed!"
+print_status "🎉 ChargeGhar Deployment Completed!"
 print_status "========================================"
 print_status "API URL: https://main.chargeghar.com"
 print_status "API Documentation: https://main.chargeghar.com/docs/"
 print_status "Admin Panel: https://main.chargeghar.com/admin/"
 print_status ""
-print_status "Use 'python3 powerbank-manager.py' for management tasks"
+print_status "Use 'python3 mgr.py' for management tasks"
 print_status ""

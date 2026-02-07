@@ -217,7 +217,7 @@ class BeatScheduleFixer:
                 "   2. Test beat schedule: celery -A tasks.app beat --loglevel=info --dry-run"
             )
             print(
-                "   3. Restart Celery: docker-compose restart powerbank_celery_worker powerbank_celery_beat"
+                "   3. Restart Celery: docker-compose restart celery celery_beat"
             )
             print("\n💡 If issues occur, rollback with:")
             print(f"   python3 tools/fix_beat_schedule.py --rollback {backup_path}")
@@ -250,7 +250,7 @@ class BeatScheduleFixer:
         shutil.copy2(backup_path, self.app_file)
         print("✅ Rollback complete")
         print("\n🚀 Restart Celery to apply changes:")
-        print("   docker-compose restart powerbank_celery_worker powerbank_celery_beat")
+        print("   docker-compose restart celery celery_beat")
 
 
 def main():

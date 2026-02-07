@@ -48,11 +48,11 @@ fi
 print_step "Starting safe fixtures loading (idempotent)"
 
 # Detect API container (same pattern as load-fixtures.sh)
-API_CONTAINER=$(docker ps --format "{{.Names}}" | grep "powerbank.*api" | head -1)
+API_CONTAINER=$(docker ps --format "{{.Names}}" | grep "cg-api" | head -1)
 if [[ -z "$API_CONTAINER" ]]; then
-    print_error "No PowerBank API container is running!"
+    print_error "No ChargeGhar API container is running!"
     echo "Available containers:"
-    docker ps --format "table {{.Names}}\t{{.Status}}" | grep powerbank || echo "No PowerBank containers found"
+    docker ps --format "table {{.Names}}\t{{.Status}}" | grep cg- || echo "No ChargeGhar containers found"
     exit 1
 fi
 

@@ -67,7 +67,7 @@ if [[ -n "$NGINX_CONFIG" ]]; then
     print_step "Creating static files link..."
     
     # Get static files from container
-    API_CONTAINER=$(docker ps --format "{{.Names}}" | grep "powerbank.*api" | head -1)
+    API_CONTAINER=$(docker ps --format "{{.Names}}" | grep "cg-api" | head -1)
     
     if [[ -n "$API_CONTAINER" ]]; then
         # Copy static files from container to host

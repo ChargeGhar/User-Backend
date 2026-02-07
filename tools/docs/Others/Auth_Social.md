@@ -299,13 +299,13 @@ const signInWithApple = async () => {
 ### Debug Commands:
 ```bash
 # Check container logs
-docker-compose -f docker-compose.prod.yml logs -f powerbank_api
+docker-compose -f docker-compose.prod.yml logs -f api
 
 # Check environment variables
-docker-compose -f docker-compose.prod.yml exec powerbank_api env | grep OAUTH
+docker-compose -f docker-compose.prod.yml exec api env | grep OAUTH
 
 # Test database connection
-docker-compose -f docker-compose.prod.yml exec powerbank_api python manage.py shell
+docker-compose -f docker-compose.prod.yml exec api python manage.py shell
 ```
 
 ## ✅ Production Checklist

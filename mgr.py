@@ -166,7 +166,7 @@ class PowerBankManager:
     def view_logs(self):
         """View logs with service selection"""
         print(f"\n{Colors.BLUE}📋 Available Services:{Colors.ENDC}")
-        services = ["all", "powerbank_api", "powerbank_db", "powerbank_redis", "powerbank_rabbitmq", "powerbank_celery"]
+        services = ["all", "api", "db", "redis", "rabbitmq", "celery"]
         
         for i, service in enumerate(services, 1):
             print(f"{Colors.GREEN}{i}.{Colors.ENDC} {service}")
@@ -262,7 +262,7 @@ class PowerBankManager:
         # Ensure backups directory exists
         os.makedirs("backups", exist_ok=True)
         
-        cmd = f"docker-compose -f {self.compose_file} exec -T powerbank_db pg_dump -U powerbank_user powerbank_db > {backup_file}"
+        cmd = f"docker-compose -f {self.compose_file} exec -T db pg_dump -U powerbank_user powerbank_db > {backup_file}"
         success = self.run_command(cmd, f"Creating backup: {backup_file}")
         
         if success:

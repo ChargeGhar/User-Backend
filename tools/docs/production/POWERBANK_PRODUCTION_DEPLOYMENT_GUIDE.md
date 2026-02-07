@@ -95,13 +95,13 @@ docker-compose -f docker-compose.prod.yml logs -f
 ### **View Specific Service Logs:**
 ```bash
 # API logs
-docker-compose -f docker-compose.prod.yml logs -f powerbank_api
+docker-compose -f docker-compose.prod.yml logs -f api
 
 # Database logs
-docker-compose -f docker-compose.prod.yml logs -f powerbank_db
+docker-compose -f docker-compose.prod.yml logs -f db
 
 # Celery logs
-docker-compose -f docker-compose.prod.yml logs -f powerbank_celery
+docker-compose -f docker-compose.prod.yml logs -f celery
 ```
 
 ### **Stop Application:**
@@ -131,10 +131,10 @@ docker stats
 curl http://localhost:8010/api/app/health/
 
 # View real-time logs
-docker-compose -f /opt/powerbank/docker-compose.prod.yml logs -f powerbank_api
+docker-compose -f /opt/powerbank/docker-compose.prod.yml logs -f api
 
 # Django shell access
-docker-compose -f /opt/powerbank/docker-compose.prod.yml exec powerbank_api python manage.py shell
+docker-compose -f /opt/powerbank/docker-compose.prod.yml exec api python manage.py shell
 ```
 
 ---
@@ -167,17 +167,17 @@ When you get your domain:
 
 2. **Database connection issues:**
    ```bash
-   docker-compose -f docker-compose.prod.yml logs powerbank_db
+   docker-compose -f docker-compose.prod.yml logs db
    ```
 
 3. **Migration failures:**
    ```bash
-   docker-compose -f docker-compose.prod.yml exec powerbank_api python manage.py migrate
+   docker-compose -f docker-compose.prod.yml exec api python manage.py migrate
    ```
 
 4. **Container fails to start:**
    ```bash
-   docker-compose -f docker-compose.prod.yml logs powerbank_api
+   docker-compose -f docker-compose.prod.yml logs api
    ```
 
 5. **Memory issues:**
@@ -192,7 +192,7 @@ When you get your domain:
    curl -v http://localhost:8010/api/app/health/
    
    # Check container logs
-   docker-compose -f docker-compose.prod.yml logs --tail=50 powerbank_api
+   docker-compose -f docker-compose.prod.yml logs --tail=50 api
    ```
 
 ---
@@ -286,7 +286,7 @@ HOST=main.chargeghar.com
 # Database
 POSTGRES_DB=powerbank_db
 POSTGRES_USER=powerbank_user
-POSTGRES_HOST=powerbank_db
+POSTGRES_HOST=db
 
 # Security (CHANGE THESE!)
 DJANGO_SECRET_KEY=your-super-secret-and-long-django-secret-key
