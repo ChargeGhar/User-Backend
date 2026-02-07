@@ -161,25 +161,11 @@ print_step "Stopping containers and cleaning up..."
 # IMPORTANT: Removed --volumes flag to preserve database data
 docker-compose -f "$DOCKER_COMPOSE_FILE" down --remove-orphans || true
 
-# Migrate data from old powerbank volumes to new cg volumes (one-time migration)
-migrate_volume() {
-    local old_vol="$1"
-    local new_vol="$2"
-    if docker volume inspect "$old_vol" >/dev/null 2>&1; then
-        if ! docker volume inspect "$new_vol" >/dev/null 2>&1; then
-            print_step "Migrating volume: $old_vol -> $new_vol"
-            docker volume create "$new_vol"
-            docker run --rm -v "$old_vol":/from -v "$new_vol":/to alpine sh -c "cp -a /from/. /to/"
-            print_status "Volume $new_vol migrated successfully"
-        fi
-    fi
-}
-
-migrate_volume "powerbank_production_powerbank_postgres_data" "chargeghar_production_cg_postgres_data"
-migrate_volume "powerbank_production_powerbank_redis_data" "chargeghar_production_cg_redis_data"
-migrate_volume "powerbank_production_powerbank_rabbitmq_data" "chargeghar_production_cg_rabbitmq_data"
-migrate_volume "powerbank_production_static_volume" "chargeghar_production_static_volume"
-migrate_volume "powerbank_production_celery_beat_data" "chargeghar_production_celery_beat_data"
+# Also stop old containers from previous project name (one-time migration)
+if docker ps -a --format "{{.Names}}" | grep -q "^cg-"; then
+    print_step "Removing old cg-* containers from previous project..."
+    docker ps -a --format "{{.Names}}" | grep "^cg-" | xargs -r docker rm -f || true
+fi
 
 # Kill any containers using port 8010
 print_step "Checking for port conflicts..."
