@@ -83,7 +83,6 @@ class RentalCancelView(GenericAPIView, BaseAPIView):
         responses={200: BaseResponseSerializer}
     )
     @log_api_call(include_request_data=True)
-    @log_api_call()
     def post(self, request: Request, rental_id: str) -> Response:
         """Cancel rental"""
         def operation():

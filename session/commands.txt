@@ -124,13 +124,13 @@ docker-compose exec api python manage.py shell -c "from django.db import connect
 
 
 
-docker exec powerbank_production-powerbank_api-1 python manage.py shell -c " # Clear the account lock (django-axes) from axes.models import AccessAttempt AccessAttempt.objects.filter(username='janak').delete() print('✅ Account lock cleared for janak') # Set password for admin user from django.contrib.auth import get_user_model User = get_user_model() admin_user = User.objects.get(username='janak') admin_user.set_password('PowerBank@2024') admin_user.save() print('✅ Password set for admin user') print('🌐 Django Admin: https://main.chargeghar.com/admin/') print('👤 Username: janak') print('🔑 Password: PowerBank@2024') print('') print('📧 Email (for OTP): janak@powerbank.com') print('🔐 OTP flow still works for API authentication') "
+docker exec powerbank_production-powerbank_api-1 python manage.py shell -c " # Clear the account lock (django-axes) from axes.models import AccessAttempt AccessAttempt.objects.filter(username='janak').delete() print('✅ Account lock cleared for janak') # Set password for admin user from django.contrib.auth import get_user_model User = get_user_model() admin_user = User.objects.get(username='janak') admin_user.set_password('5060') admin_user.save() print('✅ Password set for admin user') print('🌐 Django Admin: https://main.chargeghar.com/admin/') print('👤 Username: janak') print('🔑 Password: PowerBank@2024') print('') print('📧 Email (for OTP): janak@powerbank.com') print('🔐 OTP flow still works for API authentication') "
 
 
 
 
 
-docker exec powerbank_local_api_1 python manage.py shell -c "
+docker exec powerbank_production-powerbank_api-1 python manage.py shell -c "
 # Clear ALL axes locks for the admin user
 from axes.models import AccessAttempt, AccessLog
 from django.contrib.auth import get_user_model
@@ -160,7 +160,7 @@ try:
     print(f'   Has usable password: {admin_user.has_usable_password()}')
     
     # Set password again to be sure
-    admin_user.set_password('PowerBank@2024')
+    admin_user.set_password('5060')
     admin_user.save()
     print('✅ Password reset successfully')
     

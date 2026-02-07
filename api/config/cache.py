@@ -15,7 +15,7 @@ REDIS_URL = getenv("REDIS_URL", default="redis://localhost:6379/0")
 CACHES: dict[str, Any] = {}
 
 if USE_REDIS_FOR_CACHE:
-    logger.info("Using Redis for cache")
+    logger.debug("Using Redis for cache")
     CACHES["default"] = {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": REDIS_URL,
@@ -26,7 +26,7 @@ if USE_REDIS_FOR_CACHE:
 
     # Don't test cache connection during startup to avoid blocking Django initialization
     # The cache will be tested when first used
-    logger.info("Redis cache configured - connection will be tested on first use")
+    logger.debug("Redis cache configured - connection will be tested on first use")
 else:
     logger.warning("Using dummy cache")
     CACHES["default"] = {

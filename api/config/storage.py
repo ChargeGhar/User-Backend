@@ -42,20 +42,20 @@ AWS_S3_CONFIG = {
 STORAGES: dict[str, Any] = {}
 
 if USE_S3_FOR_STATIC:
-    logger.info("Serving static files from S3")
+    logger.debug("Serving static files from S3")
     STORAGES["staticfiles"] = AWS_S3_CONFIG
 else:
-    logger.info("Serving static files locally")
+    logger.debug("Serving static files locally")
     STORAGES["staticfiles"] = {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     }
 
 
 if USE_S3_FOR_MEDIA:
-    logger.info("Serving media files from S3")
+    logger.debug("Serving media files from S3")
     STORAGES["default"] = AWS_S3_CONFIG
 else:
-    logger.info("Serving media files locally")
+    logger.debug("Serving media files locally")
     STORAGES["default"] = {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
         "LOCATION": MEDIA_ROOT.as_posix(),

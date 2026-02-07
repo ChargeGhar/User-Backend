@@ -42,4 +42,4 @@ if USE_SENTRY:
 
     logger.info("Sentry is initialized")
 else:
-    logger.info("Sentry is not initialized")
+    logger.debug("Sentry is not initialized")

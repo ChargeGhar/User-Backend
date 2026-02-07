@@ -11,7 +11,7 @@ LOGGING = {
     "formatters": {
         "colored": {
             "()": "colorlog.ColoredFormatter",
-            "format": "%(asctime)s %(log_color)s%(levelname)s %(name)s %(message)s",
+            "format": "%(asctime)s %(log_color)s%(levelname)-5s%(reset)s %(name)s %(message)s",
             "datefmt": "%Y-%m-%d %H:%M:%S",
         },
     },
@@ -22,11 +22,27 @@ LOGGING = {
         },
     },
     "loggers": {
+        # Root logger — your app
         "": {
             "handlers": ["console"],
             "level": LOG_LEVEL,
             "propagate": True,
         },
+        # ── Silence noisy third-party libraries ──
+        # AMQP connection debug spam
+        "amqp": {"level": "WARNING"},
+        # Django internals
+        "django.utils.autoreload": {"level": "WARNING"},
+        "django.template": {"level": "WARNING"},
+        # Axes login attempt monitoring (startup banner repeats per worker)
+        "axes.apps": {"level": "WARNING"},
+        # Celery internal chatter
+        "celery.worker.consumer.mingle": {"level": "WARNING"},
+        "celery.worker.strategy": {"level": "WARNING"},
+        # Kombu/redis transport noise
+        "kombu": {"level": "WARNING"},
+        # Silk profiler (if enabled)
+        "silk": {"level": "WARNING"},
     },
 }
 

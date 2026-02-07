@@ -172,7 +172,7 @@ class {Model}Serializer(serializers.ModelSerializer):
 ### Available Decorators
 
 ```python
-@log_api_call(include_request_data=True, include_response_data=False)
+@log_api_call(include_request_data=True)
 @rate_limit(max_requests=5, window_seconds=300)
 @cached_response(timeout=300, key_func=custom_key_func)
 @require_complete_profile

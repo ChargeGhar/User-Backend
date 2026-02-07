@@ -4,7 +4,6 @@ import functools
 import logging
 from typing import Callable, Any
 from django.core.cache import cache
-from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -87,66 +86,70 @@ def rate_limit(max_requests: int = 5, window_seconds: int = 60):
     return decorator
 
 
-def log_api_call(include_request_data: bool = False, include_response_data: bool = False):
-    """Decorator for logging API calls"""
+def log_api_call(include_request_data: bool = False):
+    """
+    Decorator for logging API calls with accurate, useful output.
+    
+    Logs: METHOD /path View.method user=X status=200 42ms
+    
+    - Only logs warnings for 4xx, errors for 5xx/exceptions
+    - Successful GET requests logged at DEBUG to reduce noise
+    - Mutating requests (POST/PUT/PATCH/DELETE) always logged at INFO
+    - Optionally includes request body (sensitive fields auto-redacted)
+    """
+    # Sensitive fields that should never appear in logs
+    REDACTED_FIELDS = frozenset({
+        'password', 'token', 'otp', 'pin', 'secret',
+        'access_token', 'refresh_token', 'credit_card',
+        'card_number', 'cvv', 'biometric_data',
+    })
+
     def decorator(view_func):
         @functools.wraps(view_func)
         def wrapper(self, request, *args, **kwargs):
-            start_time = timezone.now()
-            
-            # Log request
-            log_data = {
-                'view': self.__class__.__name__,
-                'method': request.method,
-                'path': request.path,
-                'user': str(request.user) if request.user.is_authenticated else 'anonymous',
-                'ip': request.META.get('REMOTE_ADDR', 'unknown'),
-                'user_agent': request.META.get('HTTP_USER_AGENT', 'unknown')
-            }
-            
-            if include_request_data and hasattr(request, 'data'):
-                # Don't log sensitive data
-                safe_data = {k: v for k, v in request.data.items() 
-                           if k not in ['password', 'token', 'otp']}
-                log_data['request_data'] = safe_data
-            
+            import time
+            start = time.monotonic()
+
+            view_name = self.__class__.__name__
+            method = request.method
+            path = request.path
+            user = str(request.user) if request.user.is_authenticated else 'anon'
+
             try:
                 response = view_func(self, request, *args, **kwargs)
-                
-                # Calculate response time
-                end_time = timezone.now()
-                response_time = (end_time - start_time).total_seconds() * 1000
-                
-                log_data.update({
-                    'status_code': response.status_code,
-                    'response_time_ms': round(response_time, 2)
-                })
-                
-                if include_response_data and hasattr(response, 'data'):
-                    log_data['response_data'] = response.data
-                
-                # Log based on status code
-                if response.status_code >= 500:
-                    logger.error("API call failed", extra=log_data)
-                elif response.status_code >= 400:
-                    logger.warning("API call error", extra=log_data)
+                elapsed_ms = round((time.monotonic() - start) * 1000, 1)
+                status_code = response.status_code
+
+                # Build log line — everything a developer needs in one glance
+                msg = f"{method} {path} {view_name}.{view_func.__name__} user={user} status={status_code} {elapsed_ms}ms"
+
+                # Append request body for mutating endpoints if opted-in
+                if include_request_data and method in ('POST', 'PUT', 'PATCH') and hasattr(request, 'data'):
+                    safe = {k: '***' if k in REDACTED_FIELDS else v for k, v in request.data.items()}
+                    msg += f" body={safe}"
+
+                # Log level based on status code
+                if status_code >= 500:
+                    logger.error(msg)
+                elif status_code >= 400:
+                    logger.warning(msg)
+                elif method in ('POST', 'PUT', 'PATCH', 'DELETE'):
+                    # Mutating requests always at INFO
+                    logger.info(msg)
                 else:
-                    logger.info("API call success", extra=log_data)
-                
+                    # GET/HEAD/OPTIONS at DEBUG — keeps production logs clean
+                    logger.debug(msg)
+
                 return response
-                
+
             except Exception as e:
-                end_time = timezone.now()
-                response_time = (end_time - start_time).total_seconds() * 1000
-                
-                log_data.update({
-                    'exception': str(e),
-                    'response_time_ms': round(response_time, 2)
-                })
-                
-                logger.error("API call exception", extra=log_data)
+                elapsed_ms = round((time.monotonic() - start) * 1000, 1)
+                logger.error(
+                    f"{method} {path} {view_name}.{view_func.__name__} user={user} "
+                    f"EXCEPTION {e.__class__.__name__}: {e} {elapsed_ms}ms"
+                )
                 raise
-        
+
         return wrapper
     return decorator
 

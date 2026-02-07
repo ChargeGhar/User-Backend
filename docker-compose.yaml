@@ -57,10 +57,10 @@ services:
       - RESERVE_POOL_TIMEOUT=5
       - SERVER_RESET_QUERY=DISCARD ALL
       - SERVER_CHECK_QUERY=select 1
-      - LOG_CONNECTIONS=1
-      - LOG_DISCONNECTIONS=1
+      - LOG_CONNECTIONS=0
+      - LOG_DISCONNECTIONS=0
       - LOG_POOLER_ERRORS=1
-      - STATS_PERIOD=60
+      - STATS_PERIOD=0
       - AUTH_TYPE=md5
     volumes:
       - pgbouncer-data:/var/lib/pgbouncer
