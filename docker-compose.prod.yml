@@ -11,11 +11,13 @@ x-common: &common
   restart: unless-stopped
 
 services:
-  powerbank_api:
+  api:
     <<: *common
     build:
       context: .
       dockerfile: Dockerfile.prod
+    image: cg-api:prod
+    container_name: cg-api
     ports:
       - "${API_PORT:-8010}:80"
     environment:
@@ -24,15 +26,15 @@ services:
       ENVIRONMENT: production
     command: sh -c "python manage.py collectstatic --noinput && python -m gunicorn api.web.wsgi:application --bind 0.0.0.0:80 --workers ${WORKERS:-4} --threads ${THREADS:-16} --timeout 480"
     depends_on:
-      powerbank_db:
+      db:
         condition: service_healthy
-      powerbank_redis:
+      redis:
         condition: service_healthy
-      powerbank_rabbitmq:
+      rabbitmq:
         condition: service_healthy
-      powerbank_migrations:
+      migrations:
         condition: service_completed_successfully
-      powerbank_collectstatic:
+      collectstatic:
         condition: service_completed_successfully
 
     healthcheck:
@@ -50,9 +52,10 @@ services:
     volumes:
       - static_volume:/application/staticfiles
 
-  powerbank_db:
+  db:
     <<: *common
     image: postgres:15
+    container_name: cg-db
     environment:
       POSTGRES_INITDB_ARGS: --auth=scram-sha-256
     volumes:
@@ -70,9 +73,10 @@ services:
           memory: 256M
     command: postgres -c shared_preload_libraries=pg_stat_statements -c pg_stat_statements.track=all
 
-  powerbank_redis:
+  redis:
     <<: *common
     image: redis:7-alpine
+    container_name: cg-redis
     volumes:
       - powerbank_redis_data:/data
     healthcheck:
@@ -89,9 +93,10 @@ services:
           memory: 64M
     command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru
 
-  powerbank_rabbitmq:
+  rabbitmq:
     <<: *common
     image: rabbitmq:3.13-management-alpine
+    container_name: cg-rabbitmq
     environment:
         RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-powerbank}
         RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
@@ -110,14 +115,16 @@ services:
         reservations:
           memory: 128M
 
-  powerbank_celery:
+  celery:
     <<: *common
     build:
       context: .
       dockerfile: Dockerfile.prod
+    image: cg-api:prod
+    container_name: cg-celery
     command: python -m celery -A tasks.app worker --loglevel=INFO --concurrency=2 --max-tasks-per-child=100 --prefetch-multiplier=1
     depends_on:
-      powerbank_api:
+      api:
         condition: service_healthy
     deploy:
       resources:
@@ -126,16 +133,18 @@ services:
         reservations:
           memory: 256M
 
-  powerbank_celery_beat:
+  celery_beat:
     <<: *common
     build:
       context: .
       dockerfile: Dockerfile.prod
+    image: cg-api:prod
+    container_name: cg-celery-beat
     command: python -m celery -A tasks.app beat --loglevel=INFO --schedule=/tmp/celerybeat-schedule
     depends_on:
-      powerbank_redis:
+      redis:
         condition: service_healthy
-      powerbank_rabbitmq:
+      rabbitmq:
         condition: service_healthy
     deploy:
       resources:
@@ -144,25 +153,29 @@ services:
         reservations:
           memory: 64M
 
-  powerbank_migrations:
+  migrations:
     <<: *common
     build:
       context: .
       dockerfile: Dockerfile.prod
+    image: cg-api:prod
+    container_name: cg-migrations
     command: sh -c "sleep 15 && python manage.py migrate"
     depends_on:
-      powerbank_db:
+      db:
         condition: service_healthy
     restart: "no"
 
-  powerbank_collectstatic:
+  collectstatic:
     <<: *common
     build:
       context: .
       dockerfile: Dockerfile.prod
+    image: cg-api:prod
+    container_name: cg-collectstatic
     command: sh -c "sleep 15 && python manage.py collectstatic --noinput"
     depends_on:
-      powerbank_db:
+      db:
         condition: service_healthy
     volumes:
       - static_volume:/application/staticfiles
