@@ -289,6 +289,14 @@ class AdminPartnerService(BaseService):
         if 'address' in data:
             partner.address = data['address']
             update_fields.append('address')
+
+        if 'subject' in data:
+            partner.subject = data['subject']
+            update_fields.append('subject')
+
+        if 'message' in data:
+            partner.message = data['message']
+            update_fields.append('message')
         
         if 'notes' in data:
             partner.notes = data['notes']

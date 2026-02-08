@@ -676,7 +676,7 @@ class AdminPartnerListView(GenericAPIView, BaseAPIView):
         parameters=[
             OpenApiParameter(name='partner_type', type=str, enum=['FRANCHISE', 'VENDOR']),
             OpenApiParameter(name='vendor_type', type=str, enum=['REVENUE', 'NON_REVENUE']),
-            OpenApiParameter(name='status', type=str, enum=['ACTIVE', 'INACTIVE', 'SUSPENDED']),
+            OpenApiParameter(name='status', type=str, enum=['PENDING', 'ACTIVE', 'INACTIVE', 'SUSPENDED']),
             OpenApiParameter(name='parent_id', type=str, description='Filter by franchise ID'),
             OpenApiParameter(name='search', type=str, description='Search by name, code, phone'),
             OpenApiParameter(name='page', type=int, default=1),

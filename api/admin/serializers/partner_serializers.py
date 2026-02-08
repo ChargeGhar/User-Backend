@@ -28,7 +28,7 @@ class AdminPartnerListFilterSerializer(serializers.Serializer):
         help_text="Filter by vendor type (only for VENDOR partner_type)"
     )
     status = serializers.ChoiceField(
-        choices=['ACTIVE', 'INACTIVE', 'SUSPENDED'],
+        choices=['PENDING', 'ACTIVE', 'INACTIVE', 'SUSPENDED'],
         required=False,
         help_text="Filter by status"
     )
@@ -71,6 +71,8 @@ class AdminPartnerSerializer(serializers.Serializer):
     business_name = serializers.CharField(read_only=True)
     contact_phone = serializers.CharField(read_only=True)
     contact_email = serializers.EmailField(read_only=True, allow_null=True)
+    subject = serializers.CharField(read_only=True, allow_null=True)
+    message = serializers.CharField(read_only=True, allow_null=True)
     status = serializers.CharField(read_only=True)
     balance = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     total_earnings = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
@@ -183,13 +185,15 @@ class CreateFranchiseSerializer(serializers.Serializer):
         """Validate user exists and is not already a partner"""
         from api.user.auth.models import User
         from api.partners.common.repositories import PartnerRepository
+        from api.partners.common.models import Partner
         
         try:
             User.objects.get(id=value)
         except User.DoesNotExist:
             raise serializers.ValidationError("User not found")
         
-        if PartnerRepository.user_is_already_partner(value):
+        existing_partner = PartnerRepository.get_by_user_id(value)
+        if existing_partner and existing_partner.status != Partner.Status.PENDING:
             raise serializers.ValidationError("User is already a partner")
         
         return value
@@ -262,13 +266,15 @@ class CreateVendorSerializer(serializers.Serializer):
         """Validate user exists and is not already a partner"""
         from api.user.auth.models import User
         from api.partners.common.repositories import PartnerRepository
+        from api.partners.common.models import Partner
         
         try:
             User.objects.get(id=value)
         except User.DoesNotExist:
             raise serializers.ValidationError("User not found")
         
-        if PartnerRepository.user_is_already_partner(value):
+        existing_partner = PartnerRepository.get_by_user_id(value)
+        if existing_partner and existing_partner.status != Partner.Status.PENDING:
             raise serializers.ValidationError("User is already a partner")
         
         return value
@@ -329,6 +335,8 @@ class UpdatePartnerSerializer(serializers.Serializer):
     contact_email = serializers.EmailField(required=False, allow_null=True)
     address = serializers.CharField(required=False, allow_null=True)
     notes = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    subject = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    message = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     # Franchise-specific
     upfront_amount = serializers.DecimalField(
         max_digits=12, decimal_places=2, required=False
@@ -343,7 +351,7 @@ class UpdatePartnerSerializer(serializers.Serializer):
 class UpdatePartnerStatusSerializer(serializers.Serializer):
     """Serializer for updating partner status"""
     status = serializers.ChoiceField(
-        choices=['ACTIVE', 'INACTIVE', 'SUSPENDED'],
+        choices=['PENDING', 'ACTIVE', 'INACTIVE', 'SUSPENDED'],
         help_text="New status for partner"
     )
     reason = serializers.CharField(

@@ -253,3 +253,37 @@ class IssueTypesResponseSerializer(serializers.Serializer):
     """Response for issue types endpoint"""
     station_issue_types = IssueTypeChoiceSerializer(many=True)
     rental_issue_types = IssueTypeChoiceSerializer(many=True)
+
+
+# ============================================================================
+# Partner Request Serializers
+# ============================================================================
+
+class PartnerRequestCreateSerializer(serializers.Serializer):
+    """Serializer for creating partner request"""
+    full_name = serializers.CharField(max_length=100)
+    contact_number = serializers.CharField(max_length=20)
+    subject = serializers.CharField(max_length=255)
+    message = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+
+    def validate_full_name(self, value):
+        if len(value.strip()) < 3:
+            raise serializers.ValidationError(
+                "Full name must be at least 3 characters"
+            )
+        return value.strip()
+
+    def validate_contact_number(self, value):
+        cleaned = value.strip().replace(' ', '').replace('-', '')
+        if len(cleaned) < 10:
+            raise serializers.ValidationError(
+                "Contact number must be at least 10 digits"
+            )
+        return value.strip()
+
+    def validate_subject(self, value):
+        if len(value.strip()) < 3:
+            raise serializers.ValidationError(
+                "Subject must be at least 3 characters"
+            )
+        return value.strip()

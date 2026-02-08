@@ -28,6 +28,7 @@ class Partner(BaseModel):
         NON_REVENUE = 'NON_REVENUE', 'Non-Revenue Vendor'
     
     class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
         ACTIVE = 'ACTIVE', 'Active'
         INACTIVE = 'INACTIVE', 'Inactive'
         SUSPENDED = 'SUSPENDED', 'Suspended'
@@ -72,6 +73,8 @@ class Partner(BaseModel):
     contact_phone = models.CharField(max_length=20)
     contact_email = models.EmailField(null=True, blank=True)
     address = models.TextField(null=True, blank=True)
+    subject = models.CharField(max_length=255, null=True, blank=True)
+    message = models.TextField(null=True, blank=True)
     
     # Status
     status = models.CharField(

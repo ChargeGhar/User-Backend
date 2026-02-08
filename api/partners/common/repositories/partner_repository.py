@@ -113,33 +113,115 @@ class PartnerRepository:
         partner_type: str,
         business_name: str,
         contact_phone: str,
-        assigned_by_id: int,
+        assigned_by_id: Optional[int],
         vendor_type: Optional[str] = None,
         parent_id: Optional[str] = None,
         contact_email: Optional[str] = None,
         address: Optional[str] = None,
         upfront_amount: float = 0,
         revenue_share_percent: Optional[float] = None,
-        notes: Optional[str] = None
+        notes: Optional[str] = None,
+        subject: Optional[str] = None,
+        message: Optional[str] = None,
+        status: Optional[str] = None
     ) -> Partner:
-        """Create a new partner"""
+        """Create a new partner or convert a pending request to a partner"""
+        existing_partner = PartnerRepository.get_by_user_id(user_id)
+        if existing_partner:
+            if existing_partner.status != Partner.Status.PENDING:
+                raise ValueError("User is already a partner")
+
+            update_fields = ['updated_at']
+
+            if partner_type and existing_partner.partner_type != partner_type:
+                existing_partner.partner_type = partner_type
+                update_fields.append('partner_type')
+                existing_partner.code = PartnerRepository.generate_partner_code(partner_type)
+                update_fields.append('code')
+
+            if partner_type == Partner.PartnerType.FRANCHISE:
+                existing_partner.vendor_type = None
+                update_fields.append('vendor_type')
+                existing_partner.parent_id = None
+                update_fields.append('parent')
+            elif vendor_type is not None:
+                existing_partner.vendor_type = vendor_type
+                update_fields.append('vendor_type')
+                if parent_id is not None:
+                    existing_partner.parent_id = parent_id
+                    update_fields.append('parent')
+
+            existing_partner.business_name = business_name
+            update_fields.append('business_name')
+
+            existing_partner.contact_phone = contact_phone
+            update_fields.append('contact_phone')
+
+            if contact_email is not None:
+                existing_partner.contact_email = contact_email
+                update_fields.append('contact_email')
+
+            if address is not None:
+                existing_partner.address = address
+                update_fields.append('address')
+
+            if upfront_amount is not None:
+                existing_partner.upfront_amount = upfront_amount
+                update_fields.append('upfront_amount')
+
+            if revenue_share_percent is not None:
+                existing_partner.revenue_share_percent = revenue_share_percent
+                update_fields.append('revenue_share_percent')
+
+            if assigned_by_id is not None:
+                existing_partner.assigned_by_id = assigned_by_id
+                update_fields.append('assigned_by')
+
+            if notes is not None:
+                existing_partner.notes = notes
+                update_fields.append('notes')
+
+            if subject is not None:
+                existing_partner.subject = subject
+                update_fields.append('subject')
+
+            if message is not None:
+                existing_partner.message = message
+                update_fields.append('message')
+
+            if status is not None:
+                existing_partner.status = status
+                update_fields.append('status')
+            else:
+                existing_partner.status = Partner.Status.ACTIVE
+                update_fields.append('status')
+
+            existing_partner.save(update_fields=update_fields)
+            return existing_partner
+
         code = PartnerRepository.generate_partner_code(partner_type)
         
-        return Partner.objects.create(
-            user_id=user_id,
-            partner_type=partner_type,
-            vendor_type=vendor_type,
-            parent_id=parent_id,
-            code=code,
-            business_name=business_name,
-            contact_phone=contact_phone,
-            contact_email=contact_email,
-            address=address,
-            upfront_amount=upfront_amount,
-            revenue_share_percent=revenue_share_percent,
-            assigned_by_id=assigned_by_id,
-            notes=notes
-        )
+        create_kwargs = {
+            'user_id': user_id,
+            'partner_type': partner_type,
+            'vendor_type': vendor_type,
+            'parent_id': parent_id,
+            'code': code,
+            'business_name': business_name,
+            'contact_phone': contact_phone,
+            'contact_email': contact_email,
+            'address': address,
+            'upfront_amount': upfront_amount,
+            'revenue_share_percent': revenue_share_percent,
+            'assigned_by_id': assigned_by_id,
+            'notes': notes,
+            'subject': subject,
+            'message': message,
+        }
+        if status:
+            create_kwargs['status'] = status
+
+        return Partner.objects.create(**create_kwargs)
     
     @staticmethod
     def update_status(partner_id: str, status: str) -> Optional[Partner]:
