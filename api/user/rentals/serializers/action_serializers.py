@@ -29,6 +29,11 @@ class RentalStartSerializer(serializers.Serializer):
         allow_blank=True,
         help_text="Optional: Specific powerbank SN to rent"
     )
+    payment_method_id = serializers.UUIDField(
+        required=False,
+        allow_null=True,
+        help_text="Optional: Payment method ID (required if payment is needed)"
+    )
     
     def validate_station_sn(self, value):
         try:

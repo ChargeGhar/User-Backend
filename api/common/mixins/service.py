@@ -42,7 +42,7 @@ class ServiceHandlerMixin:
             elif isinstance(e, ServiceException):
                 error_code = getattr(e, 'default_code', 'service_error')
                 user_message = str(e)
-                error_context = None
+                error_context = getattr(e, 'context', None)
                 status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
             else:
                 error_code = 'internal_error'

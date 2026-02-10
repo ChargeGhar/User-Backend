@@ -35,7 +35,8 @@ class PaymentCalculationService(BaseService):
                 # Get amount from package price
                 from api.user.rentals.models import RentalPackage
                 package = RentalPackage.objects.get(id=package_id, is_active=True)
-                amount = package.price
+                amount_override = kwargs.get('amount')
+                amount = Decimal(str(amount_override)) if amount_override is not None else package.price
                 
                 # Validate this is a prepaid package
                 if package.payment_model != 'PREPAID':

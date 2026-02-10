@@ -287,3 +287,30 @@ class PartnerRequestCreateSerializer(serializers.Serializer):
                 "Subject must be at least 3 characters"
             )
         return value.strip()
+
+
+class PartnerRequestAssignedBySerializer(serializers.Serializer):
+    """Serializer for assigned_by user details"""
+    id = serializers.CharField()
+    username = serializers.CharField(allow_null=True)
+    email = serializers.EmailField(allow_null=True)
+    phone_number = serializers.CharField(allow_null=True)
+
+
+class PartnerRequestDetailSerializer(serializers.Serializer):
+    """Serializer for partner request detail response"""
+    business_name = serializers.CharField()
+    contact_phone = serializers.CharField()
+    subject = serializers.CharField(allow_null=True)
+    message = serializers.CharField(allow_null=True)
+    status = serializers.CharField()
+    assigned_by = PartnerRequestAssignedBySerializer(allow_null=True, required=False)
+    assigned_at = serializers.DateTimeField(allow_null=True, required=False)
+    partner_code = serializers.CharField(allow_null=True, required=False)
+    partner_type = serializers.CharField(allow_null=True, required=False)
+    vendor_type = serializers.CharField(allow_null=True, required=False)
+    contact_email = serializers.EmailField(allow_null=True, required=False)
+    address = serializers.CharField(allow_null=True, required=False)
+    upfront_amount = serializers.DecimalField(max_digits=12, decimal_places=2, allow_null=True, required=False)
+    revenue_share_percent = serializers.DecimalField(max_digits=5, decimal_places=2, allow_null=True, required=False)
+    notes = serializers.CharField(allow_null=True, required=False)

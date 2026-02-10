@@ -50,7 +50,8 @@ class RentalStartView(GenericAPIView, BaseAPIView):
                 user=request.user,
                 station_sn=serializer.validated_data['station_sn'],
                 package_id=serializer.validated_data['package_id'],
-                powerbank_sn=serializer.validated_data.get('powerbank_sn')
+                powerbank_sn=serializer.validated_data.get('powerbank_sn'),
+                payment_method_id=serializer.validated_data.get('payment_method_id')
             )
             
             response_serializer = serializers.RentalDetailSerializer(rental)
@@ -240,4 +241,3 @@ class RentalSwapView(GenericAPIView, BaseAPIView):
             success_message="Powerbank swapped successfully",
             error_message="Failed to swap powerbank"
         )
-

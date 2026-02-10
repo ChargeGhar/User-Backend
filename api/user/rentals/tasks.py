@@ -453,3 +453,69 @@ def detect_rental_anomalies(self):
     except Exception as e:
         self.logger.error(f"Failed to detect rental anomalies: {str(e)}")
         raise
+
+
+@shared_task(base=BaseTask, bind=True)
+def resume_rental_start_from_intent(self, intent_id: str):
+    """Resume rental start after successful top-up verification."""
+    try:
+        from api.user.payments.repositories import PaymentIntentRepository
+        from api.user.rentals.services import RentalService
+
+        intent = PaymentIntentRepository.get_by_intent_id(intent_id)
+        if not intent:
+            self.logger.warning(f"Payment intent not found: {intent_id}")
+            return {'status': 'NOT_FOUND'}
+
+        metadata = intent.intent_metadata or {}
+        if metadata.get('flow') != 'RENTAL_START':
+            return {'status': 'SKIPPED'}
+
+        if intent.status != 'COMPLETED':
+            return {'status': 'NOT_READY'}
+
+        if metadata.get('rental_id'):
+            return {'status': 'ALREADY_STARTED', 'rental_id': metadata.get('rental_id')}
+
+        metadata['rental_start_status'] = 'PROCESSING'
+        intent.intent_metadata = metadata
+        intent.save(update_fields=['intent_metadata'])
+
+        pricing_override = None
+        if metadata.get('actual_price') is not None:
+            pricing_override = {
+                'actual_price': metadata.get('actual_price'),
+                'discount_id': metadata.get('discount_id'),
+                'discount_amount': metadata.get('discount_amount'),
+                'discount_metadata': metadata.get('discount_metadata')
+            }
+
+        service = RentalService()
+        rental = service.start_rental(
+            user=intent.user,
+            station_sn=metadata.get('station_sn'),
+            package_id=metadata.get('package_id'),
+            powerbank_sn=metadata.get('powerbank_sn'),
+            pricing_override=pricing_override
+        )
+
+        metadata['rental_start_status'] = 'SUCCESS'
+        metadata['rental_id'] = str(rental.id)
+        intent.intent_metadata = metadata
+        intent.save(update_fields=['intent_metadata'])
+
+        return {'status': 'SUCCESS', 'rental_id': str(rental.id)}
+
+    except Exception as e:
+        try:
+            if 'intent' in locals() and intent:
+                metadata = intent.intent_metadata or {}
+                metadata['rental_start_status'] = 'FAILED'
+                metadata['rental_error'] = str(e)
+                intent.intent_metadata = metadata
+                intent.save(update_fields=['intent_metadata'])
+        except Exception as update_error:
+            self.logger.error(f"Failed to update intent metadata: {update_error}")
+
+        self.logger.error(f"Failed to resume rental start for intent {intent_id}: {str(e)}")
+        return {'status': 'FAILED', 'error': str(e)}

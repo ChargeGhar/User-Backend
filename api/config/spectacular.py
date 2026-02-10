@@ -36,6 +36,7 @@ SPECTACULAR_SETTINGS = {
     # Endpoint Organization (tags defined in @extend_schema decorators)
     "TAGS": [
         {"name": "App", "description": "Core app functionality (health, version, media, countries)"},
+        {"name": "Partners", "description": "Partner request submission and management"},
         {"name": "Authentication - OTP", "description": "OTP-based authentication (request, verify, complete)"},
         {"name": "Authentication - Biometric", "description": "Biometric authentication (fingerprint, Face ID)"},
         {"name": "Authentication - Social", "description": "Social authentication (Google, Apple OAuth)"},

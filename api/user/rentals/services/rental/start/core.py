@@ -42,13 +42,14 @@ class RentalStartMixin:
     Inherited by RentalService to provide start_rental() method.
     """
     
-    @transaction.atomic
     def start_rental(
         self,
         user,
         station_sn: str,
         package_id: str,
-        powerbank_sn: Optional[str] = None
+        powerbank_sn: Optional[str] = None,
+        payment_method_id: Optional[str] = None,
+        pricing_override: Optional[dict] = None
     ) -> Rental:
         """
         Start a new rental session with device popup.
@@ -67,93 +68,280 @@ class RentalStartMixin:
             station_sn: Station serial number
             package_id: Rental package ID
             powerbank_sn: Optional specific powerbank SN (if user selected)
+            payment_method_id: Optional payment method ID (required if payment is needed)
+            pricing_override: Optional pricing override from payment intent (actual_price, discount info)
         
         Returns:
             Rental object
         """
         try:
-            # Step 1: Validation
+            # Step 1: Validation (pre-check stage)
             validate_rental_prerequisites(user)
-            
+
             station = Station.objects.get(serial_number=station_sn)
             package = RentalPackage.objects.get(id=package_id, is_active=True)
-            
+
             validate_station_availability(station)
-            
-            if package.payment_model == 'POSTPAID':
-                validate_postpaid_balance(user)
-            
-            power_bank, slot = get_available_power_bank_and_slot(station)
-            
-            # Step 2: Get discount
-            discount, discount_amount, actual_price = get_applicable_discount(
-                station_sn, package_id, user
+
+            discount, discount_amount, actual_price, rental_metadata = self._resolve_pricing(
+                station_sn=station_sn,
+                package=package,
+                user=user,
+                pricing_override=pricing_override
             )
-            
-            if discount:
-                self.log_info(
-                    f"Discount applied: {discount.discount_percent}% off, "
-                    f"original: {package.price}, final: {actual_price}"
+
+            # Step 2: Payment pre-check (no locks)
+            if package.payment_model == 'PREPAID':
+                from api.user.payments.services import PaymentCalculationService
+                calc_service = PaymentCalculationService()
+                payment_options = calc_service.calculate_payment_options(
+                    user=user,
+                    scenario='pre_payment',
+                    package_id=str(package.id),
+                    amount=actual_price
                 )
-            
-            # Step 3: Create rental
-            rental_metadata = build_discount_metadata(
-                discount, package.price, discount_amount, actual_price
-            )
-            
-            rental = Rental.objects.create(
+
+                if not payment_options['is_sufficient']:
+                    if not payment_method_id:
+                        raise ServiceException(
+                            detail="Payment method is required when balance is insufficient",
+                            code="payment_method_required"
+                        )
+
+                    intent = self._create_rental_topup_intent(
+                        user=user,
+                        payment_method_id=payment_method_id,
+                        amount=actual_price,
+                        metadata={
+                            'flow': 'RENTAL_START',
+                            'station_sn': station_sn,
+                            'package_id': str(package.id),
+                            'powerbank_sn': powerbank_sn,
+                            'actual_price': str(actual_price),
+                            'discount_id': str(discount.id) if discount else None,
+                            'discount_amount': str(discount_amount),
+                            'discount_metadata': rental_metadata,
+                            'payment_model': package.payment_model
+                        }
+                    )
+
+                    raise ServiceException(
+                        detail="Payment required to start rental",
+                        code="payment_required",
+                        status_code=402,
+                        context=self._build_payment_required_context(
+                            intent=intent,
+                            shortfall=payment_options.get('shortfall')
+                        )
+                    )
+            else:
+                # POSTPAID: Require minimum balance, otherwise trigger top-up
+                from api.user.system.services import AppConfigService
+                min_balance_str = AppConfigService().get_config_cached('POSTPAID_MINIMUM_BALANCE', '50')
+                min_balance = Decimal(str(min_balance_str))
+
+                wallet_balance = Decimal('0')
+                if hasattr(user, 'wallet') and user.wallet:
+                    wallet_balance = user.wallet.balance
+
+                if wallet_balance < min_balance:
+                    if not payment_method_id:
+                        raise ServiceException(
+                            detail="Payment method is required when balance is insufficient",
+                            code="payment_method_required"
+                        )
+
+                    required_amount = min_balance - wallet_balance
+                    intent = self._create_rental_topup_intent(
+                        user=user,
+                        payment_method_id=payment_method_id,
+                        amount=required_amount,
+                        metadata={
+                            'flow': 'RENTAL_START',
+                            'station_sn': station_sn,
+                            'package_id': str(package.id),
+                            'powerbank_sn': powerbank_sn,
+                            'actual_price': str(actual_price),
+                            'discount_id': str(discount.id) if discount else None,
+                            'discount_amount': str(discount_amount),
+                            'discount_metadata': rental_metadata,
+                            'payment_model': package.payment_model,
+                            'postpaid_min_balance': str(min_balance)
+                        }
+                    )
+
+                    raise ServiceException(
+                        detail="Payment required to meet minimum balance",
+                        code="payment_required",
+                        status_code=402,
+                        context=self._build_payment_required_context(
+                            intent=intent,
+                            shortfall=required_amount
+                        )
+                    )
+
+            return self._start_rental_atomic(
                 user=user,
                 station=station,
-                slot=slot,
                 package=package,
-                power_bank=power_bank,
-                rental_code=generate_rental_code(),
-                status='PENDING_POPUP',
-                due_at=timezone.now() + timezone.timedelta(minutes=package.duration_minutes),
-                amount_paid=Decimal('0'),
+                powerbank_sn=powerbank_sn,
+                discount=discount,
+                discount_amount=discount_amount,
+                actual_price=actual_price,
                 rental_metadata=rental_metadata
             )
-            
-            # Step 4: Process payment (PREPAID only)
-            transaction = None
-            if package.payment_model == 'PREPAID':
-                transaction = process_prepayment(user, package, rental, actual_price)
-                rental.amount_paid = actual_price
-                rental.payment_status = 'PAID'
-                rental.save(update_fields=['amount_paid', 'payment_status'])
-            else:
-                # Create PENDING transaction for POSTPAID
-                from .payment import create_postpaid_transaction
-                transaction = create_postpaid_transaction(user, rental, actual_price)
-                rental.rental_metadata['pending_transaction_id'] = str(transaction.id)
-                rental.save(update_fields=['rental_metadata'])
-            
-            # Step 5: Trigger device popup
-            popup_success, popup_result_sn = trigger_device_popup(
-                rental, station, power_bank, powerbank_sn
-            )
-            
-            # Step 6: Handle popup result
-            if popup_success:
-                self._handle_popup_success(
-                    rental=rental,
-                    station=station,
-                    package=package,
-                    user=user,
-                    popup_result_sn=popup_result_sn,
-                    discount=discount,
-                    actual_price=actual_price
-                )
-            else:
-                # Popup pending verification
-                self.log_warning(f"Rental {rental.rental_code} popup pending verification")
-            
-            return rental
-            
+
         except Exception as e:
             if isinstance(e, ServiceException):
                 raise
             self.handle_service_error(e, "Failed to start rental")
+
+    def _resolve_pricing(
+        self,
+        station_sn: str,
+        package: RentalPackage,
+        user,
+        pricing_override: Optional[dict] = None
+    ):
+        """Resolve discount and actual price, optionally using override from payment intent."""
+        if pricing_override and pricing_override.get('actual_price') is not None:
+            actual_price = Decimal(str(pricing_override['actual_price']))
+            discount_metadata = pricing_override.get('discount_metadata') or {}
+            discount_amount_raw = pricing_override.get('discount_amount')
+
+            if discount_amount_raw is None and discount_metadata.get('discount'):
+                discount_amount_raw = discount_metadata['discount'].get('discount_amount', '0')
+
+            discount_amount = Decimal(str(discount_amount_raw or '0'))
+
+            discount = None
+            discount_id = pricing_override.get('discount_id')
+            if discount_id:
+                try:
+                    from api.user.promotions.models import Discount
+                    discount = Discount.objects.get(id=discount_id)
+                except Exception:
+                    discount = None
+
+            return discount, discount_amount, actual_price, discount_metadata
+
+        discount, discount_amount, actual_price = get_applicable_discount(
+            station_sn, str(package.id), user
+        )
+
+        if discount:
+            self.log_info(
+                f"Discount applied: {discount.discount_percent}% off, "
+                f"original: {package.price}, final: {actual_price}"
+            )
+
+        rental_metadata = build_discount_metadata(
+            discount, package.price, discount_amount, actual_price
+        )
+
+        return discount, discount_amount, actual_price, rental_metadata
+
+    def _create_rental_topup_intent(self, user, payment_method_id: str, amount: Decimal, metadata: dict):
+        """Create a top-up intent and attach rental start metadata."""
+        from api.user.payments.services import PaymentIntentService
+
+        intent_service = PaymentIntentService()
+        intent = intent_service.create_topup_intent(
+            user=user,
+            amount=amount,
+            payment_method_id=payment_method_id
+        )
+
+        intent.intent_metadata.update(metadata)
+        intent.save(update_fields=['intent_metadata'])
+        return intent
+
+    def _build_payment_required_context(self, intent, shortfall: Optional[Decimal] = None) -> dict:
+        gateway_result = intent.intent_metadata.get('gateway_result', {}) if intent.intent_metadata else {}
+        return {
+            'intent_id': intent.intent_id,
+            'amount': str(intent.amount),
+            'currency': intent.currency,
+            'gateway': intent.intent_metadata.get('gateway') if intent.intent_metadata else None,
+            'gateway_url': intent.gateway_url,
+            'redirect_url': gateway_result.get('redirect_url'),
+            'redirect_method': gateway_result.get('redirect_method', 'POST'),
+            'form_fields': gateway_result.get('form_fields', {}),
+            'payment_instructions': gateway_result.get('payment_instructions'),
+            'expires_at': intent.expires_at.isoformat() if intent.expires_at else None,
+            'status': intent.status,
+            'shortfall': str(shortfall) if shortfall is not None else None
+        }
+
+    @transaction.atomic
+    def _start_rental_atomic(
+        self,
+        user,
+        station: Station,
+        package: RentalPackage,
+        powerbank_sn: Optional[str],
+        discount,
+        discount_amount: Decimal,
+        actual_price: Decimal,
+        rental_metadata: dict
+    ) -> Rental:
+        """Atomic rental creation and popup flow."""
+        # Re-validate inside transaction for safety
+        validate_rental_prerequisites(user)
+        validate_station_availability(station)
+
+        if package.payment_model == 'POSTPAID':
+            validate_postpaid_balance(user)
+
+        power_bank, slot = get_available_power_bank_and_slot(station)
+
+        rental = Rental.objects.create(
+            user=user,
+            station=station,
+            slot=slot,
+            package=package,
+            power_bank=power_bank,
+            rental_code=generate_rental_code(),
+            status='PENDING_POPUP',
+            due_at=timezone.now() + timezone.timedelta(minutes=package.duration_minutes),
+            amount_paid=Decimal('0'),
+            rental_metadata=rental_metadata or {}
+        )
+
+        # Process payment (PREPAID only)
+        if package.payment_model == 'PREPAID':
+            process_prepayment(user, package, rental, actual_price)
+            rental.amount_paid = actual_price
+            rental.payment_status = 'PAID'
+            rental.save(update_fields=['amount_paid', 'payment_status'])
+        else:
+            # Create PENDING transaction for POSTPAID
+            from .payment import create_postpaid_transaction
+            transaction = create_postpaid_transaction(user, rental, actual_price)
+            rental.rental_metadata['pending_transaction_id'] = str(transaction.id)
+            rental.save(update_fields=['rental_metadata'])
+
+        # Trigger device popup
+        popup_success, popup_result_sn = trigger_device_popup(
+            rental, station, power_bank, powerbank_sn
+        )
+
+        # Handle popup result
+        if popup_success:
+            self._handle_popup_success(
+                rental=rental,
+                station=station,
+                package=package,
+                user=user,
+                popup_result_sn=popup_result_sn,
+                discount=discount,
+                actual_price=actual_price
+            )
+        else:
+            # Popup pending verification
+            self.log_warning(f"Rental {rental.rental_code} popup pending verification")
+
+        return rental
     
     def _handle_popup_success(
         self,

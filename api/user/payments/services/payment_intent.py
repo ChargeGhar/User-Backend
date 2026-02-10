@@ -126,13 +126,21 @@ class PaymentIntentService(CRUDService):
                 )
 
             if intent.status == 'COMPLETED':
-                return {
+                result = {
                     'status': 'SUCCESS',
                     'message': 'Payment already verified',
                     'transaction_id': f"EXISTING_{intent.intent_id[:8]}",
                     'amount': intent.amount,
                     'new_balance': intent.user.wallet.balance
                 }
+                rental_status = intent.intent_metadata.get('rental_start_status') if intent.intent_metadata else None
+                if rental_status:
+                    result.update({
+                        'rental_start_status': rental_status,
+                        'rental_id': intent.intent_metadata.get('rental_id'),
+                        'rental_error': intent.intent_metadata.get('rental_error')
+                    })
+                return result
             
             if intent.status != 'PENDING':
                 raise ServiceException(
@@ -182,14 +190,30 @@ class PaymentIntentService(CRUDService):
                 # Update intent status using repository
                 self.intent_repository.update_status(intent, 'COMPLETED', completed_at=timezone.now())
 
+                # If this top-up is part of rental start flow, enqueue resume task
+                if intent.intent_metadata and intent.intent_metadata.get('flow') == 'RENTAL_START':
+                    intent.intent_metadata['rental_start_status'] = intent.intent_metadata.get('rental_start_status') or 'PENDING'
+                    intent.save(update_fields=['intent_metadata'])
+
+                    from api.user.rentals.tasks import resume_rental_start_from_intent
+                    transaction.on_commit(lambda: resume_rental_start_from_intent.delay(intent.intent_id))
+
                 self.log_info(f"Top-up verified and processed: {intent.intent_id}")
 
-                return {
+                result = {
                     'status': 'SUCCESS',
                     'transaction_id': transaction_obj.transaction_id,
                     'amount': intent.amount,
                     'new_balance': intent.user.wallet.balance
                 }
+                rental_status = intent.intent_metadata.get('rental_start_status') if intent.intent_metadata else None
+                if rental_status:
+                    result.update({
+                        'rental_start_status': rental_status,
+                        'rental_id': intent.intent_metadata.get('rental_id'),
+                        'rental_error': intent.intent_metadata.get('rental_error')
+                    })
+                return result
             else:
                 self.intent_repository.update_status(intent, 'FAILED')
                 raise ServiceException(

@@ -19,7 +19,10 @@ from api.common.serializers import BaseResponseSerializer
 from api.common.services.base import ServiceException
 from api.partners.common.models import Partner
 from api.partners.common.repositories import PartnerRepository
-from api.user.system.serializers import PartnerRequestCreateSerializer
+from api.user.system.serializers import (
+    PartnerRequestCreateSerializer,
+    PartnerRequestDetailSerializer
+)
 
 partner_request_router = CustomViewRouter()
 logger = logging.getLogger(__name__)
@@ -27,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 @partner_request_router.register(r"app/partner/request", name="partner-request")
 @extend_schema(
-    tags=["App"],
+    tags=["Partners"],
     summary="Submit Partner Request",
     description="Submit partnership request (stored in Partner with PENDING status)",
     request=PartnerRequestCreateSerializer,
@@ -37,6 +40,54 @@ class PartnerRequestCreateView(GenericAPIView, BaseAPIView):
     """Submit partnership request"""
     serializer_class = PartnerRequestCreateSerializer
     permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=["Partners"],
+        summary="Get Partner Request",
+        description="Retrieve current user's partner request details",
+        responses={200: PartnerRequestDetailSerializer}
+    )
+    @log_api_call()
+    def get(self, request: Request) -> Response:
+        def operation():
+            partner = PartnerRepository.get_by_user_id(request.user.id)
+            if not partner:
+                return None
+
+            response = {
+                'business_name': partner.business_name,
+                'contact_phone': partner.contact_phone,
+                'subject': partner.subject,
+                'message': partner.message,
+                'status': partner.status
+            }
+
+            if partner.assigned_by:
+                response.update({
+                    'assigned_by': {
+                        'id': str(partner.assigned_by.id),
+                        'username': partner.assigned_by.username,
+                        'email': partner.assigned_by.email,
+                        'phone_number': partner.assigned_by.phone_number
+                    },
+                    'assigned_at': partner.assigned_at,
+                    'partner_code': partner.code,
+                    'partner_type': partner.partner_type,
+                    'vendor_type': partner.vendor_type,
+                    'contact_email': partner.contact_email,
+                    'address': partner.address,
+                    'upfront_amount': float(partner.upfront_amount) if partner.upfront_amount is not None else None,
+                    'revenue_share_percent': float(partner.revenue_share_percent) if partner.revenue_share_percent is not None else None,
+                    'notes': partner.notes
+                })
+
+            return response
+
+        return self.handle_service_operation(
+            operation,
+            success_message="Partner request retrieved successfully",
+            error_message="Failed to retrieve partner request"
+        )
 
     @log_api_call()
     def post(self, request: Request) -> Response:
