@@ -166,8 +166,13 @@ class RentalStartMixin:
         # PREPAID: check wallet/points sufficiency
         if package.payment_model == 'PREPAID':
             payment_options = flow_service.calculate_payment_options(
-                user, 'pre_payment', str(package.id), actual_price,
-                payment_mode, wallet_amount, points_to_use
+                user=user,
+                scenario='pre_payment',
+                package_id=str(package.id),
+                amount=actual_price,
+                payment_mode=payment_mode,
+                wallet_amount=wallet_amount,
+                points_to_use=points_to_use,
             )
 
             if not payment_options['is_sufficient']:
@@ -222,6 +227,11 @@ class RentalStartMixin:
                 context={'payment_mode': requested_mode, 'shortfall': str(topup_amount)}
             )
 
+        gateway_topup_amount = flow_service.resolve_gateway_topup_amount(
+            payment_method_id=payment_method_id,
+            requested_amount=topup_amount,
+        )
+
         metadata = {
             'flow': 'RENTAL_START',
             'station_sn': station_sn,
@@ -236,7 +246,7 @@ class RentalStartMixin:
             'payment_mode': resume_mode,
             'wallet_amount': str(resume_wallet) if resume_wallet is not None else None,
             'points_to_use': resume_points,
-            'topup_amount_required': str(topup_amount),
+            'topup_amount_required': str(gateway_topup_amount),
             'shortfall': str(topup_amount)
         }
 
@@ -247,7 +257,9 @@ class RentalStartMixin:
         if postpaid_min_balance:
             metadata['postpaid_min_balance'] = str(postpaid_min_balance)
 
-        intent = flow_service.create_topup_intent(user, payment_method_id, topup_amount, metadata)
+        intent = flow_service.create_topup_intent(
+            user, payment_method_id, gateway_topup_amount, metadata
+        )
 
         raise ServiceException(
             detail="Payment required to start rental",

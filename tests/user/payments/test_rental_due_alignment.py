@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from api.common.services.base import ServiceException
 from api.user.auth.models import User
-from api.user.payments.models import Wallet
+from api.user.payments.models import PaymentMethod, Wallet
 from api.user.payments.services import RentalPaymentService
 from api.user.points.models import UserPoints
 from api.user.rentals.models import Rental, RentalPackage
@@ -305,6 +305,84 @@ def test_due_override_keeps_callback_amount_stable_for_ongoing_overdue() -> None
     user.wallet.refresh_from_db()
 
     assert result["amount_paid"] == 10.0
-    assert rental.payment_status == "PAID"
+    assert rental.payment_status == "PENDING"
     assert rental.overdue_amount == Decimal("0")
     assert user.wallet.balance == Decimal("0.00")
+
+
+@pytest.mark.django_db
+def test_pay_rental_due_points_mode_supports_fractional_amount_with_roundup_point() -> None:
+    user = _create_user_with_balances("due-points-fractional@example.com", Decimal("0.00"), 639)
+    rental = _create_rental_with_due(
+        user,
+        amount_paid=Decimal("20.00"),
+        overdue_amount=Decimal("63.89"),
+        payment_model="PREPAID",
+    )
+
+    result = RentalDuePaymentService().pay_rental_due(
+        user=user,
+        rental=rental,
+        payment_mode="points",
+    )
+
+    rental.refresh_from_db()
+    user.points.refresh_from_db()
+
+    assert result["amount_paid"] == 63.89
+    assert rental.payment_status == "PAID"
+    assert rental.overdue_amount == Decimal("0")
+    assert user.points.current_points == 0
+
+
+@pytest.mark.django_db
+def test_due_payment_intent_uses_gateway_min_amount_when_shortfall_is_tiny(monkeypatch) -> None:
+    user = _create_user_with_balances("due-small-gap@example.com", Decimal("0.00"), 312)
+    rental = _create_rental_with_due(
+        user,
+        amount_paid=Decimal("20.00"),
+        overdue_amount=Decimal("31.25"),
+        payment_model="PREPAID",
+    )
+    method = PaymentMethod.objects.create(
+        name="Esewa",
+        gateway="esewa",
+        is_active=True,
+        configuration={},
+        min_amount=Decimal("10.00"),
+        max_amount=Decimal("5000.00"),
+        supported_currencies=["NPR"],
+    )
+    captured: dict[str, Decimal] = {}
+
+    class _IntentStub:
+        intent_id = "intent-due-min-topup"
+        amount = Decimal("10.00")
+        currency = "NPR"
+        gateway_url = "https://gateway.example/redirect"
+        status = "PENDING"
+        expires_at = rental.created_at
+        intent_metadata = {"gateway": "esewa", "gateway_result": {}}
+
+    def _capture_create_intent(*args, **kwargs):
+        captured["amount"] = kwargs["amount"]
+        stub = _IntentStub()
+        stub.amount = kwargs["amount"]
+        return stub
+
+    monkeypatch.setattr(
+        "api.user.rentals.services.rental.rental_due_service.RentalPaymentFlowService.create_topup_intent",
+        _capture_create_intent,
+    )
+
+    with pytest.raises(ServiceException) as exc:
+        RentalDuePaymentService().pay_rental_due(
+            user=user,
+            rental=rental,
+            payment_mode="points",
+            payment_method_id=str(method.id),
+        )
+
+    assert exc.value.default_code == "payment_required"
+    assert captured["amount"] == Decimal("10.00")
+    assert exc.value.context["shortfall"] == "0.05"

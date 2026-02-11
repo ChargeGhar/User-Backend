@@ -183,6 +183,6 @@ def test_rental_due_does_not_force_completed_when_not_returned(api_client) -> No
 
     assert response.status_code == 200
     assert response.data["success"] is True
-    assert rental.payment_status == "PAID"
+    assert rental.payment_status == "PENDING"
     assert rental.status == "OVERDUE"
     assert rental.ended_at is None

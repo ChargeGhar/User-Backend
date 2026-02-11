@@ -80,14 +80,32 @@ class RentalPaymentFlowService(BaseService):
         from .payment_intent import PaymentIntentService
 
         intent_service = PaymentIntentService()
+        effective_amount = self.resolve_gateway_topup_amount(
+            payment_method_id=payment_method_id,
+            requested_amount=amount,
+        )
         intent = intent_service.create_topup_intent(
             user=user,
-            amount=amount,
+            amount=effective_amount,
             payment_method_id=payment_method_id,
         )
         intent.intent_metadata.update(self.serialize_for_metadata(metadata or {}))
         intent.save(update_fields=["intent_metadata"])
         return intent
+
+    def resolve_gateway_topup_amount(self, payment_method_id: str, requested_amount: Decimal) -> Decimal:
+        """Clamp requested top-up to payment method minimum, preserving 2-decimal currency precision."""
+        from api.user.payments.repositories import PaymentMethodRepository
+
+        normalized = Decimal(str(requested_amount)).quantize(Decimal("0.01"))
+        payment_method = PaymentMethodRepository.get_by_id(payment_method_id)
+        if not payment_method:
+            return normalized
+
+        min_amount = Decimal(str(payment_method.min_amount or Decimal("0.00"))).quantize(Decimal("0.01"))
+        if normalized < min_amount:
+            return min_amount
+        return normalized
 
     def build_payment_required_context(
         self,

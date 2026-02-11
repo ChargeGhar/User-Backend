@@ -132,6 +132,17 @@
   {
     "model": "system.appconfig",
     "fields": {
+      "key": "POINTS_PER_NPR",
+      "value": "10",
+      "description": "Points required to redeem NPR 1",
+      "is_active": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "system.appconfig",
+    "fields": {
       "key": "POINTS_TOPUP_PER_NPR",
       "value": "100",
       "description": "NPR amount per points award for top-up",
@@ -306,4 +317,3 @@
     }
   }
 ]
-

@@ -190,6 +190,11 @@ class RentalDuePaymentService(BaseService):
                 },
             )
 
+        gateway_topup_amount = flow_service.resolve_gateway_topup_amount(
+            payment_method_id=payment_method_id,
+            requested_amount=topup_amount,
+        )
+
         metadata = {
             "flow": "RENTAL_DUE",
             "rental_id": str(rental.id),
@@ -199,7 +204,7 @@ class RentalDuePaymentService(BaseService):
             "payment_mode": resume_mode,
             "wallet_amount": str(resume_wallet) if resume_wallet is not None else None,
             "points_to_use": resume_points,
-            "topup_amount_required": str(topup_amount),
+            "topup_amount_required": str(gateway_topup_amount),
             "shortfall": str(topup_amount),
         }
         if payment_options:
@@ -211,7 +216,7 @@ class RentalDuePaymentService(BaseService):
         intent = flow_service.create_topup_intent(
             user=user,
             payment_method_id=payment_method_id,
-            amount=topup_amount,
+            amount=gateway_topup_amount,
             metadata=metadata,
         )
 

@@ -26,25 +26,28 @@ class RentalPackageSerializer(serializers.ModelSerializer):
 
 class CalculatePaymentOptionsSerializer(serializers.Serializer):
     """Serializer for calculating payment options"""
-    SCENARIO_CHOICES = [
-        ('pre_payment', 'Pre-payment'),
-        ('post_payment', 'Post-payment'),
-    ]
+    ALLOWED_INPUT_FIELDS = {
+        'package_id',
+        'rental_id',
+        'payment_mode',
+        'wallet_amount',
+        'points_to_use',
+    }
     PAYMENT_MODE_CHOICES = [
         ('wallet', 'Wallet'),
         ('points', 'Points'),
         ('wallet_points', 'Wallet + Points'),
         ('direct', 'Direct Gateway Payment'),
     ]
-    scenario = serializers.ChoiceField(choices=SCENARIO_CHOICES)
-    package_id = serializers.UUIDField(required=False, allow_null=True)
-    rental_id = serializers.UUIDField(required=False, allow_null=True)
-    amount = serializers.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        min_value=0,
+    package_id = serializers.UUIDField(
         required=False,
-        allow_null=True
+        allow_null=True,
+        help_text="Pre-payment context: provide package_id",
+    )
+    rental_id = serializers.UUIDField(
+        required=False,
+        allow_null=True,
+        help_text="Post-payment context: provide rental_id",
     )
     payment_mode = serializers.ChoiceField(
         choices=PAYMENT_MODE_CHOICES,
@@ -65,18 +68,26 @@ class CalculatePaymentOptionsSerializer(serializers.Serializer):
     )
 
     def validate(self, attrs):
-        scenario = attrs.get('scenario')
+        unknown_fields = set(self.initial_data.keys()) - self.ALLOWED_INPUT_FIELDS
+        if unknown_fields:
+            raise serializers.ValidationError(
+                {'unsupported_fields': [f'Unsupported field: {field}' for field in sorted(unknown_fields)]}
+            )
+
         package_id = attrs.get('package_id')
         rental_id = attrs.get('rental_id')
         payment_mode = attrs.get('payment_mode', 'wallet_points')
         wallet_amount = attrs.get('wallet_amount')
         points_to_use = attrs.get('points_to_use')
 
-        if scenario == 'pre_payment' and not package_id:
-            raise serializers.ValidationError({'package_id': 'package_id is required for pre_payment'})
-
-        if scenario == 'post_payment' and not rental_id:
-            raise serializers.ValidationError({'rental_id': 'rental_id is required for post_payment'})
+        if package_id and rental_id:
+            raise serializers.ValidationError(
+                {'selector': 'Provide either package_id or rental_id, not both'}
+            )
+        if not package_id and not rental_id:
+            raise serializers.ValidationError(
+                {'selector': 'Either package_id or rental_id is required'}
+            )
 
         if (wallet_amount is None) ^ (points_to_use is None):
             raise serializers.ValidationError(
@@ -88,6 +99,7 @@ class CalculatePaymentOptionsSerializer(serializers.Serializer):
                 {'wallet_points_split': 'wallet_amount and points_to_use are only valid for wallet_points mode'}
             )
 
+        attrs['scenario'] = 'pre_payment' if package_id else 'post_payment'
         return attrs
 
 class PaymentOptionsResponseSerializer(serializers.Serializer):

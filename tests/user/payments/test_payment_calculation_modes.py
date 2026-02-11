@@ -151,6 +151,24 @@ def test_points_mode_insufficient() -> None:
 
 
 @pytest.mark.django_db
+def test_points_mode_fractional_amount_sufficient_with_roundup_point() -> None:
+    user = _create_user_with_balances("points-fractional@example.com", Decimal("0.00"), 639)
+    package = _create_prepaid_package(Decimal("63.89"))
+
+    options = PaymentCalculationService().calculate_payment_options(
+        user=user,
+        scenario="pre_payment",
+        package_id=str(package.id),
+        payment_mode="points",
+    )
+
+    assert options["is_sufficient"] is True
+    assert options["shortfall"] == Decimal("0.00")
+    assert options["payment_breakdown"]["points_to_use"] == 639
+    assert options["payment_breakdown"]["points_amount"] == Decimal("63.89")
+
+
+@pytest.mark.django_db
 def test_wallet_points_mode_auto_split() -> None:
     user = _create_user_with_balances("combo-auto@example.com", Decimal("30.00"), 600)
     package = _create_prepaid_package(Decimal("100.00"))
@@ -167,6 +185,25 @@ def test_wallet_points_mode_auto_split() -> None:
     assert options["payment_breakdown"]["points_to_use"] == 600
     assert options["payment_breakdown"]["points_amount"] == Decimal("60.00")
     assert options["payment_breakdown"]["wallet_amount"] == Decimal("40.00")
+
+
+@pytest.mark.django_db
+def test_wallet_points_mode_auto_split_consumes_roundup_point_when_wallet_short_on_fraction() -> None:
+    user = _create_user_with_balances("combo-roundup@example.com", Decimal("0.00"), 313)
+    package = _create_prepaid_package(Decimal("31.25"))
+
+    options = PaymentCalculationService().calculate_payment_options(
+        user=user,
+        scenario="pre_payment",
+        package_id=str(package.id),
+        payment_mode="wallet_points",
+    )
+
+    assert options["is_sufficient"] is True
+    assert options["shortfall"] == Decimal("0.00")
+    assert options["payment_breakdown"]["wallet_amount"] == Decimal("0.00")
+    assert options["payment_breakdown"]["points_to_use"] == 313
+    assert options["payment_breakdown"]["points_amount"] == Decimal("31.25")
 
 
 @pytest.mark.django_db

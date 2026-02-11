@@ -212,20 +212,41 @@ class RentalActiveView(GenericAPIView, BaseAPIView):
         def operation():
             service = RentalService()
             rental = service.get_active_rental(request.user)
-            
-            if rental:
-                # Real-time status check: Update to OVERDUE if past due
-                from django.utils import timezone
-                if rental.status == 'ACTIVE' and rental.due_at and timezone.now() > rental.due_at:
-                    rental.status = 'OVERDUE'
-                    rental.save(update_fields=['status', 'updated_at'])
-                serializer = self.get_serializer(rental)
-                return serializer.data
-            return None
+            if not rental:
+                return None
+
+            from decimal import Decimal
+            from django.utils import timezone
+
+            now = timezone.now()
+            update_fields = []
+
+            # Keep status in sync with realtime due time.
+            if rental.status == 'ACTIVE' and rental.due_at and now > rental.due_at:
+                rental.status = 'OVERDUE'
+                update_fields.append('status')
+
+            # Keep persisted overdue snapshot/payment state aligned for ongoing overdue rental.
+            if rental.status == 'OVERDUE' and rental.ended_at is None:
+                current_overdue = Decimal(str(rental.current_overdue_amount or Decimal('0'))).quantize(
+                    Decimal('0.01')
+                )
+                if current_overdue != rental.overdue_amount:
+                    rental.overdue_amount = current_overdue
+                    update_fields.append('overdue_amount')
+                if current_overdue > Decimal('0.00') and rental.payment_status != 'PENDING':
+                    rental.payment_status = 'PENDING'
+                    update_fields.append('payment_status')
+
+            if update_fields:
+                rental.save(update_fields=update_fields + ['updated_at'])
+
+            serializer = self.get_serializer(rental)
+            return serializer.data
         
         return self.handle_service_operation(
             operation,
-            success_message="Active rental retrieved" if operation() else "No active rental",
+            success_message="Active rental retrieved",
             error_message="Failed to get active rental"
         )
 

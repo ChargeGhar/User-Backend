@@ -94,6 +94,7 @@ class RentalPayDueView(GenericAPIView, BaseAPIView):
 
         try:
             rental = Rental.objects.get(id=rental_id, user=request.user)
+            flow_service = RentalPaymentFlowService()
 
             if (
                 rental.started_at is None
@@ -108,19 +109,31 @@ class RentalPayDueView(GenericAPIView, BaseAPIView):
                     code="rental_not_started",
                 )
 
-            if rental.payment_status == "PAID":
+            required_due = flow_service.calculate_required_due(rental)
+
+            if required_due <= 0:
+                if rental.started_at is not None and rental.payment_status != "PAID":
+                    rental.payment_status = "PAID"
+                    rental.save(update_fields=["payment_status", "updated_at"])
                 raise ServiceException(
                     detail="Rental dues have already been settled",
                     code="dues_already_paid",
                 )
 
-            required_due = RentalPaymentFlowService().calculate_required_due(rental)
-
-            if required_due <= 0:
-                raise ServiceException(
-                    detail="No due amount pending for this rental",
-                    code="no_due_amount",
+            # Keep persisted status aligned when due is dynamic and rental is still running overdue.
+            if rental.status == "OVERDUE" and rental.ended_at is None:
+                current_overdue = Decimal(str(rental.current_overdue_amount or Decimal("0"))).quantize(
+                    Decimal("0.01")
                 )
+                update_fields = []
+                if current_overdue != rental.overdue_amount:
+                    rental.overdue_amount = current_overdue
+                    update_fields.append("overdue_amount")
+                if rental.payment_status != "PENDING":
+                    rental.payment_status = "PENDING"
+                    update_fields.append("payment_status")
+                if update_fields:
+                    rental.save(update_fields=update_fields + ["updated_at"])
 
             payment_service = RentalDuePaymentService()
             result = payment_service.pay_rental_due(

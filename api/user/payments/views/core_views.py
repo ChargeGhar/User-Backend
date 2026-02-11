@@ -189,7 +189,7 @@ class PaymentMethodListView(GenericAPIView, BaseAPIView):
 @extend_schema(
     tags=["Payments"],
     summary="Calculate Rental Payment Options",
-    description="Calculate payment options for rental scenarios (pre-payment and settling dues)",
+    description="Calculate payment options for rental flows using package_id (start) or rental_id (due)",
     responses={200: BaseResponseSerializer}
 )
 class CalculatePaymentOptionsView(GenericAPIView, BaseAPIView):
@@ -198,7 +198,10 @@ class CalculatePaymentOptionsView(GenericAPIView, BaseAPIView):
     
     @extend_schema(
         summary="Calculate Rental Payment Options",
-        description="Calculate available payment options (wallet, points, combination) for rental scenarios only",
+        description=(
+            "Calculate available payment options (wallet, points, wallet+points, direct). "
+            "Provide exactly one selector: package_id for pre-payment or rental_id for due settlement."
+        ),
         request=serializers.CalculatePaymentOptionsSerializer
     )
     @log_api_call()
@@ -214,7 +217,6 @@ class CalculatePaymentOptionsView(GenericAPIView, BaseAPIView):
                 scenario=serializer.validated_data['scenario'],
                 package_id=serializer.validated_data.get('package_id'),
                 rental_id=serializer.validated_data.get('rental_id'),
-                amount=serializer.validated_data.get('amount'),
                 payment_mode=serializer.validated_data.get('payment_mode'),
                 wallet_amount=serializer.validated_data.get('wallet_amount'),
                 points_to_use=serializer.validated_data.get('points_to_use')
