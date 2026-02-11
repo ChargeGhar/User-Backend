@@ -44,12 +44,12 @@ def process_prepayment(
     Raises:
         ServiceException if insufficient balance
     """
-    from api.user.payments.services import PaymentCalculationService, RentalPaymentService
+    from api.user.payments.services import RentalPaymentFlowService, RentalPaymentService
     
     payment_amount = amount if amount is not None else package.price
     
-    calc_service = PaymentCalculationService()
-    payment_options = calc_service.calculate_payment_options(
+    flow_service = RentalPaymentFlowService()
+    payment_options = flow_service.calculate_payment_options(
         user=user,
         scenario='pre_payment',
         package_id=str(package.id),
@@ -65,13 +65,7 @@ def process_prepayment(
             code="insufficient_balance"
         )
     
-    breakdown = payment_options.get('payment_breakdown', {}) or {}
-    # Normalize key names for RentalPaymentService
-    normalized_breakdown = {
-        'points_to_use': breakdown.get('points_to_use', breakdown.get('points_used', 0)),
-        'points_amount': breakdown.get('points_amount', Decimal('0')),
-        'wallet_amount': breakdown.get('wallet_amount', breakdown.get('wallet_used', Decimal('0')))
-    }
+    normalized_breakdown = flow_service.normalize_breakdown_from_options(payment_options)
     
     payment_service = RentalPaymentService()
     return payment_service.process_rental_payment(

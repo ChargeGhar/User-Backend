@@ -15,7 +15,7 @@ from .return_powerbank import RentalReturnMixin
 from .swap import RentalSwapMixin
 from .queries import RentalQueryMixin
 from .notifications import RentalNotificationMixin
-
+from .rental_due_service import RentalDuePaymentService
 
 class RentalService(
     RentalNotificationMixin,
@@ -25,7 +25,8 @@ class RentalService(
     RentalReturnMixin,
     RentalSwapMixin,
     RentalQueryMixin,
-    CRUDService
+    CRUDService,
+    RentalDuePaymentService
 ):
     """
     Service for rental operations.
@@ -45,4 +46,5 @@ class RentalService(
 
 __all__ = [
     "RentalService",
+    "RentalDuePaymentService",
 ]

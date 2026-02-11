@@ -2,7 +2,7 @@
 
 Last verified: 2026-02-11
 
-This file is the final cycle contract for rental start + rental dues after the `payment_mode` update and backward-compatible payment breakdown keys.
+This file is the final cycle contract for rental start + rental dues after the `payment_mode` update, shared flow service alignment, and backward-compatible payment breakdown keys.
 
 ## 1) Response Contracts
 
@@ -58,6 +58,28 @@ Rental start business-blocking (special contract):
 }
 ```
 
+Rental due business-blocking (same contract):
+- HTTP 200
+- `success=true`
+- error moved under `data.error`
+
+```json
+{
+  "success": true,
+  "message": "Payment required to settle rental dues",
+  "data": {
+    "error": {
+      "code": "payment_required|payment_method_required|invalid_payment_mode|invalid_wallet_points_split|split_total_mismatch",
+      "message": "...",
+      "context": {
+        "payment_mode": "wallet|points|wallet_points|direct",
+        "shortfall": "..."
+      }
+    }
+  }
+}
+```
+
 Business-blocking codes currently wrapped this way:
 - `payment_required`
 - `payment_method_required`
@@ -103,6 +125,38 @@ Behavior:
 4. `direct`
 - Always returns business-blocking payment-required response (gateway intent).
 - Resume mode after top-up is `wallet` to avoid direct-mode recursion.
+
+## 3A) Rental Due Modes (POST_PAYMENT)
+
+Request fields:
+```json
+{
+  "payment_method_id": "OPTIONAL_UUID",
+  "payment_mode": "wallet|points|wallet_points|direct",
+  "wallet_amount": "OPTIONAL_DECIMAL",
+  "points_to_use": "OPTIONAL_INT"
+}
+```
+
+Behavior:
+1. `wallet`
+- If wallet can settle due fully, due is paid.
+- If insufficient, returns business-blocking:
+  - `payment_method_required` (when `payment_method_id` missing), or
+  - `payment_required` with top-up intent context (when `payment_method_id` provided).
+
+2. `points`
+- If points value can settle due fully, due is paid.
+- If insufficient, same business-blocking behavior as wallet.
+
+3. `wallet_points`
+- Optional explicit split is supported; split must exactly match due amount.
+- If split is affordable, due is paid.
+- If split is not affordable, returns business-blocking response.
+
+4. `direct`
+- Always returns business-blocking payment-required response with top-up intent details.
+- Uses the same wrapped response shape as rental start.
 
 ## 3) POSTPAID Start Rules
 
@@ -159,15 +213,19 @@ This ensures older callers still work while newer flows can rely on canonical na
 ## 6) Recursive Alignment Verification (Code)
 
 Verified aligned files:
+- `api/user/payments/services/rental_payment_flow.py` (shared start/due flow)
 - `api/user/payments/services/payment_calculation.py`
 - `api/user/payments/views/core_views.py`
 - `api/user/payments/serializers/rental_payment_serializer.py`
 - `api/user/rentals/serializers/action_serializers.py`
 - `api/user/rentals/services/rental/start/core.py`
 - `api/user/rentals/services/rental/start/payment.py`
+- `api/user/payments/services/rental_payment.py`
 - `api/user/rentals/views/core_views.py`
+- `api/user/rentals/views/support_views.py`
 - `api/user/rentals/tasks.py`
-- `api/user/rentals/views/support_views.py` (legacy breakdown keys still consumed)
+- `tests/user/rentals/test_rental_due_view_payment_contract.py`
+- `tests/user/payments/test_rental_due_alignment.py`
 
 ## 7) Non-Changed Scope (intentional)
 

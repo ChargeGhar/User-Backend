@@ -133,13 +133,7 @@ class PaymentIntentService(CRUDService):
                     'amount': intent.amount,
                     'new_balance': intent.user.wallet.balance
                 }
-                rental_status = intent.intent_metadata.get('rental_start_status') if intent.intent_metadata else None
-                if rental_status:
-                    result.update({
-                        'rental_start_status': rental_status,
-                        'rental_id': intent.intent_metadata.get('rental_id'),
-                        'rental_error': intent.intent_metadata.get('rental_error')
-                    })
+                self._append_rental_flow_result(result, intent)
                 return result
             
             if intent.status != 'PENDING':
@@ -190,13 +184,25 @@ class PaymentIntentService(CRUDService):
                 # Update intent status using repository
                 self.intent_repository.update_status(intent, 'COMPLETED', completed_at=timezone.now())
 
-                # If this top-up is part of rental start flow, enqueue resume task
-                if intent.intent_metadata and intent.intent_metadata.get('flow') == 'RENTAL_START':
-                    intent.intent_metadata['rental_start_status'] = intent.intent_metadata.get('rental_start_status') or 'PENDING'
-                    intent.save(update_fields=['intent_metadata'])
+                # If this top-up is part of rental flow, enqueue resume task
+                if intent.intent_metadata:
+                    flow = intent.intent_metadata.get('flow')
+                    if flow == 'RENTAL_START':
+                        intent.intent_metadata['rental_start_status'] = (
+                            intent.intent_metadata.get('rental_start_status') or 'PENDING'
+                        )
+                        intent.save(update_fields=['intent_metadata'])
 
-                    from api.user.rentals.tasks import resume_rental_start_from_intent
-                    transaction.on_commit(lambda: resume_rental_start_from_intent.delay(intent.intent_id))
+                        from api.user.rentals.tasks import resume_rental_start_from_intent
+                        transaction.on_commit(lambda: resume_rental_start_from_intent.delay(intent.intent_id))
+                    elif flow == 'RENTAL_DUE':
+                        intent.intent_metadata['rental_due_status'] = (
+                            intent.intent_metadata.get('rental_due_status') or 'PENDING'
+                        )
+                        intent.save(update_fields=['intent_metadata'])
+
+                        from api.user.rentals.tasks import resume_rental_due_from_intent
+                        transaction.on_commit(lambda: resume_rental_due_from_intent.delay(intent.intent_id))
 
                 self.log_info(f"Top-up verified and processed: {intent.intent_id}")
 
@@ -206,13 +212,7 @@ class PaymentIntentService(CRUDService):
                     'amount': intent.amount,
                     'new_balance': intent.user.wallet.balance
                 }
-                rental_status = intent.intent_metadata.get('rental_start_status') if intent.intent_metadata else None
-                if rental_status:
-                    result.update({
-                        'rental_start_status': rental_status,
-                        'rental_id': intent.intent_metadata.get('rental_id'),
-                        'rental_error': intent.intent_metadata.get('rental_error')
-                    })
+                self._append_rental_flow_result(result, intent)
                 return result
             else:
                 self.intent_repository.update_status(intent, 'FAILED')
@@ -225,6 +225,28 @@ class PaymentIntentService(CRUDService):
             raise
         except Exception as e:
             self.handle_service_error(e, "Failed to verify top-up payment")
+
+    def _append_rental_flow_result(self, result: Dict[str, Any], intent: PaymentIntent) -> None:
+        """Attach rental flow status fields (start/due) to verify response payload."""
+        if not intent.intent_metadata:
+            return
+
+        rental_start_status = intent.intent_metadata.get('rental_start_status')
+        if rental_start_status:
+            result.update({
+                'rental_start_status': rental_start_status,
+                'rental_id': intent.intent_metadata.get('rental_id'),
+                'rental_error': intent.intent_metadata.get('rental_error')
+            })
+
+        rental_due_status = intent.intent_metadata.get('rental_due_status')
+        if rental_due_status:
+            result.update({
+                'rental_due_status': rental_due_status,
+                'rental_due_error': intent.intent_metadata.get('rental_due_error'),
+                'due_transaction_id': intent.intent_metadata.get('due_transaction_id'),
+                'rental_id': intent.intent_metadata.get('rental_id')
+            })
 
     def _post_payment_processing(self, intent, transaction_obj):
         """Handle points, notifications, etc."""

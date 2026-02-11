@@ -9,7 +9,9 @@ from api.user.auth.models import User
 from api.user.payments.models import Wallet
 from api.user.payments.services import PaymentCalculationService
 from api.user.points.models import UserPoints
-from api.user.rentals.models import RentalPackage
+from api.user.rentals.models import Rental, RentalPackage
+from api.user.stations.models import Station, StationSlot
+from django.utils import timezone
 
 
 def _create_user_with_balances(email: str, wallet: Decimal, points: int) -> User:
@@ -28,6 +30,48 @@ def _create_prepaid_package(price: Decimal = Decimal("100.00")) -> RentalPackage
         package_type="HOURLY",
         payment_model="PREPAID",
         is_active=True,
+    )
+
+
+def _create_postpaid_rental(user: User, amount_paid: Decimal, overdue_amount: Decimal) -> Rental:
+    station = Station.objects.create(
+        station_name=f"Calc Station {user.username}",
+        serial_number=f"CALC-SN-{user.username}",
+        imei=f"CALC-IMEI-{user.username}",
+        latitude=Decimal("27.700000000000000"),
+        longitude=Decimal("85.300000000000000"),
+        address="Calculation Test Address",
+        total_slots=1,
+        status="ONLINE",
+        is_maintenance=False,
+    )
+    slot = StationSlot.objects.create(
+        station=station,
+        slot_number=1,
+        status="AVAILABLE",
+        battery_level=80,
+    )
+    package = RentalPackage.objects.create(
+        name=f"Postpaid Calc Package {user.username}",
+        description="Postpaid payment calculation package",
+        duration_minutes=60,
+        price=Decimal("100.00"),
+        package_type="HOURLY",
+        payment_model="POSTPAID",
+        is_active=True,
+    )
+    return Rental.objects.create(
+        user=user,
+        station=station,
+        slot=slot,
+        package=package,
+        rental_code=f"CALC{user.username[:6]}",
+        status="COMPLETED",
+        payment_status="PENDING",
+        due_at=timezone.now(),
+        amount_paid=amount_paid,
+        overdue_amount=overdue_amount,
+        rental_metadata={},
     )
 
 
@@ -202,3 +246,28 @@ def test_direct_mode_always_requires_topup() -> None:
     assert options["payment_breakdown"]["direct_amount"] == Decimal("100.00")
     assert options["payment_breakdown"]["wallet_amount"] == Decimal("0.00")
     assert options["payment_breakdown"]["points_to_use"] == 0
+
+
+@pytest.mark.django_db
+def test_post_payment_amount_override_aligns_due_calculation() -> None:
+    user = _create_user_with_balances("post-override@example.com", Decimal("20.00"), 100)
+    rental = _create_postpaid_rental(
+        user=user,
+        amount_paid=Decimal("20.00"),
+        overdue_amount=Decimal("10.00"),
+    )
+
+    options = PaymentCalculationService().calculate_payment_options(
+        user=user,
+        scenario="post_payment",
+        rental_id=str(rental.id),
+        amount=Decimal("30.00"),
+        payment_mode="wallet_points",
+        wallet_amount=Decimal("20.00"),
+        points_to_use=100,
+    )
+
+    assert options["total_amount"] == Decimal("30.00")
+    assert options["is_sufficient"] is True
+    assert options["payment_breakdown"]["wallet_amount"] == Decimal("20.00")
+    assert options["payment_breakdown"]["points_to_use"] == 100

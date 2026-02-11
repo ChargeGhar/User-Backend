@@ -64,6 +64,10 @@ class Rental(BaseModel):
         """
         from decimal import Decimal
         from django.utils import timezone
+
+        # Rental never started: no realtime overdue should accrue.
+        if not self.started_at:
+            return Decimal('0')
         
         # If already returned, use stored final amount
         if self.ended_at:
@@ -105,6 +109,10 @@ class Rental(BaseModel):
         Returns 0 if not overdue yet or already returned.
         """
         from django.utils import timezone
+
+        # Rental never started: no overdue duration.
+        if not self.started_at:
+            return 0
         
         if not self.due_at:
             return 0

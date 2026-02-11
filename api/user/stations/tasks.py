@@ -64,12 +64,18 @@ def verify_popup_completion(self, rental_id: str, station_sn: str, expected_powe
                             f"Verified popup for rental {rental_id}: "
                             f"powerbank={popup_sn}"
                         )
+                        started_at = timezone.now()
                         rental.status = 'ACTIVE'
-                        rental.started_at = timezone.now()
+                        rental.started_at = started_at
+                        rental.due_at = started_at + timezone.timedelta(
+                            minutes=rental.package.duration_minutes
+                        )
                         rental.rental_metadata['popup_verified'] = True
                         rental.rental_metadata['popup_verified_at'] = timezone.now().isoformat()
                         rental.rental_metadata['verified_powerbank_sn'] = popup_sn
-                        rental.save(update_fields=['status', 'started_at', 'rental_metadata'])
+                        rental.save(
+                            update_fields=['status', 'started_at', 'due_at', 'rental_metadata']
+                        )
                         
                         return {"status": "verified", "powerbank_sn": popup_sn}
         

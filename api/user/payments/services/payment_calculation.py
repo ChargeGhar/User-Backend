@@ -69,7 +69,10 @@ class PaymentCalculationService(BaseService):
                 from api.user.rentals.models import Rental
 
                 rental = Rental.objects.get(id=rental_id, user=user)
-                if rental.package.payment_model == 'POSTPAID':
+                amount_override = kwargs.get('amount')
+                if amount_override is not None:
+                    amount = Decimal(str(amount_override))
+                elif rental.package.payment_model == 'POSTPAID':
                     if rental.ended_at and rental.started_at:
                         usage_duration = rental.ended_at - rental.started_at
                         usage_minutes = int(usage_duration.total_seconds() / 60)
@@ -83,16 +86,6 @@ class PaymentCalculationService(BaseService):
                             if overdue_minutes > 0:
                                 late_fee = calculate_late_fee_amount(package_rate_per_minute, overdue_minutes)
                                 amount += late_fee
-
-                                from api.user.notifications.services import notify
-
-                                notify(
-                                    user,
-                                    'fines_dues',
-                                    async_send=True,
-                                    amount=float(late_fee),
-                                    reason=f"Late return penalty - {overdue_minutes} minutes overdue"
-                                )
                         else:
                             amount = rental.package.price
                     else:

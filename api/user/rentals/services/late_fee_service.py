@@ -31,7 +31,7 @@ class LateFeeService:
         """
         if not config:
             # Fallback to simple calculation if no config provided
-            return normal_rate_per_minute * Decimal(str(overdue_minutes))
+            return normal_rate_per_minute * Decimal('2') * Decimal(str(overdue_minutes))
 
         # Apply grace period
         effective_overdue_minutes = max(0, overdue_minutes - config.grace_period_minutes)

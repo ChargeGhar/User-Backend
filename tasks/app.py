@@ -79,10 +79,10 @@ app.conf.beat_schedule = {
         "task": "api.user.payments.tasks.expire_payment_intents",
         "schedule": 900.0,  # Every 15 minutes
     },
-    # Regular tasks (hourly)
+    # Regular tasks
     "calculate-overdue-charges": {
         "task": "api.user.rentals.tasks.calculate_overdue_charges",
-        "schedule": 3600.0,  # Every hour
+        "schedule": 60.0,  # Every 1 minute
     },
     "expire-old-referrals": {
         "task": "api.user.points.tasks.expire_old_referrals",

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from decimal import Decimal
 from django.db import transaction
 
@@ -8,32 +8,13 @@ from api.common.services.base import BaseService, ServiceException
 from api.common.utils.helpers import generate_transaction_id
 from api.user.payments.repositories.transaction_repository import TransactionRepository
 from api.user.payments.services.wallet import WalletService
+from api.user.payments.services.rental_payment_flow import RentalPaymentFlowService
 
 class RentalPaymentService(BaseService):
     """Service for rental payments"""
 
     def _normalize_payment_breakdown(self, payment_breakdown: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Normalize payment breakdown to canonical keys.
-
-        Accepts both legacy keys (points_used, wallet_used) and canonical keys
-        (points_to_use, wallet_amount).
-        """
-        points_to_use = int(payment_breakdown.get('points_to_use', payment_breakdown.get('points_used', 0)) or 0)
-        points_amount = Decimal(str(payment_breakdown.get('points_amount', Decimal('0'))))
-        wallet_amount = Decimal(str(payment_breakdown.get('wallet_amount', payment_breakdown.get('wallet_used', Decimal('0')))))
-
-        if points_to_use < 0 or points_amount < 0 or wallet_amount < 0:
-            raise ServiceException(
-                detail="Payment breakdown values must be non-negative",
-                code="invalid_payment_breakdown"
-            )
-
-        return {
-            'points_to_use': points_to_use,
-            'points_amount': points_amount.quantize(Decimal('0.01')),
-            'wallet_amount': wallet_amount.quantize(Decimal('0.01')),
-        }
+        return RentalPaymentFlowService().normalize_breakdown(payment_breakdown)
 
     @transaction.atomic
     def process_rental_payment(self, user, rental, payment_breakdown: Dict[str, Any]) -> Transaction:
@@ -100,18 +81,18 @@ class RentalPaymentService(BaseService):
         user,
         rental,
         payment_breakdown: Dict[str, Any],
-        is_powerbank_returned: bool = True
-    ) -> 'Transaction':
+        is_powerbank_returned: bool = True,
+        required_due_override: Optional[Decimal] = None,
+    ):
         """
         Pay outstanding rental dues.
-        
+
         Args:
             user: The user making payment
             rental: The rental with dues
             payment_breakdown: Payment amounts breakdown
-            is_powerbank_returned: Whether powerbank has been returned (default True for backward compat)
-                                   If False, status stays as ACTIVE/OVERDUE (early payment scenario)
-        
+            is_powerbank_returned: Whether powerbank has been returned
+
         Returns:
             Transaction object
         """
@@ -120,10 +101,12 @@ class RentalPaymentService(BaseService):
             points_amount = normalized['points_amount']
             wallet_amount = normalized['wallet_amount']
             points_to_use = normalized['points_to_use']
-            
-            # Calculate total amount
+
             total_amount = (points_amount + wallet_amount).quantize(Decimal('0.01'))
-            required_due = ((rental.amount_paid or Decimal('0')) + (rental.overdue_amount or Decimal('0'))).quantize(Decimal('0.01'))
+            if required_due_override is not None:
+                required_due = Decimal(str(required_due_override)).quantize(Decimal('0.01'))
+            else:
+                required_due = RentalPaymentFlowService().calculate_required_due(rental)
 
             if required_due <= 0:
                 raise ServiceException(
@@ -144,7 +127,11 @@ class RentalPaymentService(BaseService):
                     }
                 )
 
-            payment_type = 'COMBINATION' if points_to_use > 0 and wallet_amount > 0 else 'POINTS' if points_to_use > 0 else 'WALLET'
+            payment_type = (
+                'COMBINATION' if points_to_use > 0 and wallet_amount > 0
+                else 'POINTS' if points_to_use > 0
+                else 'WALLET'
+            )
 
             transaction_obj = TransactionRepository.create(
                 user=user,
@@ -156,7 +143,6 @@ class RentalPaymentService(BaseService):
                 related_rental=rental
             )
 
-            # Deduct points if used
             if points_to_use > 0:
                 from api.user.points.services import deduct_points
                 deduct_points(
@@ -164,10 +150,9 @@ class RentalPaymentService(BaseService):
                     points_to_use,
                     'DUE_PAYMENT',
                     f"Due payment for rental {rental.rental_code}",
-                    async_send=False  # Immediate for payment processing
+                    async_send=False
                 )
 
-            # Deduct wallet if used
             if wallet_amount > 0:
                 wallet_service = WalletService()
                 wallet_service.deduct_balance(
@@ -177,41 +162,39 @@ class RentalPaymentService(BaseService):
                     transaction_obj
                 )
 
-            # Clear dues and update payment status
             rental.overdue_amount = Decimal('0')
             rental.payment_status = 'PAID'
-            
-            # Only set COMPLETED if powerbank has been returned
-            # If powerbank is still out, keep current status (ACTIVE/OVERDUE)
             update_fields = ['overdue_amount', 'payment_status', 'updated_at']
             if is_powerbank_returned:
                 rental.status = 'COMPLETED'
                 update_fields.append('status')
-            
             rental.save(update_fields=update_fields)
-            
-            # Trigger revenue distribution for successful payment
+
             self._trigger_revenue_distribution(transaction_obj, rental)
 
-            self.log_info(f"Rental due paid: {rental.rental_code} for user {user.username} - amount: {total_amount}")
+            self.log_info(
+                f"Rental due paid: {rental.rental_code} for user {user.username} - amount: {total_amount}"
+            )
             return transaction_obj
 
         except Exception as e:
             self.handle_service_error(e, "Failed to pay rental due")
-    
+
     def _trigger_revenue_distribution(self, transaction_obj, rental) -> None:
-        """Trigger revenue distribution for successful payment"""
+        """Trigger revenue distribution for successful payment."""
         try:
             from api.partners.common.services import RevenueDistributionService
-            
+
             rev_service = RevenueDistributionService()
             distribution = rev_service.create_revenue_distribution(transaction_obj, rental)
-            
+
             if distribution:
                 self.log_info(
                     f"Revenue distribution created for rental {rental.rental_code}: "
                     f"distribution_id={distribution.id}"
                 )
         except Exception as e:
-            # Log but don't fail the payment - revenue distribution can be recalculated
-            self.log_error(f"Failed to create revenue distribution for {rental.rental_code}: {str(e)}")
+            # Log but don't fail the payment; distribution can be recalculated.
+            self.log_error(
+                f"Failed to create revenue distribution for {rental.rental_code}: {str(e)}"
+            )

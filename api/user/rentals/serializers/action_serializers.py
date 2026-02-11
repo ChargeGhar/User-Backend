@@ -9,19 +9,19 @@ from rest_framework import serializers
 from api.user.rentals.models import RentalPackage, RentalIssue
 from api.user.stations.models import Station
 
+PAYMENT_MODE_CHOICES = [
+    ('wallet', 'Wallet'),
+    ('points', 'Points'),
+    ('wallet_points', 'Wallet + Points'),
+    ('direct', 'Direct Gateway Payment'),
+]
+
 
 class RentalStartSerializer(serializers.Serializer):
     """
     Request serializer for starting a rental.
     Used in: POST /api/rentals/start
     """
-    PAYMENT_MODE_CHOICES = [
-        ('wallet', 'Wallet'),
-        ('points', 'Points'),
-        ('wallet_points', 'Wallet + Points'),
-        ('direct', 'Direct Gateway Payment'),
-    ]
-
     station_sn = serializers.CharField(
         max_length=255,
         help_text="Station serial number where powerbank is picked up"
@@ -39,7 +39,7 @@ class RentalStartSerializer(serializers.Serializer):
     payment_method_id = serializers.UUIDField(
         required=False,
         allow_null=True,
-        help_text="Optional: Payment method ID (required if payment is needed)"
+        help_text="Optional: Payment method ID (required if payment is needed)/When selected payment_mode is 'direct' payment method ID must be provided"
     )
     payment_mode = serializers.ChoiceField(
         choices=PAYMENT_MODE_CHOICES,
@@ -53,13 +53,13 @@ class RentalStartSerializer(serializers.Serializer):
         min_value=0,
         required=False,
         allow_null=True,
-        help_text="Optional preferred wallet amount for wallet_points mode"
+        help_text="Optional preferred wallet amount for wallet_points mode/When selected payment_mode is 'wallet_points', both wallet_amount and points_to_use must be provided"
     )
     points_to_use = serializers.IntegerField(
         min_value=0,
         required=False,
         allow_null=True,
-        help_text="Optional preferred points to use for wallet_points mode"
+        help_text="Optional preferred points to use for wallet_points mode/When selected payment_mode is 'wallet_points', both wallet_amount and points_to_use must be provided"
     )
     
     def validate_station_sn(self, value):
@@ -142,28 +142,50 @@ class RentalExtensionCreateSerializer(serializers.Serializer):
 class RentalPayDueSerializer(serializers.Serializer):
     """
     Request serializer for paying rental dues.
-    Used in: POST /api/rentals/pay-due
+    Used in: POST /api/rentals/{id}/pay-due
     """
-    scenario = serializers.ChoiceField(
-        choices=['pre_payment', 'post_payment'],
-        required=True,
-        help_text="Payment scenario"
-    )
-    package_id = serializers.UUIDField(
+    payment_method_id = serializers.UUIDField(
         required=False,
         allow_null=True,
-        help_text="Package ID (required for pre_payment)"
+        help_text="Optional payment method ID (required if gateway top-up intent is needed)/When selected payment_mode is 'direct', payment_method_id must be provided"
     )
-    rental_id = serializers.UUIDField(
-        help_text="Rental ID with outstanding dues"
+    payment_mode = serializers.ChoiceField(
+        choices=PAYMENT_MODE_CHOICES,
+        required=False,
+        default='wallet_points',
+        help_text="Payment mode: wallet, points, wallet_points, or direct"
+    )
+    wallet_amount = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        min_value=0,
+        required=False,
+        allow_null=True,
+        help_text="Optional preferred wallet amount for wallet_points mode/When selected payment_mode is 'wallet_points', both wallet_amount and points_to_use must be provided"
+    )
+    points_to_use = serializers.IntegerField(
+        min_value=0,
+        required=False,
+        allow_null=True,
+        help_text="Optional preferred points to use for wallet_points mode/When selected payment_mode is 'wallet_points', both wallet_amount and points_to_use must be provided"
     )
 
-    def validate_scenario(self, value):
-        if value not in ['pre_payment', 'post_payment']:
+    def validate(self, attrs):
+        payment_mode = attrs.get('payment_mode', 'wallet_points')
+        wallet_amount = attrs.get('wallet_amount')
+        points_to_use = attrs.get('points_to_use')
+
+        if (wallet_amount is None) ^ (points_to_use is None):
             raise serializers.ValidationError(
-                "Invalid scenario. Supported: pre_payment, post_payment"
+                {"wallet_points_split": "Provide both wallet_amount and points_to_use together"}
             )
-        return value
+
+        if payment_mode != 'wallet_points' and (wallet_amount is not None or points_to_use is not None):
+            raise serializers.ValidationError(
+                {"wallet_points_split": "wallet_amount and points_to_use are only valid for wallet_points mode"}
+            )
+
+        return attrs
 
 
 class RentalIssueCreateSerializer(serializers.ModelSerializer):

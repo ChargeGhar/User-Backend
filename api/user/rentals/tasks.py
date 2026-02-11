@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from celery import shared_task
 from django.utils import timezone
 from django.db.models import Q
@@ -18,6 +19,7 @@ def check_overdue_rentals(self):
         # Find active rentals that are past due
         overdue_rentals = Rental.objects.filter(
             status='ACTIVE',
+            started_at__isnull=False,
             due_at__lt=now
         )
         
@@ -25,20 +27,32 @@ def check_overdue_rentals(self):
         
         for rental in overdue_rentals:
             # Update status to overdue
+            current_overdue = Decimal(str(rental.current_overdue_amount or Decimal('0'))).quantize(
+                Decimal('0.01')
+            )
             rental.status = 'OVERDUE'
-            rental.save(update_fields=['status', 'updated_at'])
+            update_fields = ['status']
+            if current_overdue > Decimal('0.00'):
+                if rental.overdue_amount != current_overdue:
+                    rental.overdue_amount = current_overdue
+                    update_fields.append('overdue_amount')
+                if rental.payment_status != 'PENDING':
+                    rental.payment_status = 'PENDING'
+                    update_fields.append('payment_status')
+            rental.save(update_fields=update_fields + ['updated_at'])
             updated_count += 1
             
             # Send overdue notification
             from api.user.notifications.services import notify
             
             overdue_hours = int((now - rental.due_at).total_seconds() / 3600)
-            penalty_amount = float(rental.overdue_amount)
+            penalty_amount = float(current_overdue)
+            powerbank_serial = rental.power_bank.serial_number if rental.power_bank else None
             
             # Send rental overdue notification using clean API
             notify(rental.user, 'rental_overdue',
                   async_send=True,
-                  powerbank_id=rental.powerbank.serial_number,
+                  powerbank_id=powerbank_serial,
                   overdue_hours=overdue_hours,
                   penalty_amount=penalty_amount)
         
@@ -54,42 +68,50 @@ def check_overdue_rentals(self):
 def calculate_overdue_charges(self):
     """Calculate and apply overdue charges for late returns"""
     try:
-        # Find overdue rentals that haven't been charged yet
+        now = timezone.now()
+        # Keep overdue snapshots up-to-date for ongoing overdue rentals
         overdue_rentals = Rental.objects.filter(
             status='OVERDUE',
-            overdue_amount=0  # Not yet charged
+            started_at__isnull=False,
+            ended_at__isnull=True,
+            due_at__lt=now,
         )
         
         charged_count = 0
         
         for rental in overdue_rentals:
             try:
-                # Calculate overdue time
-                now = timezone.now()
-                overdue_duration = now - rental.due_at
-                overdue_minutes = int(overdue_duration.total_seconds() / 60)
-                
-                # Calculate overdue charges using configurable rates
-                from api.common.utils.helpers import calculate_late_fee_amount, get_package_rate_per_minute
-                package_rate_per_minute = get_package_rate_per_minute(rental.package)
-                overdue_amount = calculate_late_fee_amount(package_rate_per_minute, overdue_minutes)
-                
-                # Update rental with overdue charges
-                rental.overdue_amount = overdue_amount
-                rental.payment_status = 'PENDING'
-                rental.save(update_fields=['overdue_amount', 'payment_status', 'updated_at'])
-                
-                charged_count += 1
-                
-                # Send overdue charges notification using clean API
-                from api.user.notifications.services import notify
-                notify(
-                    rental.user,
-                    'fines_dues',
-                    async_send=True,
-                    amount=float(overdue_amount),
-                    reason=f"Overdue charges for rental {rental.rental_code}"
+                previous_overdue = Decimal(str(rental.overdue_amount or Decimal('0'))).quantize(
+                    Decimal('0.01')
                 )
+                overdue_amount = Decimal(str(rental.current_overdue_amount or Decimal('0'))).quantize(
+                    Decimal('0.01')
+                )
+
+                update_fields = []
+                if overdue_amount != previous_overdue:
+                    rental.overdue_amount = overdue_amount
+                    update_fields.append('overdue_amount')
+
+                if overdue_amount > 0 and rental.payment_status != 'PENDING':
+                    rental.payment_status = 'PENDING'
+                    update_fields.append('payment_status')
+
+                if update_fields:
+                    rental.save(update_fields=update_fields + ['updated_at'])
+                    charged_count += 1
+
+                # Notify only on first transition to payable overdue amount
+                if previous_overdue == Decimal('0.00') and overdue_amount > Decimal('0.00'):
+                    from api.user.notifications.services import notify
+
+                    notify(
+                        rental.user,
+                        'fines_dues',
+                        async_send=True,
+                        amount=float(overdue_amount),
+                        reason=f"Overdue charges for rental {rental.rental_code}"
+                    )
                 
             except Exception as e:
                 self.logger.error(f"Failed to calculate charges for rental {rental.id}: {str(e)}")
@@ -530,4 +552,109 @@ def resume_rental_start_from_intent(self, intent_id: str):
             self.logger.error(f"Failed to update intent metadata: {update_error}")
 
         self.logger.error(f"Failed to resume rental start for intent {intent_id}: {str(e)}")
+        return {'status': 'FAILED', 'error': str(e)}
+
+
+@shared_task(base=BaseTask, bind=True)
+def resume_rental_due_from_intent(self, intent_id: str):
+    """Resume rental due settlement after successful top-up verification."""
+    try:
+        from decimal import Decimal
+        from api.user.payments.repositories import PaymentIntentRepository
+        from api.user.rentals.services import RentalDuePaymentService
+
+        intent = PaymentIntentRepository.get_by_intent_id(intent_id)
+        if not intent:
+            self.logger.warning(f"Payment intent not found: {intent_id}")
+            return {'status': 'NOT_FOUND'}
+
+        metadata = intent.intent_metadata or {}
+        if metadata.get('flow') != 'RENTAL_DUE':
+            return {'status': 'SKIPPED'}
+
+        if intent.status != 'COMPLETED':
+            return {'status': 'NOT_READY'}
+
+        if metadata.get('due_transaction_id'):
+            return {
+                'status': 'ALREADY_SETTLED',
+                'due_transaction_id': metadata.get('due_transaction_id')
+            }
+
+        rental_id = metadata.get('rental_id')
+        if not rental_id:
+            metadata['rental_due_status'] = 'FAILED'
+            metadata['rental_due_error'] = 'Missing rental_id in intent metadata'
+            intent.intent_metadata = metadata
+            intent.save(update_fields=['intent_metadata'])
+            return {'status': 'FAILED', 'error': 'missing_rental_id'}
+
+        rental = Rental.objects.get(id=rental_id, user=intent.user)
+        if rental.payment_status == 'PAID':
+            metadata['rental_due_status'] = 'SUCCESS'
+            intent.intent_metadata = metadata
+            intent.save(update_fields=['intent_metadata'])
+            return {'status': 'ALREADY_PAID', 'rental_id': str(rental.id)}
+
+        metadata['rental_due_status'] = 'PROCESSING'
+        intent.intent_metadata = metadata
+        intent.save(update_fields=['intent_metadata'])
+
+        payment_mode = metadata.get('payment_mode') or metadata.get('payment_mode_requested') or 'wallet_points'
+        wallet_amount = metadata.get('wallet_amount')
+        if wallet_amount is not None:
+            try:
+                wallet_amount = Decimal(str(wallet_amount))
+            except Exception:
+                wallet_amount = None
+
+        points_to_use = metadata.get('points_to_use')
+        if points_to_use is not None:
+            try:
+                points_to_use = int(points_to_use)
+            except (TypeError, ValueError):
+                points_to_use = None
+
+        required_due_override = metadata.get('required_due')
+        if required_due_override is not None:
+            try:
+                required_due_override = Decimal(str(required_due_override))
+            except Exception:
+                required_due_override = None
+
+        service = RentalDuePaymentService()
+        result = service.pay_rental_due(
+            user=intent.user,
+            rental=rental,
+            payment_mode=payment_mode,
+            wallet_amount=wallet_amount,
+            points_to_use=points_to_use,
+            payment_method_id=None,
+            required_due_override=required_due_override,
+        )
+
+        metadata['rental_due_status'] = 'SUCCESS'
+        metadata['due_transaction_id'] = result.get('transaction_id')
+        metadata['rental_id'] = str(rental.id)
+        intent.intent_metadata = metadata
+        intent.save(update_fields=['intent_metadata'])
+
+        return {
+            'status': 'SUCCESS',
+            'rental_id': str(rental.id),
+            'due_transaction_id': result.get('transaction_id')
+        }
+
+    except Exception as e:
+        try:
+            if 'intent' in locals() and intent:
+                metadata = intent.intent_metadata or {}
+                metadata['rental_due_status'] = 'FAILED'
+                metadata['rental_due_error'] = str(e)
+                intent.intent_metadata = metadata
+                intent.save(update_fields=['intent_metadata'])
+        except Exception as update_error:
+            self.logger.error(f"Failed to update due intent metadata: {update_error}")
+
+        self.logger.error(f"Failed to resume rental due for intent {intent_id}: {str(e)}")
         return {'status': 'FAILED', 'error': str(e)}
