@@ -22,7 +22,10 @@ def process_prepayment(
     user,
     package: 'RentalPackage',
     rental: Optional['Rental'] = None,
-    amount: Optional[Decimal] = None
+    amount: Optional[Decimal] = None,
+    payment_mode: str = 'wallet_points',
+    wallet_amount: Optional[Decimal] = None,
+    points_to_use: Optional[int] = None
 ) -> 'Transaction':
     """
     Process pre-payment for PREPAID rental.
@@ -50,7 +53,10 @@ def process_prepayment(
         user=user,
         scenario='pre_payment',
         package_id=str(package.id),
-        amount=payment_amount
+        amount=payment_amount,
+        payment_mode=payment_mode,
+        wallet_amount=wallet_amount,
+        points_to_use=points_to_use
     )
     
     if not payment_options['is_sufficient']:
@@ -62,9 +68,9 @@ def process_prepayment(
     breakdown = payment_options.get('payment_breakdown', {}) or {}
     # Normalize key names for RentalPaymentService
     normalized_breakdown = {
-        'points_to_use': breakdown.get('points_used', breakdown.get('points_to_use', 0)),
+        'points_to_use': breakdown.get('points_to_use', breakdown.get('points_used', 0)),
         'points_amount': breakdown.get('points_amount', Decimal('0')),
-        'wallet_amount': breakdown.get('wallet_used', breakdown.get('wallet_amount', Decimal('0')))
+        'wallet_amount': breakdown.get('wallet_amount', breakdown.get('wallet_used', Decimal('0')))
     }
     
     payment_service = RentalPaymentService()

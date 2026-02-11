@@ -82,13 +82,18 @@ class RentalPayDueView(GenericAPIView, BaseAPIView):
             # Process payment using rental payment service
             from api.user.payments.services import RentalPaymentService
             payment_service = RentalPaymentService()
+            breakdown = payment_options.get('payment_breakdown', {}) or {}
+            points_to_use = breakdown.get('points_to_use', breakdown.get('points_used', 0))
+            points_amount = breakdown.get('points_amount', 0)
+            wallet_amount = breakdown.get('wallet_amount', breakdown.get('wallet_used', 0))
+
             transaction = payment_service.pay_rental_due(
                 user=request.user,
                 rental=rental,
                 payment_breakdown={
-                    'points_to_use': payment_options['payment_breakdown']['points_used'],
-                    'points_amount': payment_options['payment_breakdown']['points_amount'],
-                    'wallet_amount': payment_options['payment_breakdown']['wallet_used'],
+                    'points_to_use': points_to_use,
+                    'points_amount': points_amount,
+                    'wallet_amount': wallet_amount,
                     'total_amount': payment_options['total_amount']
                 }
             )
@@ -100,9 +105,9 @@ class RentalPayDueView(GenericAPIView, BaseAPIView):
                 'rental_id': str(rental.id),
                 'amount_paid': float(payment_options['total_amount']),
                 'payment_breakdown': {
-                    'points_used': payment_options['payment_breakdown']['points_used'],
-                    'points_amount': float(payment_options['payment_breakdown']['points_amount']),
-                    'wallet_used': float(payment_options['payment_breakdown']['wallet_used'])
+                    'points_used': int(points_to_use),
+                    'points_amount': float(points_amount),
+                    'wallet_used': float(wallet_amount)
                 },
                 'payment_status': rental.payment_status,
                 'account_unblocked': True

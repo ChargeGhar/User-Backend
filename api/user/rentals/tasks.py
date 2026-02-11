@@ -490,13 +490,25 @@ def resume_rental_start_from_intent(self, intent_id: str):
                 'discount_metadata': metadata.get('discount_metadata')
             }
 
+        payment_mode = metadata.get('payment_mode') or metadata.get('payment_mode_requested') or 'wallet_points'
+        wallet_amount = metadata.get('wallet_amount')
+        points_to_use = metadata.get('points_to_use')
+        if points_to_use is not None:
+            try:
+                points_to_use = int(points_to_use)
+            except (TypeError, ValueError):
+                points_to_use = None
+
         service = RentalService()
         rental = service.start_rental(
             user=intent.user,
             station_sn=metadata.get('station_sn'),
             package_id=metadata.get('package_id'),
             powerbank_sn=metadata.get('powerbank_sn'),
-            pricing_override=pricing_override
+            pricing_override=pricing_override,
+            payment_mode=payment_mode,
+            wallet_amount=wallet_amount,
+            points_to_use=points_to_use
         )
 
         metadata['rental_start_status'] = 'SUCCESS'

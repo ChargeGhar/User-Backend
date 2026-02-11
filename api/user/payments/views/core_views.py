@@ -214,7 +214,10 @@ class CalculatePaymentOptionsView(GenericAPIView, BaseAPIView):
                 scenario=serializer.validated_data['scenario'],
                 package_id=serializer.validated_data.get('package_id'),
                 rental_id=serializer.validated_data.get('rental_id'),
-                amount=serializer.validated_data.get('amount')
+                amount=serializer.validated_data.get('amount'),
+                payment_mode=serializer.validated_data.get('payment_mode'),
+                wallet_amount=serializer.validated_data.get('wallet_amount'),
+                points_to_use=serializer.validated_data.get('points_to_use')
             )
 
             return options

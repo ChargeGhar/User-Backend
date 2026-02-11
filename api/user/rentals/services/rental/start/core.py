@@ -49,7 +49,10 @@ class RentalStartMixin:
         package_id: str,
         powerbank_sn: Optional[str] = None,
         payment_method_id: Optional[str] = None,
-        pricing_override: Optional[dict] = None
+        pricing_override: Optional[dict] = None,
+        payment_mode: str = 'wallet_points',
+        wallet_amount: Optional[Decimal] = None,
+        points_to_use: Optional[int] = None
     ) -> Rental:
         """
         Start a new rental session with device popup.
@@ -70,6 +73,9 @@ class RentalStartMixin:
             powerbank_sn: Optional specific powerbank SN (if user selected)
             payment_method_id: Optional payment method ID (required if payment is needed)
             pricing_override: Optional pricing override from payment intent (actual_price, discount info)
+            payment_mode: Payment strategy (wallet, points, wallet_points, direct)
+            wallet_amount: Optional requested wallet amount (wallet_points mode only)
+            points_to_use: Optional requested points usage (wallet_points mode only)
         
         Returns:
             Rental object
@@ -89,6 +95,7 @@ class RentalStartMixin:
                 user=user,
                 pricing_override=pricing_override
             )
+            selected_payment_mode = payment_mode or 'wallet_points'
 
             # Step 2: Payment pre-check (no locks)
             if package.payment_model == 'PREPAID':
@@ -98,20 +105,43 @@ class RentalStartMixin:
                     user=user,
                     scenario='pre_payment',
                     package_id=str(package.id),
-                    amount=actual_price
+                    amount=actual_price,
+                    payment_mode=selected_payment_mode,
+                    wallet_amount=wallet_amount,
+                    points_to_use=points_to_use
                 )
 
                 if not payment_options['is_sufficient']:
                     if not payment_method_id:
                         raise ServiceException(
                             detail="Payment method is required when balance is insufficient",
-                            code="payment_method_required"
+                            code="payment_method_required",
+                            context={
+                                'payment_mode': selected_payment_mode,
+                                'shortfall': str(payment_options.get('shortfall', Decimal('0')))
+                            }
                         )
+
+                    topup_amount = Decimal(str(
+                        payment_options.get('topup_amount_required')
+                        or payment_options.get('shortfall')
+                        or actual_price
+                    ))
+                    (
+                        resume_payment_mode,
+                        resume_wallet_amount,
+                        resume_points_to_use,
+                    ) = self._get_resume_payment_preferences(
+                        selected_payment_mode=selected_payment_mode,
+                        wallet_amount=wallet_amount,
+                        points_to_use=points_to_use,
+                        payment_options=payment_options
+                    )
 
                     intent = self._create_rental_topup_intent(
                         user=user,
                         payment_method_id=payment_method_id,
-                        amount=actual_price,
+                        amount=topup_amount,
                         metadata={
                             'flow': 'RENTAL_START',
                             'station_sn': station_sn,
@@ -121,7 +151,14 @@ class RentalStartMixin:
                             'discount_id': str(discount.id) if discount else None,
                             'discount_amount': str(discount_amount),
                             'discount_metadata': rental_metadata,
-                            'payment_model': package.payment_model
+                            'payment_model': package.payment_model,
+                            'payment_mode_requested': selected_payment_mode,
+                            'payment_mode': resume_payment_mode,
+                            'wallet_amount': str(resume_wallet_amount) if resume_wallet_amount is not None else None,
+                            'points_to_use': resume_points_to_use,
+                            'payment_breakdown': self._serialize_for_metadata(payment_options.get('payment_breakdown')),
+                            'topup_amount_required': str(topup_amount),
+                            'shortfall': str(payment_options.get('shortfall', Decimal('0')))
                         }
                     )
 
@@ -131,10 +168,22 @@ class RentalStartMixin:
                         status_code=402,
                         context=self._build_payment_required_context(
                             intent=intent,
-                            shortfall=payment_options.get('shortfall')
+                            shortfall=payment_options.get('shortfall'),
+                            payment_mode=selected_payment_mode,
+                            payment_options=payment_options
                         )
                     )
             else:
+                if selected_payment_mode in {'points', 'wallet_points'}:
+                    raise ServiceException(
+                        detail=f"Payment mode '{selected_payment_mode}' is not supported for POSTPAID packages",
+                        code="payment_mode_not_supported",
+                        context={
+                            'payment_mode': selected_payment_mode,
+                            'payment_model': package.payment_model
+                        }
+                    )
+
                 # POSTPAID: Require minimum balance, otherwise trigger top-up
                 from api.user.system.services import AppConfigService
                 min_balance_str = AppConfigService().get_config_cached('POSTPAID_MINIMUM_BALANCE', '50')
@@ -145,13 +194,18 @@ class RentalStartMixin:
                     wallet_balance = user.wallet.balance
 
                 if wallet_balance < min_balance:
+                    required_amount = min_balance - wallet_balance
+
                     if not payment_method_id:
                         raise ServiceException(
                             detail="Payment method is required when balance is insufficient",
-                            code="payment_method_required"
+                            code="payment_method_required",
+                            context={
+                                'payment_mode': selected_payment_mode,
+                                'shortfall': str(required_amount)
+                            }
                         )
 
-                    required_amount = min_balance - wallet_balance
                     intent = self._create_rental_topup_intent(
                         user=user,
                         payment_method_id=payment_method_id,
@@ -166,7 +220,13 @@ class RentalStartMixin:
                             'discount_amount': str(discount_amount),
                             'discount_metadata': rental_metadata,
                             'payment_model': package.payment_model,
-                            'postpaid_min_balance': str(min_balance)
+                            'postpaid_min_balance': str(min_balance),
+                            'payment_mode_requested': selected_payment_mode,
+                            'payment_mode': self._get_resume_payment_mode(selected_payment_mode),
+                            'wallet_amount': str(wallet_amount) if wallet_amount is not None else None,
+                            'points_to_use': points_to_use,
+                            'topup_amount_required': str(required_amount),
+                            'shortfall': str(required_amount)
                         }
                     )
 
@@ -176,7 +236,8 @@ class RentalStartMixin:
                         status_code=402,
                         context=self._build_payment_required_context(
                             intent=intent,
-                            shortfall=required_amount
+                            shortfall=required_amount,
+                            payment_mode=selected_payment_mode
                         )
                     )
 
@@ -188,7 +249,10 @@ class RentalStartMixin:
                 discount=discount,
                 discount_amount=discount_amount,
                 actual_price=actual_price,
-                rental_metadata=rental_metadata
+                rental_metadata=rental_metadata,
+                payment_mode=selected_payment_mode,
+                wallet_amount=wallet_amount,
+                points_to_use=points_to_use
             )
 
         except Exception as e:
@@ -256,9 +320,15 @@ class RentalStartMixin:
         intent.save(update_fields=['intent_metadata'])
         return intent
 
-    def _build_payment_required_context(self, intent, shortfall: Optional[Decimal] = None) -> dict:
+    def _build_payment_required_context(
+        self,
+        intent,
+        shortfall: Optional[Decimal] = None,
+        payment_mode: Optional[str] = None,
+        payment_options: Optional[dict] = None
+    ) -> dict:
         gateway_result = intent.intent_metadata.get('gateway_result', {}) if intent.intent_metadata else {}
-        return {
+        context = {
             'intent_id': intent.intent_id,
             'amount': str(intent.amount),
             'currency': intent.currency,
@@ -273,6 +343,66 @@ class RentalStartMixin:
             'shortfall': str(shortfall) if shortfall is not None else None
         }
 
+        if payment_mode:
+            context['payment_mode'] = payment_mode
+
+        if payment_options:
+            context['wallet_shortfall'] = str(payment_options.get('wallet_shortfall', Decimal('0')))
+            context['points_shortfall'] = payment_options.get('points_shortfall', 0)
+            context['points_shortfall_amount'] = str(payment_options.get('points_shortfall_amount', Decimal('0')))
+            context['payment_breakdown'] = self._serialize_for_metadata(payment_options.get('payment_breakdown'))
+
+        return context
+
+    def _get_resume_payment_mode(self, payment_mode: str) -> str:
+        """
+        Determine the mode to use when rental start resumes after gateway top-up.
+
+        Direct mode must not recurse into another direct top-up step. Points mode can
+        resume with wallet+points after wallet credit.
+        """
+        if payment_mode == 'direct':
+            return 'wallet'
+        if payment_mode == 'points':
+            return 'wallet_points'
+        return payment_mode
+
+    def _get_resume_payment_preferences(
+        self,
+        selected_payment_mode: str,
+        wallet_amount: Optional[Decimal],
+        points_to_use: Optional[int],
+        payment_options: dict
+    ) -> tuple[str, Optional[Decimal], Optional[int]]:
+        """
+        Build deterministic resume preferences for async rental continuation.
+
+        For wallet+points requested splits:
+        - If points are short, clear requested split because gateway top-up cannot add points.
+        - If only wallet is short, keep the requested split for deterministic debit behavior.
+        """
+        resume_mode = self._get_resume_payment_mode(selected_payment_mode)
+        resume_wallet_amount = wallet_amount
+        resume_points_to_use = points_to_use
+
+        has_requested_split = wallet_amount is not None and points_to_use is not None
+        points_shortfall = int(payment_options.get('points_shortfall', 0) or 0)
+        if selected_payment_mode == 'wallet_points' and has_requested_split and points_shortfall > 0:
+            resume_wallet_amount = None
+            resume_points_to_use = None
+
+        return resume_mode, resume_wallet_amount, resume_points_to_use
+
+    def _serialize_for_metadata(self, value):
+        """Convert Decimals recursively for JSONField-safe metadata storage."""
+        if isinstance(value, Decimal):
+            return str(value)
+        if isinstance(value, dict):
+            return {key: self._serialize_for_metadata(val) for key, val in value.items()}
+        if isinstance(value, list):
+            return [self._serialize_for_metadata(item) for item in value]
+        return value
+
     @transaction.atomic
     def _start_rental_atomic(
         self,
@@ -283,7 +413,10 @@ class RentalStartMixin:
         discount,
         discount_amount: Decimal,
         actual_price: Decimal,
-        rental_metadata: dict
+        rental_metadata: dict,
+        payment_mode: str = 'wallet_points',
+        wallet_amount: Optional[Decimal] = None,
+        points_to_use: Optional[int] = None
     ) -> Rental:
         """Atomic rental creation and popup flow."""
         # Re-validate inside transaction for safety
@@ -295,6 +428,13 @@ class RentalStartMixin:
 
         power_bank, slot = get_available_power_bank_and_slot(station)
 
+        runtime_metadata = dict(rental_metadata or {})
+        runtime_metadata['payment_mode'] = payment_mode
+        if wallet_amount is not None:
+            runtime_metadata['wallet_amount_requested'] = str(wallet_amount)
+        if points_to_use is not None:
+            runtime_metadata['points_to_use_requested'] = int(points_to_use)
+
         rental = Rental.objects.create(
             user=user,
             station=station,
@@ -305,12 +445,20 @@ class RentalStartMixin:
             status='PENDING_POPUP',
             due_at=timezone.now() + timezone.timedelta(minutes=package.duration_minutes),
             amount_paid=Decimal('0'),
-            rental_metadata=rental_metadata or {}
+            rental_metadata=runtime_metadata
         )
 
         # Process payment (PREPAID only)
         if package.payment_model == 'PREPAID':
-            process_prepayment(user, package, rental, actual_price)
+            process_prepayment(
+                user=user,
+                package=package,
+                rental=rental,
+                amount=actual_price,
+                payment_mode=payment_mode,
+                wallet_amount=wallet_amount,
+                points_to_use=points_to_use
+            )
             rental.amount_paid = actual_price
             rental.payment_status = 'PAID'
             rental.save(update_fields=['amount_paid', 'payment_status'])

@@ -15,6 +15,13 @@ class RentalStartSerializer(serializers.Serializer):
     Request serializer for starting a rental.
     Used in: POST /api/rentals/start
     """
+    PAYMENT_MODE_CHOICES = [
+        ('wallet', 'Wallet'),
+        ('points', 'Points'),
+        ('wallet_points', 'Wallet + Points'),
+        ('direct', 'Direct Gateway Payment'),
+    ]
+
     station_sn = serializers.CharField(
         max_length=255,
         help_text="Station serial number where powerbank is picked up"
@@ -33,6 +40,26 @@ class RentalStartSerializer(serializers.Serializer):
         required=False,
         allow_null=True,
         help_text="Optional: Payment method ID (required if payment is needed)"
+    )
+    payment_mode = serializers.ChoiceField(
+        choices=PAYMENT_MODE_CHOICES,
+        required=False,
+        default='wallet_points',
+        help_text="Payment mode: wallet, points, wallet_points, or direct"
+    )
+    wallet_amount = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        min_value=0,
+        required=False,
+        allow_null=True,
+        help_text="Optional preferred wallet amount for wallet_points mode"
+    )
+    points_to_use = serializers.IntegerField(
+        min_value=0,
+        required=False,
+        allow_null=True,
+        help_text="Optional preferred points to use for wallet_points mode"
     )
     
     def validate_station_sn(self, value):
@@ -59,6 +86,21 @@ class RentalStartSerializer(serializers.Serializer):
             attrs['_package_payment_model'] = package.payment_model
         except RentalPackage.DoesNotExist:
             raise serializers.ValidationError({"package_id": "Package not found or inactive"})
+
+        payment_mode = attrs.get('payment_mode', 'wallet_points')
+        wallet_amount = attrs.get('wallet_amount')
+        points_to_use = attrs.get('points_to_use')
+
+        if (wallet_amount is None) ^ (points_to_use is None):
+            raise serializers.ValidationError(
+                {"wallet_points_split": "Provide both wallet_amount and points_to_use together"}
+            )
+
+        if payment_mode != 'wallet_points' and (wallet_amount is not None or points_to_use is not None):
+            raise serializers.ValidationError(
+                {"wallet_points_split": "wallet_amount and points_to_use are only valid for wallet_points mode"}
+            )
+
         return attrs
 
 

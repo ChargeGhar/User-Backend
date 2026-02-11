@@ -4,7 +4,7 @@ from typing import Dict, Any
 from decimal import Decimal
 from django.db import transaction
 
-from api.common.services.base import BaseService
+from api.common.services.base import BaseService, ServiceException
 from api.common.utils.helpers import generate_transaction_id
 from api.user.payments.repositories.transaction_repository import TransactionRepository
 from api.user.payments.services.wallet import WalletService
@@ -12,14 +12,37 @@ from api.user.payments.services.wallet import WalletService
 class RentalPaymentService(BaseService):
     """Service for rental payments"""
 
+    def _normalize_payment_breakdown(self, payment_breakdown: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Normalize payment breakdown to canonical keys.
+
+        Accepts both legacy keys (points_used, wallet_used) and canonical keys
+        (points_to_use, wallet_amount).
+        """
+        points_to_use = int(payment_breakdown.get('points_to_use', payment_breakdown.get('points_used', 0)) or 0)
+        points_amount = Decimal(str(payment_breakdown.get('points_amount', Decimal('0'))))
+        wallet_amount = Decimal(str(payment_breakdown.get('wallet_amount', payment_breakdown.get('wallet_used', Decimal('0')))))
+
+        if points_to_use < 0 or points_amount < 0 or wallet_amount < 0:
+            raise ServiceException(
+                detail="Payment breakdown values must be non-negative",
+                code="invalid_payment_breakdown"
+            )
+
+        return {
+            'points_to_use': points_to_use,
+            'points_amount': points_amount.quantize(Decimal('0.01')),
+            'wallet_amount': wallet_amount.quantize(Decimal('0.01')),
+        }
+
     @transaction.atomic
     def process_rental_payment(self, user, rental, payment_breakdown: Dict[str, Any]) -> Transaction:
         """Process payment for rental"""
         try:
-            # Get values with defaults to handle missing keys
-            points_amount = payment_breakdown.get('points_amount', Decimal('0'))
-            wallet_amount = payment_breakdown.get('wallet_amount', Decimal('0'))
-            points_to_use = payment_breakdown.get('points_to_use', 0)
+            normalized = self._normalize_payment_breakdown(payment_breakdown)
+            points_amount = normalized['points_amount']
+            wallet_amount = normalized['wallet_amount']
+            points_to_use = normalized['points_to_use']
 
             # Calculate total amount
             total_amount = points_amount + wallet_amount
@@ -93,13 +116,34 @@ class RentalPaymentService(BaseService):
             Transaction object
         """
         try:
-            # Get values with defaults to handle missing keys
-            points_amount = payment_breakdown.get('points_amount', Decimal('0'))
-            wallet_amount = payment_breakdown.get('wallet_amount', Decimal('0'))
-            points_to_use = payment_breakdown.get('points_to_use', 0)
+            normalized = self._normalize_payment_breakdown(payment_breakdown)
+            points_amount = normalized['points_amount']
+            wallet_amount = normalized['wallet_amount']
+            points_to_use = normalized['points_to_use']
             
             # Calculate total amount
-            total_amount = points_amount + wallet_amount
+            total_amount = (points_amount + wallet_amount).quantize(Decimal('0.01'))
+            required_due = ((rental.amount_paid or Decimal('0')) + (rental.overdue_amount or Decimal('0'))).quantize(Decimal('0.01'))
+
+            if required_due <= 0:
+                raise ServiceException(
+                    detail="No due amount pending for this rental",
+                    code="no_due_amount"
+                )
+
+            if total_amount != required_due:
+                raise ServiceException(
+                    detail=f"Payment breakdown amount mismatch. Expected NPR {required_due}, got NPR {total_amount}.",
+                    code="payment_amount_mismatch",
+                    context={
+                        'required_due': str(required_due),
+                        'provided_total': str(total_amount),
+                        'points_amount': str(points_amount),
+                        'wallet_amount': str(wallet_amount),
+                        'points_to_use': points_to_use,
+                    }
+                )
+
             payment_type = 'COMBINATION' if points_to_use > 0 and wallet_amount > 0 else 'POINTS' if points_to_use > 0 else 'WALLET'
 
             transaction_obj = TransactionRepository.create(

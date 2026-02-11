@@ -13,6 +13,7 @@ from api.common.routers import CustomViewRouter
 from api.common.mixins import BaseAPIView
 from api.common.decorators import rate_limit, log_api_call
 from api.common.serializers import BaseResponseSerializer
+from api.common.services.base import ServiceException
 from api.user.rentals import serializers
 from api.user.rentals.services import RentalService
 from rest_framework.request import Request
@@ -30,6 +31,14 @@ logger = logging.getLogger(__name__)
 class RentalStartView(GenericAPIView, BaseAPIView):
     serializer_class = serializers.RentalStartSerializer
     permission_classes = [IsAuthenticated]
+    BUSINESS_BLOCKING_CODES = {
+        'payment_required',
+        'payment_method_required',
+        'payment_mode_not_supported',
+        'invalid_payment_mode',
+        'invalid_wallet_points_split',
+        'split_total_mismatch',
+    }
     
     @extend_schema(
         summary="Start New Rental",
@@ -41,27 +50,58 @@ class RentalStartView(GenericAPIView, BaseAPIView):
     @log_api_call()
     def post(self, request: Request) -> Response:
         """Start new rental"""
-        def operation():
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            
-            service = RentalService()
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        service = RentalService()
+        try:
             rental = service.start_rental(
                 user=request.user,
                 station_sn=serializer.validated_data['station_sn'],
                 package_id=serializer.validated_data['package_id'],
                 powerbank_sn=serializer.validated_data.get('powerbank_sn'),
-                payment_method_id=serializer.validated_data.get('payment_method_id')
+                payment_method_id=serializer.validated_data.get('payment_method_id'),
+                payment_mode=serializer.validated_data.get('payment_mode', 'wallet_points'),
+                wallet_amount=serializer.validated_data.get('wallet_amount'),
+                points_to_use=serializer.validated_data.get('points_to_use')
             )
-            
-            response_serializer = serializers.RentalDetailSerializer(rental)
-            return response_serializer.data
-        
-        return self.handle_service_operation(
-            operation,
-            success_message="Rental started successfully",
-            error_message="Failed to start rental",
-            success_status=status.HTTP_201_CREATED
+        except ServiceException as exc:
+            error_code = getattr(exc, 'default_code', 'service_error')
+            error_context = getattr(exc, 'context', None) or None
+            error_message = str(exc)
+
+            if error_code in self.BUSINESS_BLOCKING_CODES:
+                payload = {
+                    'code': error_code,
+                    'message': error_message
+                }
+                if error_context is not None:
+                    payload['context'] = error_context
+                return self.success_response(
+                    data={'error': payload},
+                    message=error_message,
+                    status_code=status.HTTP_200_OK
+                )
+
+            return self.error_response(
+                message=error_message,
+                status_code=getattr(exc, 'status_code', status.HTTP_400_BAD_REQUEST),
+                error_code=error_code,
+                context=error_context
+            )
+        except Exception as exc:
+            logger.error(f"Failed to start rental: {str(exc)}")
+            return self.error_response(
+                message="Failed to start rental",
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                error_code='internal_error'
+            )
+
+        response_serializer = serializers.RentalDetailSerializer(rental)
+        return self.success_response(
+            data=response_serializer.data,
+            message="Rental started successfully",
+            status_code=status.HTTP_201_CREATED
         )
 
 
