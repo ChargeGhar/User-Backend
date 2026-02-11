@@ -1,96 +1,27 @@
-Now our task is to Make the rental /api/rentals/start to accept pay with wallet, points, wallet + ponits, direct payment  user have control over on it we need to make 100% accuate plan for this without any asssumptions and inconsistency and duplicacy 
+Rental Start Payment Plan Index (Finalized, 2026-02-11)
+======================================================
 
-also need to make this return into success true and error = data(1. Start rental (insufficient funds)
-Request:
-```json
-POST /api/rentals/start
-{
-  "station_sn": "STATION_SN",
-  "package_id": "PACKAGE_UUID",
-  "payment_method_id": "PAYMENT_METHOD_UUID",
-  "powerbank_sn": "OPTIONAL"
-}
-```
-Response (payment required):
-```json
-{
-  "success": false,
-  "error": {
-    "code": "payment_required",
-    "message": "Payment required to start rental",
-    "context": {
-      "intent_id": "INTENT_UUID",
-      "amount": "ACTUAL_PRICE_AFTER_DISCOUNT",
-      "shortfall": "...",
-      "gateway": "khalti|esewa",
-      "gateway_url": "...",
-      "redirect_url": "...",
-      "redirect_method": "POST",
-      "form_fields": {},
-      "expires_at": "...",
-      "status": "PENDING"
-    }
-  }
-})
+Final product direction is locked:
+- implement `payment_mode` user control
+- rental-start business block responses must use `success=true` with `error` moved under `data`
 
-lets do comprehensive and wide range of recursive cros verification also see this "payments/calculate-options" and make sure you have all the necessry conytex wothout leaving any of them and best plan which just not solve the problem but also help and best from the diffrent prospectove for that you need to have know what acutally we have and whats this currently matters and what actually neeed to do without making and increasing complexity be 100% accuate
+Plan documents:
+1) Verified Baseline + Delta
+- docs/Rental Flow/rental_start_payment_verified_baseline_2026-02-11.md
 
-and for you contex my docker is up and running (
+2) Final Execution Plan (file-level implementation)
+- docs/Rental Flow/rental_start_payment_execution_plan_2026-02-11.md
 
-    [+] Running 10/10igrations-local     Started                                                     16.8s 
- ✔ cg-api:local                      Built                                                        0.0s 
- ✔ Container cg-migrations-local     Started                                                     16.8s 
- ✔ Container cg-collectstatic-local  Started                                                     16.7s 
- ✔ Container cg-fixtures-local       Started                                                      8.3s 
- ✔ Container cg-api-local            Started                                                      8.1s 
- ✔ Container cg-celery-local         Started                                                      7.5s 
- ✔ Container cg-rabbitmq-local       Started                                                      0.4s 
- ✔ Container cg-redis-local          Started                                                      0.4s 
- ✔ Container cg-db-local             Started                                                      0.4s 
- ✔ Container cg-pgbouncer-local      Started                                                      0.3s 
-PS E:\Companies\DEVALAYA\Deva_ChargeGhar\ChargeGhar> docker ps
-CONTAINER ID   IMAGE                      COMMAND                  CREATED         STATUS         PORTS                                             NAMES
-fa77484a031f   cg-api:local               "make run.celery.prod"   7 minutes ago   Up 6 minutes                                                     cg-celery-local
-774a625a3c57   cg-api:local               "make migrate run.se…"   7 minutes ago   Up 6 minutes   0.0.0.0:8010->80/tcp, [::]:8010->80/tcp           cg-api-local
-887e93ddcc70   edoburu/pgbouncer:latest   "/entrypoint.sh /usr…"   2 days ago      Up 6 minutes   5432/tcp                                          cg-pgbouncer-local
-4a01aa84a1fb   postgres:16                "docker-entrypoint.s…"   2 days ago      Up 6 minutes   5432/tcp                                          cg-db-local
-9b96511ba82a   redis:latest               "docker-entrypoint.s…"   2 days ago      Up 6 minutes   0.0.0.0:6379->6379/tcp, [::]:6379->6379/tcp       cg-redis-local
-3b108c2b9e2b   rabbitmq:3.13-management   "docker-entrypoint.s…"   2 days ago      Up 6 minutes   0.0.0.0:15672->15672/tcp, [::]:15672->15672/tcp   cg-rabbitmq-local
-PS E:\Companies\DEVALAYA\Deva_ChargeGhar\ChargeGhar> 
-)
+3) Final Recursive Test Matrix (contract + behavior verification)
+- docs/Rental Flow/rental_start_payment_test_matrix_2026-02-11.md
 
-we can have the test at last and for api testing we can do testing from this user token (
+4) Full Code Cross Verification (rental + payment + points/AppConfig)
+- docs/Rental Flow/rental_payment_code_cross_verification_2026-02-11.md
 
-    curl -X 'POST' \
-  'http://localhost:8010/api/admin/login' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: multipart/form-data' \
-  -H 'X-CSRFTOKEN: 1fGMIKb1xoMeii2XNalNEs6IKmIcQWi4iyFF4RRjOEpSDkFjSjXwVlRjbotiBTMR' \
-  -F 'email=janak@powerbank.com' \
-  -F 'password=5060'
-Request URL
-http://localhost:8010/api/admin/login
-Server response
-Code	Details
-200	
-Response body
-Download
-{
-  "success": true,
-  "message": "Admin login successful",
-  "data": {
-    "user_id": "1",
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzczNDA1MTA1LCJpYXQiOjE3NzA4MTMxMDUsImp0aSI6IjkwYmJiZTU1ZWE4NzRlMGNhZDA5YTYxOGFjZWRhYTAzIiwidXNlcl9pZCI6IjEiLCJpc3MiOiJDaGFyZ2VHaGFyLUFQSSAgICJ9.tS_bCqlvdtLib2w-J2sYn_jOppjxQ296ZjAu7XeUfPA",
-    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc3ODU4OTEwNSwiaWF0IjoxNzcwODEzMTA1LCJqdGkiOiI5YmYzZTUxOWU0MDA0ZjQ4OTY5MGM0MTE3NzQyNmIxYSIsInVzZXJfaWQiOiIxIiwiaXNzIjoiQ2hhcmdlR2hhci1BUEkgICAifQ.E8GRdkESEWZflux3p3wFL2h0GKPermgNnd-I4z-CoOg",
-    "user": {
-      "id": "1",
-      "email": "janak@powerbank.com",
-      "username": "janak",
-      "is_staff": true,
-      "is_superuser": true,
-      "role": "super_admin"
-    },
-    "message": "Admin login successful"
-  }
-}
-)
+Implementation order:
+1. Serializer contracts (`payment_mode`, calculator parity fields)
+2. Mode-aware payment calculation
+3. Rental-start orchestration updates (including top-up amount policy)
+4. Rental-start response wrapper conversion to `success=true` + `data.error`
+5. Resume metadata propagation and idempotency checks
+6. Automated/API testing against matrix
