@@ -27,7 +27,7 @@ docker-compose run --rm migrations python manage.py shell -c "from api.stations.
 docker-compose run --rm migrations python manage.py 
 shell -c "from api.stations.models import *; print('Amenities:', [a.name for a in StationAmenity.objects.all()]); print('Slots:', StationSlot.objects.count()); print('PowerBanks:', PowerBank.objects.count())"
 
-docker-compose run --rm migrations python manage.py loaddata api/payments/fixtures/payments.json
+docker-compose run --rm migrations python manage.py loaddata api/user/payments/fixtures/payments.json
 
 docker-compose exec api python manage.py makemigrations points
 docker-compose exec api python manage.py check --deploy

@@ -59,11 +59,19 @@ def process_prepayment(
             code="insufficient_balance"
         )
     
+    breakdown = payment_options.get('payment_breakdown', {}) or {}
+    # Normalize key names for RentalPaymentService
+    normalized_breakdown = {
+        'points_to_use': breakdown.get('points_used', breakdown.get('points_to_use', 0)),
+        'points_amount': breakdown.get('points_amount', Decimal('0')),
+        'wallet_amount': breakdown.get('wallet_used', breakdown.get('wallet_amount', Decimal('0')))
+    }
+    
     payment_service = RentalPaymentService()
     return payment_service.process_rental_payment(
         user=user,
         rental=rental,
-        payment_breakdown=payment_options['payment_breakdown']
+        payment_breakdown=normalized_breakdown
     )
 
 
