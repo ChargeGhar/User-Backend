@@ -1,11 +1,11 @@
 """
-Internal IoT action endpoints for partner-controlled station operations.
+Internal IoT action endpoints for staff and partner station operations.
 """
 from __future__ import annotations
 
 from drf_spectacular.utils import extend_schema
 from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import BasePermission, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -24,20 +24,57 @@ from api.internal.serializers import (
     IoTWifiConnectRequestSerializer,
 )
 from api.internal.services import InternalIoTActionService
+from api.partners.common.repositories import StationDistributionRepository
 from api.partners.auth.permissions import CanPerformIotAction, IsFranchise
+from api.user.auth.permissions import IsStaffPermission
 from api.user.stations.models import Station
 
 
 internal_iot_router = CustomViewRouter()
 
 
+class CanPerformInternalIoTAction(BasePermission):
+    """
+    Staff can perform all internal IoT actions.
+    Partners keep existing CanPerformIotAction rules.
+    """
+
+    message = CanPerformIotAction.message
+
+    def has_permission(self, request, view):
+        if IsStaffPermission().has_permission(request, view):
+            return True
+        return CanPerformIotAction().has_permission(request, view)
+
+    def has_object_permission(self, request, view, obj):
+        if IsStaffPermission().has_permission(request, view):
+            return True
+        return CanPerformIotAction().has_object_permission(request, view, obj)
+
+
+class CanPerformInternalIoTEject(CanPerformInternalIoTAction):
+    """
+    Staff can eject; partner eject remains franchise-only.
+    """
+
+    message = IsFranchise.message
+
+    def has_permission(self, request, view):
+        if IsStaffPermission().has_permission(request, view):
+            return True
+        return IsFranchise().has_permission(request, view) and super().has_permission(
+            request,
+            view,
+        )
+
+
 class InternalIoTActionBaseView(GenericAPIView, BaseAPIView):
     """
     Base view for station-level IoT actions.
-    Enforces station access via object permissions before command dispatch.
+    Enforces staff/partner station access before command dispatch.
     """
 
-    permission_classes = [IsAuthenticated, CanPerformIotAction]
+    permission_classes = [IsAuthenticated, CanPerformInternalIoTAction]
     iot_action: str = ''
 
     @staticmethod
@@ -51,10 +88,45 @@ class InternalIoTActionBaseView(GenericAPIView, BaseAPIView):
             )
         return station
 
+    def _check_station_object_permissions(self, request: Request, station: Station) -> None:
+        """
+        Keep consistent error response envelope for permission failures.
+        """
+        for permission in self.get_permissions():
+            if not permission.has_object_permission(request, self, station):
+                raise ServiceException(
+                    detail=getattr(permission, 'message', 'Permission denied.'),
+                    code='permission_denied',
+                    status_code=403,
+                )
+
+    def _resolve_actor_partner(self, request: Request, station: Station):
+        if IsStaffPermission().has_permission(request, self):
+            partner = StationDistributionRepository.get_station_operator(str(station.id))
+            if partner:
+                return partner
+
+            if hasattr(request.user, 'partner_profile'):
+                return request.user.partner_profile
+
+            raise ServiceException(
+                detail='Station is not assigned to any partner for IoT history logging.',
+                code='station_partner_not_assigned',
+                status_code=400,
+            )
+
+        if not hasattr(request.user, 'partner_profile'):
+            raise ServiceException(
+                detail='Partner profile not found for authenticated user.',
+                code='partner_profile_not_found',
+                status_code=403,
+            )
+        return request.user.partner_profile
+
     def _get_action_context(self, request: Request, station_id):
-        partner = request.user.partner_profile
         station = self._get_station(station_id)
-        self.check_object_permissions(request, station)
+        self._check_station_object_permissions(request, station)
+        partner = self._resolve_actor_partner(request, station)
         ip_address = get_client_ip(request)
         user_agent = request.META.get('HTTP_USER_AGENT', '')
         return partner, station, ip_address, user_agent
@@ -302,7 +374,7 @@ class InternalIoTModeView(InternalIoTActionBaseView):
 @internal_iot_router.register(r"internal/iot/eject", name="internal-iot-eject")
 @extend_schema(
     tags=["Internal - IoT Actions"],
-    summary="Eject Powerbank (Franchise Only)",
+    summary="Eject Powerbank",
     request=IoTEjectRequestSerializer,
     responses={200: BaseResponseSerializer},
 )
@@ -310,7 +382,7 @@ class InternalIoTEjectView(InternalIoTActionBaseView):
     """POST /api/internal/iot/eject"""
 
     serializer_class = IoTEjectRequestSerializer
-    permission_classes = [IsAuthenticated, IsFranchise, CanPerformIotAction]
+    permission_classes = [IsAuthenticated, CanPerformInternalIoTEject]
     iot_action = 'EJECT'
 
     @log_api_call()

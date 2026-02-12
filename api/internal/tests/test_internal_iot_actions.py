@@ -89,6 +89,13 @@ class InternalIoTActionsTestCase(TestCase):
             is_active=True,
             is_partner=True,
         )
+        self.admin_user = User.objects.create(
+            email='admin@test.com',
+            username='admin',
+            is_active=True,
+            is_staff=True,
+            is_partner=False,
+        )
 
         self.franchise_partner = Partner.objects.create(
             user=self.franchise_user,
@@ -217,6 +224,38 @@ class InternalIoTActionsTestCase(TestCase):
 
         history = PartnerIotHistory.objects.filter(action_type='CHECK').latest('created_at')
         self.assertFalse(history.request_payload.get('check_all'))
+
+    @patch('api.internal.services.iot_action_service.get_device_api_service')
+    def test_admin_staff_can_check_station(self, mocked_device_service):
+        mocked_device_service.return_value = self.fake_device_service
+        self.client.force_authenticate(self.admin_user)
+
+        response = self.client.post(
+            '/api/internal/iot/check',
+            {'station_id': str(self.station.id)},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['success'])
+        self.assertEqual(self.fake_device_service.check_all_called_with, self.station.imei)
+
+        history = PartnerIotHistory.objects.filter(action_type='CHECK').latest('created_at')
+        self.assertEqual(history.performed_from, PartnerIotHistory.PerformedFrom.ADMIN_PANEL)
+
+    @patch('api.internal.services.iot_action_service.get_device_api_service')
+    def test_station_access_denied_returns_403(self, mocked_device_service):
+        mocked_device_service.return_value = self.fake_device_service
+        self.client.force_authenticate(self.vendor_user)
+
+        response = self.client.post(
+            '/api/internal/iot/check',
+            {'station_id': str(self.other_station.id)},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(response.json()['success'])
 
     @patch('api.internal.services.iot_action_service.get_device_api_service')
     def test_franchise_eject_without_powerbank_sn_uses_random_popup(self, mocked_device_service):

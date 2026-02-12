@@ -368,12 +368,17 @@ class InternalIoTActionService(BaseService):
         user_agent: Optional[str] = None,
     ) -> PartnerIotHistory:
         """Create partner IoT history row for any action."""
+        performed_from = (
+            PartnerIotHistory.PerformedFrom.ADMIN_PANEL
+            if getattr(performed_by, 'is_staff', False)
+            else PartnerIotHistory.PerformedFrom.DASHBOARD
+        )
         return PartnerIotHistoryRepository.create(
             partner_id=str(partner.id),
             performed_by_id=performed_by.id,
             station_id=str(station.id),
             action_type=action_type,
-            performed_from=PartnerIotHistory.PerformedFrom.DASHBOARD,
+            performed_from=performed_from,
             powerbank_sn=powerbank_sn,
             slot_number=slot_number,
             rental_id=None,
