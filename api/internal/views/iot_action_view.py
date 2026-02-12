@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from drf_spectacular.utils import extend_schema
 from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import BasePermission, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -15,6 +15,7 @@ from api.common.routers import CustomViewRouter
 from api.common.serializers import BaseResponseSerializer
 from api.common.services.base import ServiceException
 from api.common.utils.helpers import get_client_ip
+from api.internal.permissions import InternalIoTActionPermission, InternalIoTEjectPermission
 from api.internal.serializers import (
     IoTCheckRequestSerializer,
     IoTEjectRequestSerializer,
@@ -25,47 +26,11 @@ from api.internal.serializers import (
 )
 from api.internal.services import InternalIoTActionService
 from api.partners.common.repositories import StationDistributionRepository
-from api.partners.auth.permissions import CanPerformIotAction, IsFranchise
 from api.user.auth.permissions import IsStaffPermission
 from api.user.stations.models import Station
 
 
 internal_iot_router = CustomViewRouter()
-
-
-class CanPerformInternalIoTAction(BasePermission):
-    """
-    Staff can perform all internal IoT actions.
-    Partners keep existing CanPerformIotAction rules.
-    """
-
-    message = CanPerformIotAction.message
-
-    def has_permission(self, request, view):
-        if IsStaffPermission().has_permission(request, view):
-            return True
-        return CanPerformIotAction().has_permission(request, view)
-
-    def has_object_permission(self, request, view, obj):
-        if IsStaffPermission().has_permission(request, view):
-            return True
-        return CanPerformIotAction().has_object_permission(request, view, obj)
-
-
-class CanPerformInternalIoTEject(CanPerformInternalIoTAction):
-    """
-    Staff can eject; partner eject remains franchise-only.
-    """
-
-    message = IsFranchise.message
-
-    def has_permission(self, request, view):
-        if IsStaffPermission().has_permission(request, view):
-            return True
-        return IsFranchise().has_permission(request, view) and super().has_permission(
-            request,
-            view,
-        )
 
 
 class InternalIoTActionBaseView(GenericAPIView, BaseAPIView):
@@ -74,7 +39,7 @@ class InternalIoTActionBaseView(GenericAPIView, BaseAPIView):
     Enforces staff/partner station access before command dispatch.
     """
 
-    permission_classes = [IsAuthenticated, CanPerformInternalIoTAction]
+    permission_classes = [IsAuthenticated, InternalIoTActionPermission]
     iot_action: str = ''
 
     @staticmethod
@@ -143,6 +108,7 @@ class InternalIoTRebootView(InternalIoTActionBaseView):
     """POST /api/internal/iot/reboot"""
 
     serializer_class = IoTStationActionSerializer
+    permission_classes = [IsAuthenticated, InternalIoTActionPermission]
     iot_action = 'REBOOT'
 
     @log_api_call()
@@ -182,6 +148,7 @@ class InternalIoTCheckView(InternalIoTActionBaseView):
     """POST /api/internal/iot/check"""
 
     serializer_class = IoTCheckRequestSerializer
+    permission_classes = [IsAuthenticated, InternalIoTActionPermission]
     iot_action = 'CHECK'
 
     @log_api_call()
@@ -222,6 +189,7 @@ class InternalIoTWifiScanView(InternalIoTActionBaseView):
     """POST /api/internal/iot/wifi/scan"""
 
     serializer_class = IoTStationActionSerializer
+    permission_classes = [IsAuthenticated, InternalIoTActionPermission]
     iot_action = 'WIFI_SCAN'
 
     @log_api_call()
@@ -261,6 +229,7 @@ class InternalIoTWifiConnectView(InternalIoTActionBaseView):
     """POST /api/internal/iot/wifi/connect"""
 
     serializer_class = IoTWifiConnectRequestSerializer
+    permission_classes = [IsAuthenticated, InternalIoTActionPermission]
     iot_action = 'WIFI_CONNECT'
 
     @log_api_call()
@@ -302,6 +271,7 @@ class InternalIoTVolumeView(InternalIoTActionBaseView):
     """POST /api/internal/iot/volume"""
 
     serializer_class = IoTVolumeRequestSerializer
+    permission_classes = [IsAuthenticated, InternalIoTActionPermission]
     iot_action = 'VOLUME'
 
     @log_api_call()
@@ -342,6 +312,7 @@ class InternalIoTModeView(InternalIoTActionBaseView):
     """POST /api/internal/iot/mode"""
 
     serializer_class = IoTModeRequestSerializer
+    permission_classes = [IsAuthenticated, InternalIoTActionPermission]
     iot_action = 'MODE'
 
     @log_api_call()
@@ -382,7 +353,7 @@ class InternalIoTEjectView(InternalIoTActionBaseView):
     """POST /api/internal/iot/eject"""
 
     serializer_class = IoTEjectRequestSerializer
-    permission_classes = [IsAuthenticated, CanPerformInternalIoTEject]
+    permission_classes = [IsAuthenticated, InternalIoTEjectPermission]
     iot_action = 'EJECT'
 
     @log_api_call()
