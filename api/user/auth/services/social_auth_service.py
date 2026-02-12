@@ -55,6 +55,8 @@ class SocialAuthService(BaseService):
             )
             
             self._handle_post_registration(user, provider)
+            # Signal adapter that related objects are already initialized.
+            user._created_via_service = True
             return user
             
         except Exception as e:
@@ -92,6 +94,8 @@ class SocialAuthService(BaseService):
             self.account_service.point_repo.get_or_create(user=user)
             
             self.log_info(f"Social account linked: {user.username} with {provider}")
+            # Signal adapter that service handled social account linking path.
+            user._created_via_service = True
             return user
         except Exception as e:
             self.handle_service_error(e, f"Failed to link social account via {provider}")

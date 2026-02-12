@@ -97,10 +97,12 @@ base64 -i AuthKey_XXXXXXXXXX.p8 | tr -d '\n'
 ### 2.6 Update Environment Variables
 Add to your `.env` file:
 ```bash
-APPLE_OAUTH_CLIENT_ID=com.chargeghar.app.service
+APPLE_OAUTH_CLIENT_ID=com.inflancer.chargeghar.service
 APPLE_OAUTH_TEAM_ID=YOUR_TEAM_ID
 APPLE_OAUTH_KEY_ID=YOUR_KEY_ID
 APPLE_OAUTH_PRIVATE_KEY_BASE64=your_base64_encoded_private_key_here
+# Optional backward-compatibility fallback
+APPLE_OAUTH_CLIENT_SECRET=YOUR_KEY_ID
 ```
 
 ## 🔧 Step 3: Production Environment Configuration
@@ -115,19 +117,22 @@ CORS_ALLOWED_ORIGINS=https://main.chargeghar.com,http://main.chargeghar.com
 CSRF_TRUSTED_ORIGINS=https://main.chargeghar.com,http://main.chargeghar.com
 
 # Social Auth URLs
-SOCIAL_AUTH_REDIRECT_URL=https://main.chargeghar.com/auth/social/callback/
-SOCIAL_AUTH_LOGIN_REDIRECT_URL=/api/auth/social/success/
-SOCIAL_AUTH_LOGIN_ERROR_URL=/api/auth/social/error/
+SOCIAL_AUTH_LOGIN_REDIRECT_URL=/api/auth/social/success
+SOCIAL_AUTH_LOGIN_ERROR_URL=/api/auth/social/error
+FRONTEND_URL=https://chargeghar.app
 
 # Google OAuth
 GOOGLE_OAUTH_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
 GOOGLE_OAUTH_CLIENT_SECRET=your_google_client_secret
 
 # Apple OAuth
-APPLE_OAUTH_CLIENT_ID=com.chargeghar.app.service
+APPLE_OAUTH_CLIENT_ID=com.inflancer.chargeghar.service
 APPLE_OAUTH_TEAM_ID=your_team_id
 APPLE_OAUTH_KEY_ID=your_key_id
+APPLE_OAUTH_PRIVATE_KEY_PATH=apple_auth_key.p8
 APPLE_OAUTH_PRIVATE_KEY_BASE64=your_base64_encoded_private_key
+# Optional backward-compatibility fallback
+APPLE_OAUTH_CLIENT_SECRET=your_key_id
 ```
 
 ### 3.2 Deploy to Production
@@ -175,79 +180,42 @@ curl https://main.chargeghar.com/api/auth/apple/login
 1. **Google Test**:
    - Visit: `https://main.chargeghar.com/accounts/google/login/`
    - Complete Google OAuth
-   - Should redirect to: `https://main.chargeghar.com/api/auth/social/success/`
+   - Should redirect to: `https://main.chargeghar.com/api/auth/social/success`
    - Should receive JWT tokens
 
 2. **Apple Test**:
    - Visit: `https://main.chargeghar.com/accounts/apple/login/`
    - Complete Apple OAuth
-   - Should redirect to: `https://main.chargeghar.com/api/auth/social/success/`
+   - Should redirect to: `https://main.chargeghar.com/api/auth/social/success`
    - Should receive JWT tokens
 
 ## 📱 Step 5: Mobile App Integration
 
 ### 5.1 Google Sign-In (React Native)
 ```javascript
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
+// Backend uses redirect-based OAuth (NOT /api/auth/google/verify)
+const startGoogleLogin = async () => {
+  const res = await fetch('https://main.chargeghar.com/api/auth/google/login');
+  const payload = await res.json();
+  const loginUrl = payload.data.login_url;
 
-// Configure Google Sign-In
-GoogleSignin.configure({
-  webClientId: 'your_google_client_id.apps.googleusercontent.com',
-});
-
-// Sign in with Google
-const signInWithGoogle = async () => {
-  try {
-    const userInfo = await GoogleSignin.signIn();
-    
-    // Send to your backend
-    const response = await fetch('https://main.chargeghar.com/api/auth/google/verify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        id_token: userInfo.idToken 
-      })
-    });
-    
-    const data = await response.json();
-    // Store JWT tokens
-    await AsyncStorage.setItem('access_token', data.access_token);
-    
-  } catch (error) {
-    console.error('Google Sign-In Error:', error);
-  }
+  // Open loginUrl in in-app browser/webview.
+  // Final redirect lands on:
+  // https://chargeghar.app/social/login-status?status=success&token=...&refresh=...
 };
 ```
 
 ### 5.2 Apple Sign-In (React Native)
 ```javascript
-import { appleAuth } from '@invertase/react-native-apple-authentication';
+// Backend uses redirect-based OAuth (NOT /api/auth/apple/verify)
+const startAppleLogin = async () => {
+  const res = await fetch('https://main.chargeghar.com/api/auth/apple/login');
+  const payload = await res.json();
+  const loginUrl = payload.data.login_url;
 
-// Sign in with Apple
-const signInWithApple = async () => {
-  try {
-    const appleAuthRequestResponse = await appleAuth.performRequest({
-      requestedOperation: appleAuth.Operation.LOGIN,
-      requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
-    });
-    
-    // Send to your backend
-    const response = await fetch('https://main.chargeghar.com/api/auth/apple/verify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        authorization_code: appleAuthRequestResponse.authorizationCode,
-        id_token: appleAuthRequestResponse.identityToken
-      })
-    });
-    
-    const data = await response.json();
-    // Store JWT tokens
-    await AsyncStorage.setItem('access_token', data.access_token);
-    
-  } catch (error) {
-    console.error('Apple Sign-In Error:', error);
-  }
+  // Open loginUrl in in-app browser/webview.
+  // Final redirect lands on:
+  // https://chargeghar.app/social/login-status?status=success&token=...&refresh=...
 };
 ```
 
@@ -270,7 +238,8 @@ const signInWithApple = async () => {
 
 ### OAuth Callback URLs:
 - **Google**: `https://main.chargeghar.com/accounts/google/login/callback/`
-- **Apple**: `https://main.chargeghar.com/accounts/apple/login/callback/`
+- **Apple Return URL (register in Apple Developer)**: `https://main.chargeghar.com/accounts/apple/login/callback/`
+- **Apple Internal Finish URL (do NOT register in Apple Developer)**: `https://main.chargeghar.com/accounts/apple/login/callback/finish/`
 
 ## 🚨 Troubleshooting
 
