@@ -95,7 +95,7 @@ class AdDistributionAdmin(admin.ModelAdmin):
     list_filter = ['created_at']
     search_fields = [
         'ad_content__ad_request__title',
-        'station__name',
+        'station__station_name',
         'station__serial_number'
     ]
     readonly_fields = ['id', 'created_at', 'updated_at']

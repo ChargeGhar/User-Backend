@@ -37,7 +37,7 @@ class AppConfigSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = AppConfig
-        fields = ['id', 'key', 'value', 'description', 'is_active', 'created_at', 'updated_at']
+        fields = ['id', 'key', 'value', 'description', 'is_active', 'is_public', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
@@ -46,8 +46,14 @@ class AppConfigAdminSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = AppConfig
-        fields = ['id', 'key', 'value', 'description', 'is_active', 'created_at', 'updated_at']
+        fields = ['id', 'key', 'value', 'description', 'is_active', 'is_public', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class PublicAppConfigResponseSerializer(serializers.Serializer):
+    """Public app config response serializer"""
+    configs = serializers.DictField(child=serializers.CharField())
+    total_count = serializers.IntegerField()
 
 
 class CreateAppConfigSerializer(serializers.Serializer):
@@ -72,6 +78,11 @@ class CreateAppConfigSerializer(serializers.Serializer):
         required=False,
         default=True,
         help_text="Whether the configuration is active"
+    )
+    is_public = serializers.BooleanField(
+        required=False,
+        default=False,
+        help_text="Whether the configuration is publicly exposed to app users"
     )
 
 
@@ -99,6 +110,10 @@ class UpdateAppConfigSerializer(serializers.Serializer):
     is_active = serializers.BooleanField(
         required=False,
         help_text="New active status"
+    )
+    is_public = serializers.BooleanField(
+        required=False,
+        help_text="New public exposure status"
     )
     
     def validate(self, data):

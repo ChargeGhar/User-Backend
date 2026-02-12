@@ -82,6 +82,7 @@ class AdminConfigView(GenericAPIView, BaseAPIView):
                 value=serializer.validated_data['value'],
                 description=serializer.validated_data.get('description', ''),
                 is_active=serializer.validated_data.get('is_active', True),
+                is_public=serializer.validated_data.get('is_public', False),
                 admin_user=request.user
             )
             
@@ -90,6 +91,7 @@ class AdminConfigView(GenericAPIView, BaseAPIView):
                 'key': config.key,
                 'value': config.value,
                 'is_active': config.is_active,
+                'is_public': config.is_public,
                 'message': f'Configuration {config.key} created successfully'
             }
         
@@ -116,14 +118,15 @@ class AdminConfigView(GenericAPIView, BaseAPIView):
     def put(self, request: Request) -> Response:
         """Update configuration"""
         def operation():
-            config_id = request.data.get('config_id')
-            key = request.data.get('key')
-            value = request.data.get('value')
-            description = request.data.get('description')
-            is_active = request.data.get('is_active')
-            
-            if not config_id and not key:
-                raise ValueError("Either config_id or key is required")
+            serializer = UpdateAppConfigSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+
+            config_id = serializer.validated_data.get('config_id')
+            key = serializer.validated_data.get('key')
+            value = serializer.validated_data.get('value')
+            description = serializer.validated_data.get('description')
+            is_active = serializer.validated_data.get('is_active')
+            is_public = serializer.validated_data.get('is_public')
             
             service = AppConfigService()
             config = service.update_config(
@@ -132,6 +135,7 @@ class AdminConfigView(GenericAPIView, BaseAPIView):
                 value=value,
                 description=description,
                 is_active=is_active,
+                is_public=is_public,
                 admin_user=request.user
             )
             
@@ -140,6 +144,7 @@ class AdminConfigView(GenericAPIView, BaseAPIView):
                 'key': config.key,
                 'value': config.value,
                 'is_active': config.is_active,
+                'is_public': config.is_public,
                 'message': f'Configuration {config.key} updated successfully'
             }
         

@@ -67,5 +67,4 @@ class WithdrawalRequestAdmin(ModelAdmin):
 class WithdrawalLimitAdmin(ModelAdmin):
     list_display = ['user', 'daily_withdrawn', 'monthly_withdrawn', 'last_daily_reset', 'last_monthly_reset']
     search_fields = ['user__username', 'user__email']
-    readonly_fields = ['last_daily_reset', 'last_monthly_reset']
-    readonly_fields = ['created_at', 'updated_at']
+    readonly_fields = ['created_at', 'updated_at', 'last_daily_reset', 'last_monthly_reset']

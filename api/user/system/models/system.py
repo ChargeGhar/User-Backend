@@ -33,6 +33,10 @@ class AppConfig(BaseModel):
     value = models.TextField()
     description = models.CharField(max_length=255, null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    is_public = models.BooleanField(
+        default=False,
+        help_text="If true, this config is exposed by public app config endpoint.",
+    )
 
     class Meta:
         db_table = "app_configs"

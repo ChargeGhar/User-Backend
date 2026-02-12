@@ -27,7 +27,13 @@ class AppConfigService(CRUDService):
         except self.model.DoesNotExist:
             return default
     
-    def set_config(self, key: str, value: str, description: str = None) -> AppConfig:
+    def set_config(
+        self,
+        key: str,
+        value: str,
+        description: str = None,
+        is_public: bool = False,
+    ) -> AppConfig:
         """Set configuration value"""
         try:
             config, created = self.model.objects.update_or_create(
@@ -35,7 +41,8 @@ class AppConfigService(CRUDService):
                 defaults={
                     'value': str(value),
                     'description': description,
-                    'is_active': True
+                    'is_active': True,
+                    'is_public': is_public,
                 }
             )
             
@@ -61,17 +68,12 @@ class AppConfigService(CRUDService):
         return value
     
     def get_public_configs(self) -> Dict[str, str]:
-        """Get all public (non-sensitive) configurations"""
-        sensitive_keywords = ['secret', 'password', 'key', 'token', 'url']
-        
-        configs = self.model.objects.filter(is_active=True)
-        public_configs = {}
-        
-        for config in configs:
-            if not any(keyword in config.key.lower() for keyword in sensitive_keywords):
-                public_configs[config.key] = config.value
-        
-        return public_configs
+        """Get all active configurations explicitly marked as public."""
+        configs = self.model.objects.filter(
+            is_active=True,
+            is_public=True,
+        ).order_by('key')
+        return {config.key: config.value for config in configs}
     
     # Admin methods
     def get_all_configs(self) -> Dict[str, Any]:
@@ -82,8 +84,7 @@ class AppConfigService(CRUDService):
                 config.key: {
                     'value': config.value,
                     'description': config.description,
-                    'is_public': not any(keyword in config.key.lower() 
-                                       for keyword in ['secret', 'password', 'key', 'token', 'url']),
+                    'is_public': config.is_public,
                     'created_at': config.created_at,
                     'updated_at': config.updated_at
                 }
@@ -92,8 +93,15 @@ class AppConfigService(CRUDService):
         except Exception as e:
             self.handle_service_error(e, "Failed to get all configs")
     
-    def create_config(self, key: str, value: str, description: str = None, 
-                     is_active: bool = True, admin_user=None) -> AppConfig:
+    def create_config(
+        self,
+        key: str,
+        value: str,
+        description: str = None,
+        is_active: bool = True,
+        is_public: bool = False,
+        admin_user=None,
+    ) -> AppConfig:
         """Create new configuration with enhanced error handling"""
         try:
             # Check for duplicates first with enhanced error
@@ -110,7 +118,8 @@ class AppConfigService(CRUDService):
                 key=key,
                 value=str(value),
                 description=description,
-                is_active=is_active
+                is_active=is_active,
+                is_public=is_public,
             )
             
             # Cache is automatically cleared by post_save signal in models.py
@@ -126,7 +135,9 @@ class AppConfigService(CRUDService):
                     changes={
                         'key': key,
                         'value': value,
-                        'description': description
+                        'description': description,
+                        'is_active': is_active,
+                        'is_public': is_public,
                     },
                     description=f"Created config: {key}",
                     ip_address="127.0.0.1",
@@ -153,8 +164,16 @@ class AppConfigService(CRUDService):
                 user_message=f"Unable to create configuration '{key}'. Please try again."
             )
     
-    def update_config(self, config_id: str = None, key: str = None, value: str = None, 
-                     description: str = None, is_active: bool = None, admin_user=None) -> AppConfig:
+    def update_config(
+        self,
+        config_id: str = None,
+        key: str = None,
+        value: str = None,
+        description: str = None,
+        is_active: bool = None,
+        is_public: bool = None,
+        admin_user=None,
+    ) -> AppConfig:
         """Update configuration (Admin)"""
         try:
             if config_id:
@@ -167,7 +186,8 @@ class AppConfigService(CRUDService):
             old_values = {
                 'value': config.value,
                 'description': config.description,
-                'is_active': config.is_active
+                'is_active': config.is_active,
+                'is_public': config.is_public,
             }
             
             if value is not None:
@@ -176,6 +196,8 @@ class AppConfigService(CRUDService):
                 config.description = description
             if is_active is not None:
                 config.is_active = is_active
+            if is_public is not None:
+                config.is_public = is_public
             
             config.save()
             
@@ -194,7 +216,11 @@ class AppConfigService(CRUDService):
                         'old_value': old_values['value'],
                         'new_value': config.value,
                         'old_description': old_values['description'],
-                        'new_description': config.description
+                        'new_description': config.description,
+                        'old_is_active': old_values['is_active'],
+                        'new_is_active': config.is_active,
+                        'old_is_public': old_values['is_public'],
+                        'new_is_public': config.is_public,
                     },
                     description=f"Updated config: {config.key}",
                     ip_address="127.0.0.1",

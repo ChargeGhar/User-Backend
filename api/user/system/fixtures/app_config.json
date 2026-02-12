@@ -7,6 +7,7 @@
       "value": "50",
       "description": "Price per hour for power bank rental in NPR",
       "is_active": true,
+      "is_public": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
@@ -19,6 +20,7 @@
       "value": "24",
       "description": "Maximum rental duration in hours",
       "is_active": true,
+      "is_public": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
@@ -31,287 +33,306 @@
       "value": "100",
       "description": "Points awarded for successful referral",
       "is_active": true,
-      "created_at": "2024-01-01T00:00:00Z",
-      "updated_at": "2024-01-01T00:00:00Z"
-    }
-  },
-  {
-    "model": "system.appversion",
-    "pk": "550e8400-e29b-41d4-a716-446655440601",
-    "fields": {
-      "version": "1.0.0",
-      "platform": "android",
-      "is_mandatory": false,
-      "download_url": "https://play.google.com/store/apps/details?id=com.powerbank.app",
-      "release_notes": "Initial release with basic rental functionality",
-      "released_at": "2024-01-01T00:00:00Z",
-      "created_at": "2024-01-01T00:00:00Z",
-      "updated_at": "2024-01-01T00:00:00Z"
-    }
-  },
-  {
-    "model": "system.appversion",
-    "pk": "550e8400-e29b-41d4-a716-446655440602",
-    "fields": {
-      "version": "1.0.1",
-      "platform": "ios",
-      "is_mandatory": false,
-      "download_url": "https://apps.apple.com/app/powerbank/id123456789",
-      "release_notes": "Initial release with basic rental functionality",
-      "released_at": "2024-01-01T00:00:00Z",
+      "is_public": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "system.appconfig",
+    "pk": "550e8400-e29b-41d4-a716-446655440504",
     "fields": {
       "key": "POINTS_SIGNUP",
       "value": "50",
       "description": "Points awarded for New User Signup",
       "is_active": true,
+      "is_public": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "system.appconfig",
+    "pk": "550e8400-e29b-41d4-a716-446655440505",
     "fields": {
       "key": "POINTS_REFERRAL_INVITER",
       "value": "100",
       "description": "Points awarded for Referral (Inviter)",
       "is_active": true,
+      "is_public": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "system.appconfig",
+    "pk": "550e8400-e29b-41d4-a716-446655440506",
     "fields": {
       "key": "POINTS_REFERRAL_INVITEE",
       "value": "50",
       "description": "Points awarded for Referral (Invitee)",
       "is_active": true,
+      "is_public": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "system.appconfig",
+    "pk": "550e8400-e29b-41d4-a716-446655440507",
     "fields": {
       "key": "POINTS_TOPUP",
       "value": "10",
       "description": "Points awarded for Top-Up (per NPR 100)",
       "is_active": true,
+      "is_public": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "system.appconfig",
+    "pk": "550e8400-e29b-41d4-a716-446655440508",
     "fields": {
       "key": "POINTS_RENTAL_COMPLETE",
       "value": "5",
       "description": "Points awarded for Completed Rental",
       "is_active": true,
+      "is_public": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "system.appconfig",
+    "pk": "550e8400-e29b-41d4-a716-446655440509",
     "fields": {
       "key": "POINTS_TIMELY_RETURN",
       "value": "50",
       "description": "Points awarded for Timely Returns",
       "is_active": true,
+      "is_public": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "system.appconfig",
+    "pk": "550e8400-e29b-41d4-a716-446655440510",
     "fields": {
       "key": "POINTS_PER_NPR",
       "value": "10",
       "description": "Points required to redeem NPR 1",
       "is_active": true,
+      "is_public": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "system.appconfig",
+    "pk": "550e8400-e29b-41d4-a716-446655440511",
     "fields": {
       "key": "POINTS_TOPUP_PER_NPR",
       "value": "100",
       "description": "NPR amount per points award for top-up",
       "is_active": true,
+      "is_public": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "system.appconfig",
+    "pk": "550e8400-e29b-41d4-a716-446655440512",
     "fields": {
       "key": "POINTS_KYC",
       "value": "30",
       "description": "Points awarded for KYC Verification Completion",
       "is_active": true,
+      "is_public": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "system.appconfig",
+    "pk": "550e8400-e29b-41d4-a716-446655440513",
     "fields": {
       "key": "POINTS_PROFILE",
       "value": "20",
       "description": "Points awarded for Profile Completion (100%)",
       "is_active": true,
+      "is_public": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "system.appconfig",
+    "pk": "550e8400-e29b-41d4-a716-446655440514",
     "fields": {
       "key": "POINTS_TIMELY_RETURN_HOURS",
       "value": "24",
       "description": "Hours threshold for timely return bonus",
       "is_active": true,
+      "is_public": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "system.appconfig",
+    "pk": "550e8400-e29b-41d4-a716-446655440515",
     "fields": {
       "key": "RENTAL_CANCELLATION_WINDOW_MINUTES",
       "value": "5",
       "description": "Time window in minutes within which a rental can be cancelled after start",
       "is_active": true,
+      "is_public": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "system.appconfig",
+    "pk": "550e8400-e29b-41d4-a716-446655440516",
     "fields": {
       "key": "MAX_RENTAL_EXTENSIONS",
       "value": "3",
       "description": "Maximum number of extensions allowed per rental to prevent powerbank monopolization",
       "is_active": true,
+      "is_public": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "system.appconfig",
+    "pk": "550e8400-e29b-41d4-a716-446655440517",
     "fields": {
       "key": "POSTPAID_MINIMUM_BALANCE",
       "value": "50",
       "description": "Minimum wallet balance (in NPR) required to start a POSTPAID rental to ensure payment capability",
       "is_active": true,
+      "is_public": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "system.appconfig",
+    "pk": "550e8400-e29b-41d4-a716-446655440518",
     "fields": {
       "key": "NEED_RENTALS_PROFILE_COMPLETE",
       "value": "true",
       "description": "Whether users need to complete their profile before renting a power bank",
       "is_active": true,
+      "is_public": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "system.appconfig",
+    "pk": "550e8400-e29b-41d4-a716-446655440519",
     "fields": {
       "key": "NEED_RENTALS_KYC_VERIFIED",
       "value": "true",
       "description": "Whether users need to complete KYC verification before renting a power bank",
       "is_active": true,
+      "is_public": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "system.appconfig",
+    "pk": "550e8400-e29b-41d4-a716-446655440520",
     "fields": {
       "key": "MASTER_OTP_ENABLED",
       "value": "false",
       "description": "Enable master OTP for development/testing (true/false)",
       "is_active": true,
+      "is_public": false,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "system.appconfig",
+    "pk": "550e8400-e29b-41d4-a716-446655440521",
     "fields": {
       "key": "MASTER_OTP_NUMBERS",
       "value": "9869251732",
       "description": "Comma-separated list of phone numbers/emails allowed to use master OTP",
       "is_active": true,
+      "is_public": false,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "system.appconfig",
+    "pk": "550e8400-e29b-41d4-a716-446655440522",
     "fields": {
       "key": "MASTER_OTP",
       "value": "123456",
       "description": "Master OTP code for development/testing",
       "is_active": true,
+      "is_public": false,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "system.appconfig",
+    "pk": "550e8400-e29b-41d4-a716-446655440523",
     "fields": {
       "key": "NO_CHARGE_RENTAL_CANCELLATION_TIME",
       "value": "5",
       "description": "Free cancellation window in minutes (no fee charged if cancelled within this time)",
       "is_active": true,
+      "is_public": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "system.appconfig",
+    "pk": "550e8400-e29b-41d4-a716-446655440524",
     "fields": {
       "key": "SWAPPING_MAX_TIME",
       "value": "5",
       "description": "Maximum time in minutes within which user can swap powerbank to different one",
       "is_active": true,
+      "is_public": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "system.appconfig",
+    "pk": "550e8400-e29b-41d4-a716-446655440525",
     "fields": {
       "key": "PLATFORM_VAT_PERCENT",
       "value": "13",
       "description": "VAT percentage deducted by ChargeGhar on all transactions (Nepal standard 13%)",
       "is_active": true,
+      "is_public": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
   },
   {
     "model": "system.appconfig",
+    "pk": "550e8400-e29b-41d4-a716-446655440526",
     "fields": {
       "key": "PLATFORM_SERVICE_CHARGE_PERCENT",
       "value": "2.5",
       "description": "Service charge percentage deducted by ChargeGhar on all transactions",
       "is_active": true,
+      "is_public": true,
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }

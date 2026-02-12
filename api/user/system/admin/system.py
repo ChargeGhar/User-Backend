@@ -12,10 +12,26 @@ class CountryAdmin(ModelAdmin):
 
 @admin.register(AppConfig)
 class AppConfigAdmin(ModelAdmin):
-    list_display = ['key', 'value', 'is_active', 'description']
-    list_filter = ['is_active']
-    search_fields = ['key', 'description']
+    list_display = ['key', 'value', 'is_public', 'is_active', 'description', 'updated_at']
+    list_filter = ['is_public', 'is_active', 'updated_at']
+    search_fields = ['key', 'value', 'description']
     ordering = ['key']
+    list_editable = ['is_public', 'is_active']
+    list_per_page = 50
+    save_on_top = True
+    readonly_fields = ['id', 'created_at', 'updated_at']
+    fieldsets = (
+        ('Config', {
+            'fields': ('id', 'key', 'value', 'description')
+        }),
+        ('Visibility', {
+            'fields': ('is_public', 'is_active')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
     
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)

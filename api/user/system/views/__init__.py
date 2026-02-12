@@ -7,6 +7,7 @@ from __future__ import annotations
 from api.common.routers import CustomViewRouter
 
 from .country_views import country_router
+from .app_config_views import app_config_router
 from .app_info_views import app_info_router
 from .app_updates_views import app_updates_router
 from .issue_types_views import issue_types_router
@@ -15,6 +16,6 @@ from .partner_request_views import partner_request_router
 # Merge all sub-routers
 router = CustomViewRouter()
 
-for sub_router in [country_router, app_info_router, app_updates_router, issue_types_router, partner_request_router]:
+for sub_router in [country_router, app_config_router, app_info_router, app_updates_router, issue_types_router, partner_request_router]:
     router._paths.extend(sub_router._paths)
     router._drf_router.registry.extend(sub_router._drf_router.registry)
