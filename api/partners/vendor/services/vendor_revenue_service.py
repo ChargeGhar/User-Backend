@@ -103,7 +103,14 @@ class VendorRevenueService:
     
     @staticmethod
     def _parse_date_range(period: Optional[str], start_date: Optional[str], end_date: Optional[str]) -> tuple:
-        """Parse date range from period or custom dates"""
+        """
+        Parse date range from query filters.
+
+        Behavior:
+        - No date filters provided: return full history (no date bounds)
+        - start_date + end_date provided: use custom date range
+        - period provided: apply period window
+        """
         today = timezone.now().date()
         
         if start_date and end_date:
@@ -122,6 +129,9 @@ class VendorRevenueService:
         elif period == 'year':
             year_start = today.replace(month=1, day=1)
             return year_start, today
-        else:  # Default to 'month'
+        elif period == 'month':
             month_start = today.replace(day=1)
             return month_start, today
+
+        # No period/date filters => return full history
+        return None, None

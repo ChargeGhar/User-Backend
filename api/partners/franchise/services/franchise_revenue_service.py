@@ -108,7 +108,14 @@ class FranchiseRevenueService(BaseService):
         start_date: Optional[str],
         end_date: Optional[str]
     ) -> tuple:
-        """Parse date range from period or custom dates"""
+        """
+        Parse date range from query filters.
+
+        Behavior:
+        - No date filters provided: return full history (no date bounds)
+        - period filters: apply period window
+        - custom period: requires start_date and end_date
+        """
         today = timezone.now().date()
         
         if period == 'today':
@@ -124,6 +131,6 @@ class FranchiseRevenueService(BaseService):
             return year_start, today
         elif period == 'custom' and start_date and end_date:
             return date.fromisoformat(start_date), date.fromisoformat(end_date)
-        else:
-            # Default: last 30 days
-            return today - timedelta(days=30), today
+        
+        # No period/date filters => return full history
+        return None, None
