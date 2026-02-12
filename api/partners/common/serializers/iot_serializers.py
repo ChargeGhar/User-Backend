@@ -29,10 +29,8 @@ class IoTHistorySerializer(serializers.Serializer):
 class IoTHistoryListResponseSerializer(serializers.Serializer):
     """Paginated IoT history response"""
     
-    count = serializers.IntegerField()
-    next = serializers.BooleanField()
-    previous = serializers.BooleanField()
     results = IoTHistorySerializer(many=True)
+    pagination = serializers.DictField()
 
 
 class IoTEjectResponseSerializer(serializers.Serializer):

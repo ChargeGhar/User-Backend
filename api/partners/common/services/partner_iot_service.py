@@ -7,9 +7,11 @@ Business Rules:
 - Both franchise and vendor can perform IoT actions on their stations
 """
 
+from datetime import date
 from typing import Dict
 
 from api.common.services.base import BaseService, ServiceException
+from api.common.utils.helpers import paginate_queryset
 from api.partners.common.repositories import (
     StationDistributionRepository,
     PartnerIotHistoryRepository
@@ -51,7 +53,7 @@ class PartnerIoTService(BaseService):
         free_ejections_used = 0
         
         if partner.partner_type == 'VENDOR':
-            free_ejections_used = PartnerIotHistoryRepository.get_today_free_ejections_count(
+            free_ejections_used = PartnerIotHistoryRepository.get_vendor_free_ejection_count_today(
                 str(partner.id)
             )
             is_free = free_ejections_used < 1
@@ -156,14 +158,21 @@ class PartnerIoTService(BaseService):
         Returns:
             Dict with results and pagination metadata
         """
-        from api.common.utils.helpers import paginate_queryset
-        
+        start_date = self._parse_iso_date(filters.get('start_date'), 'start_date')
+        end_date = self._parse_iso_date(filters.get('end_date'), 'end_date')
+
+        if start_date and end_date and start_date > end_date:
+            raise ServiceException(
+                detail="start_date cannot be greater than end_date",
+                code="INVALID_DATE_RANGE"
+            )
+
         # Get history using repository
         history = PartnerIotHistoryRepository.get_by_partner(
             partner_id=str(partner.id),
             action_type=filters.get('action_type'),
-            start_date=filters.get('start_date'),
-            end_date=filters.get('end_date')
+            start_date=start_date,
+            end_date=end_date
         )
         
         # Pagination
@@ -171,3 +180,20 @@ class PartnerIoTService(BaseService):
         page_size = filters.get('page_size', 20)
         
         return paginate_queryset(history, page, page_size)
+
+    @staticmethod
+    def _parse_iso_date(value, field_name: str):
+        """Parse YYYY-MM-DD date values from query filters."""
+        if not value:
+            return None
+
+        if isinstance(value, date):
+            return value
+
+        try:
+            return date.fromisoformat(str(value))
+        except ValueError as exc:
+            raise ServiceException(
+                detail=f"Invalid {field_name}. Expected format: YYYY-MM-DD",
+                code="INVALID_DATE_FORMAT"
+            ) from exc
