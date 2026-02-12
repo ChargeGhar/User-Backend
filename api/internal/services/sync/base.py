@@ -30,16 +30,28 @@ class StationSyncBaseMixin:
         'OFFLINE': 'OFFLINE',
         'MAINTENANCE': 'MAINTENANCE'
     }
-    
+
+    def _resolve_station_imei(self, device_data: Dict[str, Any]) -> str:
+        """
+        Canonical station identifier for sync operations.
+        IoT payload should provide IMEI; fallback to serial_number only if needed.
+        """
+        imei = str(device_data.get('imei') or device_data.get('serial_number') or '').strip()
+        if not imei:
+            raise ServiceException(
+                detail="Missing device identifier (imei or serial_number)",
+                code="missing_device_identifier"
+            )
+        return imei
+
     def _validate_sync_data(self, data: Dict[str, Any]) -> None:
         """Validate sync data structure"""
         if not isinstance(data, dict):
             raise ServiceException(detail="Data must be a dictionary", code="invalid_data_format")
-        
+
         device_data = data.get('device', {})
-        if not device_data.get('serial_number'):
-            raise ServiceException(detail="Missing device serial_number", code="missing_serial_number")
-        
+        self._resolve_station_imei(device_data)
+
         slots_data = data.get('slots', [])
         if slots_data and not isinstance(slots_data, list):
             raise ServiceException(detail="Slots data must be a list", code="invalid_slots_format")
@@ -51,10 +63,10 @@ class StationSyncBaseMixin:
     def _validate_return_data(self, data: Dict[str, Any]) -> None:
         """Validate return event data structure"""
         device_data = data.get('device', {})
+        self._resolve_station_imei(device_data)
         return_event = data.get('return_event', {})
-        
+
         required_fields = {
-            'device.serial_number': device_data.get('serial_number'),
             'return_event.power_bank_serial': return_event.get('power_bank_serial'),
             'return_event.slot_number': return_event.get('slot_number')
         }
@@ -70,10 +82,9 @@ class StationSyncBaseMixin:
         """Validate status update data structure"""
         if not isinstance(data, dict):
             raise ServiceException(detail="Data must be a dictionary", code="invalid_data_format")
-        
+
         device_data = data.get('device', {})
-        if not device_data.get('imei') and not device_data.get('serial_number'):
-            raise ServiceException(detail="Missing device imei or serial_number", code="missing_device_identifier")
-        
+        self._resolve_station_imei(device_data)
+
         if not device_data.get('status'):
             raise ServiceException(detail="Missing device status", code="missing_status")

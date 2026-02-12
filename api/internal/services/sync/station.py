@@ -43,7 +43,7 @@ class StationSyncMixin:
             slots_data = data.get('slots', [])
             powerbanks_data = data.get('power_banks', [])
             
-            serial_number = device_data.get('serial_number')
+            station_identifier = self._resolve_station_imei(device_data)
             
             station = self._sync_station(device_data, station_data)
             slots_updated = self._sync_slots(station, slots_data)
@@ -61,7 +61,9 @@ class StationSyncMixin:
                 'timestamp': timezone.now().isoformat()
             }
             
-            self.log_info(f"Station sync completed for {serial_number}: {slots_updated} slots, {powerbanks_updated} powerbanks")
+            self.log_info(
+                f"Station sync completed for {station_identifier}: {slots_updated} slots, {powerbanks_updated} powerbanks"
+            )
             return result
             
         except ServiceException as e:
@@ -92,8 +94,8 @@ class StationSyncMixin:
     def _sync_station(self, device_data: Dict, station_data: Dict) -> Station:
         """Update or create Station record"""
         try:
-            serial_number = device_data.get('serial_number')
-            imei = device_data.get('imei', serial_number)
+            imei = self._resolve_station_imei(device_data)
+            serial_number = device_data.get('serial_number') or imei
             
             last_heartbeat_str = device_data.get('last_heartbeat')
             last_heartbeat = None
@@ -104,9 +106,9 @@ class StationSyncMixin:
                     self.log_warning(f"Invalid heartbeat format: {last_heartbeat_str}")
             
             station, created = Station.objects.get_or_create(
-                serial_number=serial_number,
+                imei=imei,
                 defaults={
-                    'imei': imei,
+                    'serial_number': serial_number,
                     'station_name': f'Station {serial_number[-4:]}',
                     'latitude': Decimal('0.0'),
                     'longitude': Decimal('0.0'),
@@ -119,9 +121,9 @@ class StationSyncMixin:
             )
             
             if not created:
-                self._update_existing_station(station, device_data, station_data, imei, last_heartbeat)
+                self._update_existing_station(station, device_data, station_data, last_heartbeat)
             else:
-                self.log_info(f"Created new station {serial_number}")
+                self.log_info(f"Created new station {serial_number} ({imei})")
             
             return station
             
@@ -129,9 +131,8 @@ class StationSyncMixin:
             self.log_error(f"Error syncing station {device_data.get('serial_number')}: {str(e)}")
             raise ServiceException(detail=f"Failed to sync station: {str(e)}", code="station_sync_error")
     
-    def _update_existing_station(self, station: Station, device_data: Dict, station_data: Dict, imei: str, last_heartbeat) -> None:
+    def _update_existing_station(self, station: Station, device_data: Dict, station_data: Dict, last_heartbeat) -> None:
         """Update existing station with new data"""
-        station.imei = imei
         station.total_slots = station_data.get('total_slots', station.total_slots)
         station.status = self.STATION_STATUS_MAP.get(device_data.get('status', 'OFFLINE'), 'OFFLINE')
         station.hardware_info = device_data.get('hardware_info', {})

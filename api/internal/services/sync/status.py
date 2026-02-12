@@ -4,9 +4,9 @@ Status update mixin - handles station status changes
 from __future__ import annotations
 
 from typing import Dict, Any
+import time
 from django.utils import timezone
 from django.db import transaction
-from django.db.models import Q
 
 from api.common.services.base import ServiceException
 from api.user.stations.models import Station
@@ -37,25 +37,14 @@ class StatusUpdateMixin:
             self._validate_status_data(data)
             
             device_data = data.get('device', {})
-            serial_number = device_data.get('serial_number')
-            imei = device_data.get('imei')
+            station_imei = self._resolve_station_imei(device_data)
             new_status = device_data.get('status')
-            
-            identifier = imei or serial_number
-            if not identifier:
-                raise ServiceException(
-                    detail="Missing device identifier (imei or serial_number)",
-                    code="missing_device_identifier"
-                )
-            
-            # Check if identifier matches IMEI or serial_number field
-            station = Station.objects.filter(
-                Q(imei=identifier) | Q(serial_number=identifier)
-            ).first()
+
+            station = Station.objects.filter(imei=station_imei).first()
             
             if not station:
                 raise ServiceException(
-                    detail=f"Station with identifier {identifier} not found",
+                    detail=f"Station with imei {station_imei} not found",
                     code="station_not_found"
                 )
             
@@ -85,7 +74,7 @@ class StatusUpdateMixin:
                 'updated_at': timezone.now().isoformat()
             }
             
-            self.log_info(f"Station {identifier} status updated to {station.status}")
+            self.log_info(f"Station {station_imei} status updated to {station.status}")
             return result
         
         except ServiceException as e:

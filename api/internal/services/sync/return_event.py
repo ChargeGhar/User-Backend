@@ -38,16 +38,16 @@ class ReturnEventMixin:
             device_data = data.get('device', {})
             return_event = data.get('return_event', {})
             
-            station_serial = device_data.get('serial_number')
+            station_imei = self._resolve_station_imei(device_data)
             pb_serial = return_event.get('power_bank_serial')
             slot_number = return_event.get('slot_number')
             battery_level = return_event.get('battery_level', 0)
             
             # Find station
             try:
-                station = Station.objects.get(serial_number=station_serial)
+                station = Station.objects.get(imei=station_imei)
             except Station.DoesNotExist:
-                raise ServiceException(detail=f"Station {station_serial} not found", code="station_not_found")
+                raise ServiceException(detail=f"Station with imei {station_imei} not found", code="station_not_found")
             
             # Find powerbank
             try:
@@ -60,7 +60,7 @@ class ReturnEventMixin:
                 slot = StationSlot.objects.get(station=station, slot_number=slot_number)
             except StationSlot.DoesNotExist:
                 raise ServiceException(
-                    detail=f"Slot {slot_number} not found at station {station_serial}",
+                    detail=f"Slot {slot_number} not found at station {station.serial_number}",
                     code="slot_not_found"
                 )
             
@@ -78,7 +78,7 @@ class ReturnEventMixin:
                 result = {
                     'message': 'PowerBank location updated, no active rental found',
                     'power_bank_serial': pb_serial,
-                    'station_serial': station_serial,
+                    'station_serial': station.serial_number,
                     'slot_number': slot_number
                 }
                 return result

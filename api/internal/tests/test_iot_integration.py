@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import time
+from decimal import Decimal
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
@@ -72,9 +73,9 @@ class StationSyncAPITestCase(TestCase):
     
     def setUp(self):
         self.client = APIClient()
-        
+
         self.admin_user = User.objects.create_superuser(
-            username='admin', email='admin@test.com', password='testpass123'
+            identifier='admin@test.com', username='admin', password='testpass123'
         )
         
         self.client.force_authenticate(user=self.admin_user)
@@ -164,3 +165,50 @@ class StationSyncAPITestCase(TestCase):
             powerbanks = PowerBank.objects.filter(serial_number="PB12345")
             self.assertEqual(powerbanks.count(), 1)
             self.assertEqual(powerbanks.first().battery_level, 85)
+
+    def test_full_station_sync_matches_existing_station_by_imei(self):
+        """Station matching should use IMEI even when station serial was admin-configured."""
+        with self.settings(IOT_SYSTEM_SIGNATURE_SECRET=self.secret_key):
+            station = Station.objects.create(
+                station_name="Configured Station",
+                serial_number="ADMIN-CONFIGURED-SN",
+                imei="868522071408102",
+                latitude=Decimal("0.0"),
+                longitude=Decimal("0.0"),
+                address="Configured Address",
+                total_slots=4,
+                status="OFFLINE",
+                hardware_info={}
+            )
+
+            payload_data = {
+                "type": "full",
+                "timestamp": int(time.time()),
+                "device": {
+                    "serial_number": "868522071408102",
+                    "imei": "868522071408102",
+                    "status": "ONLINE",
+                    "last_heartbeat": "2026-02-12T05:11:46.782Z",
+                    "hardware_info": {"firmware_version": "2.1.5"}
+                },
+                "station": {"total_slots": 8},
+                "slots": [],
+                "power_banks": []
+            }
+
+            request_data = self._create_signed_request(payload_data)
+            response = self.client.post(
+                '/api/internal/stations/data',
+                data=json.dumps(request_data['data']),
+                content_type='application/json',
+                **request_data['headers']
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(response.json()['success'])
+
+            station.refresh_from_db()
+            self.assertEqual(station.total_slots, 8)
+            self.assertEqual(station.status, 'ONLINE')
+            self.assertEqual(station.serial_number, "ADMIN-CONFIGURED-SN")
+            self.assertEqual(Station.objects.filter(imei="868522071408102").count(), 1)
