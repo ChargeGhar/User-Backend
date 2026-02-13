@@ -5,6 +5,7 @@
     "fields": {
       "name": "Khalti",
       "gateway": "khalti",
+      "icon": "https://seeklogo.com/images/K/khalti-logo-F0B049E67E-seeklogo.com.png",
       "is_active": true,
       "configuration": {"public_key": "test_public_key", "secret_key": "test_secret_key"},
       "min_amount": "10.00",
@@ -20,6 +21,7 @@
     "fields": {
       "name": "eSewa",
       "gateway": "esewa",
+      "icon": "https://img.logokit.com/esewa.com.np",
       "is_active": true,
       "configuration": {"merchant_id": "test_merchant", "secret_key": "test_secret"},
       "min_amount": "10.00",
@@ -35,6 +37,7 @@
     "fields": {
       "name": "Stripe",
       "gateway": "stripe",
+      "icon": "https://img.logokit.com/stripe.com",
       "is_active": true,
       "configuration": {"public_key": "STRIPE_TEST_KEY", "secret_key": "STRIPE_TEST_KEY"},
       "min_amount": "10.00",

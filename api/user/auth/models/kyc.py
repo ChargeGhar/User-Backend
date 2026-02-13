@@ -17,6 +17,7 @@ class UserKYC(BaseModel):
     document_type = models.CharField(max_length=50, default='CITIZENSHIP')
     document_number = models.CharField(max_length=100)
     document_front_url = models.URLField()
+    font_face_url = models.URLField(null=True, blank=True)
     document_back_url = models.URLField(null=True, blank=True)
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='PENDING')
     verified_at = models.DateTimeField(null=True, blank=True)

@@ -106,7 +106,7 @@ class AdminPaymentMethodSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentMethod
         fields = [
-            'id', 'name', 'gateway', 'is_active', 'configuration',
+            'id', 'name', 'gateway', 'icon', 'is_active', 'configuration',
             'min_amount', 'max_amount', 'supported_currencies',
             'created_at', 'updated_at'
         ]
@@ -118,6 +118,7 @@ class CreatePaymentMethodSerializer(serializers.Serializer):
     """Serializer for creating payment method"""
     name = serializers.CharField(max_length=100)
     gateway = serializers.CharField(max_length=255)
+    icon = serializers.CharField(max_length=255, required=False, allow_blank=True, default="")
     is_active = serializers.BooleanField(default=True)
     configuration = serializers.JSONField(default=dict, required=False)
     min_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
@@ -147,6 +148,7 @@ class UpdatePaymentMethodSerializer(serializers.Serializer):
     """Serializer for updating payment method"""
     name = serializers.CharField(max_length=100, required=False)
     gateway = serializers.CharField(max_length=255, required=False)
+    icon = serializers.CharField(max_length=255, required=False, allow_blank=True)
     is_active = serializers.BooleanField(required=False)
     configuration = serializers.JSONField(required=False)
     min_amount = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
@@ -160,5 +162,4 @@ class UpdatePaymentMethodSerializer(serializers.Serializer):
         if value and value < 0:
             raise serializers.ValidationError("Minimum amount cannot be negative")
         return value
-
 

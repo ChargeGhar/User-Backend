@@ -62,6 +62,8 @@ class TopupIntentCreateView(GenericAPIView, BaseAPIView):
                 'amount': str(intent.amount),
                 'currency': intent.currency,
                 'gateway': gateway,
+                'payment_method_name': intent.intent_metadata.get('payment_method_name'),
+                'payment_method_icon': intent.intent_metadata.get('payment_method_icon'),
                 'gateway_url': intent.gateway_url,
                 'redirect_url': gateway_result.get('redirect_url'),
                 'redirect_method': gateway_result.get('redirect_method', 'POST'),
@@ -191,4 +193,3 @@ class PaymentCancelView(GenericAPIView, BaseAPIView):
             "Payment intent cancelled successfully",
             "Failed to cancel payment"
         )
-

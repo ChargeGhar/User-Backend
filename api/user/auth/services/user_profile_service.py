@@ -98,6 +98,7 @@ class UserProfileService(BaseService):
                     'verified': False,
                     'document_number': None,
                     'document_front_url': None,
+                    'font_face_url': None,
                     'document_back_url': None,
                     'document_type': None,
                     'verified_at': None,
@@ -107,6 +108,7 @@ class UserProfileService(BaseService):
             return {
                 'document_number': kyc.document_number,
                 'document_front_url': kyc.document_front_url,
+                'font_face_url': kyc.font_face_url,
                 'document_back_url': kyc.document_back_url,
                 'document_type': kyc.document_type,
                 'status': kyc.status,

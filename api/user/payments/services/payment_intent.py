@@ -57,7 +57,10 @@ class PaymentIntentService(CRUDService):
                 expires_at=timezone.now() + timezone.timedelta(minutes=30),
                 intent_metadata={
                     'user_id': str(user.id),
-                    'payment_method': payment_method.gateway
+                    'payment_method': payment_method.gateway,
+                    'payment_method_name': payment_method.name,
+                    'payment_method_icon': payment_method.icon,
+                    'payment_method_id': str(payment_method.id),
                 }
             )
 
@@ -170,7 +173,10 @@ class PaymentIntentService(CRUDService):
                 )
 
                 wallet_service = WalletService()
-                payment_method_name = intent.intent_metadata.get('payment_method', 'gateway') if intent.intent_metadata else 'gateway'
+                payment_method_name = (
+                    intent.intent_metadata.get('payment_method_name')
+                    or intent.intent_metadata.get('payment_method', 'gateway')
+                ) if intent.intent_metadata else 'gateway'
                 wallet_service.add_balance(
                     intent.user,
                     intent.amount,

@@ -6,7 +6,7 @@ class PaymentMethodListSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = PaymentMethod
-        fields = ['id', 'name', 'gateway', 'is_active']
+        fields = ['id', 'name', 'gateway', 'icon', 'is_active']
 
 class PaymentMethodSerializer(serializers.ModelSerializer):
     """Standard serializer for payment methods"""
@@ -14,6 +14,6 @@ class PaymentMethodSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentMethod
         fields = [
-            'id', 'name', 'gateway', 'is_active', 'min_amount', 
+            'id', 'name', 'gateway', 'icon', 'is_active', 'min_amount', 
             'max_amount', 'supported_currencies'
         ]

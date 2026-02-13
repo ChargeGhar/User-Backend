@@ -120,6 +120,12 @@ class RentalPaymentFlowService(BaseService):
             "amount": str(intent.amount),
             "currency": intent.currency,
             "gateway": intent.intent_metadata.get("gateway") if intent.intent_metadata else None,
+            "payment_method_name": (
+                intent.intent_metadata.get("payment_method_name") if intent.intent_metadata else None
+            ),
+            "payment_method_icon": (
+                intent.intent_metadata.get("payment_method_icon") if intent.intent_metadata else None
+            ),
             "gateway_url": intent.gateway_url,
             "redirect_url": gateway_result.get("redirect_url"),
             "redirect_method": gateway_result.get("redirect_method", "POST"),

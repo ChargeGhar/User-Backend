@@ -130,7 +130,7 @@ class AdminPowerBankService(CRUDService):
             powerbank = PowerBank.objects.select_related(
                 'current_station', 'current_slot'
             ).annotate(
-                total_rentals=Count('rental'),
+                total_rentals_count=Count('rental'),
                 completed_rentals=Count('rental', filter=Q(rental__status='COMPLETED')),
                 total_revenue=Sum('rental__amount_paid', filter=Q(rental__status='COMPLETED'))
             ).get(id=powerbank_id)
@@ -208,7 +208,7 @@ class AdminPowerBankService(CRUDService):
                 } if powerbank.current_slot else None,
                 'current_rental': current_rental,
                 'statistics': {
-                    'total_rentals': powerbank.total_rentals,
+                    'total_rentals': powerbank.total_rentals_count,
                     'completed_rentals': powerbank.completed_rentals,
                     'total_revenue': str(powerbank.total_revenue or 0)
                 },

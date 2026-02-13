@@ -38,11 +38,18 @@ class UserKYCService(BaseService):
         if kyc:
             return {
                 'status': kyc.status,
+                'font_face_url': kyc.font_face_url,
                 'submitted_at': kyc.created_at,
                 'verified_at': kyc.verified_at,
                 'rejection_reason': kyc.rejection_reason
             }
-        return {'status': 'NOT_SUBMITTED', 'submitted_at': None, 'verified_at': None, 'rejection_reason': None}
+        return {
+            'status': 'NOT_SUBMITTED',
+            'font_face_url': None,
+            'submitted_at': None,
+            'verified_at': None,
+            'rejection_reason': None
+        }
     
     def update_kyc_status(self, user: User, status: str, rejection_reason: str = None) -> bool:
         """Update KYC status and send notification"""

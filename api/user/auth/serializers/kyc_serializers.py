@@ -7,6 +7,7 @@ class UserKYCSerializer(serializers.ModelSerializer):
         model = UserKYC
         fields = [
             'id', 'document_type', 'document_number', 'document_front_url',
+            'font_face_url',
             'document_back_url', 'status', 'verified_at', 'rejection_reason',
             'created_at', 'updated_at'
         ]

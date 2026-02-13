@@ -76,6 +76,7 @@ class AdminPaymentService(BaseService):
             payment_method = PaymentMethod.objects.create(
                 name=data['name'],
                 gateway=data['gateway'],
+                icon=data.get('icon', ''),
                 is_active=data.get('is_active', True),
                 configuration=data.get('configuration', {}),
                 min_amount=data['min_amount'],
@@ -99,6 +100,8 @@ class AdminPaymentService(BaseService):
                 payment_method.name = data['name']
             if 'gateway' in data:
                 payment_method.gateway = data['gateway']
+            if 'icon' in data:
+                payment_method.icon = data['icon']
             if 'is_active' in data:
                 payment_method.is_active = data['is_active']
             if 'configuration' in data:

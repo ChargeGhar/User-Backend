@@ -67,6 +67,7 @@ class AdminKYCSerializer(serializers.Serializer):
     document_type = serializers.CharField(read_only=True)
     document_number = serializers.CharField(read_only=True)
     document_front_url = serializers.URLField(read_only=True)
+    font_face_url = serializers.URLField(read_only=True, allow_null=True)
     document_back_url = serializers.URLField(read_only=True)
     
     status = serializers.CharField(read_only=True)
@@ -76,5 +77,4 @@ class AdminKYCSerializer(serializers.Serializer):
     
     created_at = serializers.DateTimeField(read_only=True)
     updated_at = serializers.DateTimeField(read_only=True)
-
 
