@@ -145,7 +145,7 @@ class RentalPaymentFlowService(BaseService):
             context["points_shortfall_amount"] = str(
                 payment_options.get("points_shortfall_amount", Decimal("0"))
             )
-            context["payment_breakdown"] = self.serialize_for_metadata(
+            context["breakdown"] = self.serialize_for_metadata(
                 payment_options.get("payment_breakdown")
             )
 

@@ -156,7 +156,18 @@ class RentalPayDueView(GenericAPIView, BaseAPIView):
             error_context = getattr(exc, "context", None)
             error_message = str(exc)
 
-            if error_code in self.BUSINESS_BLOCKING_CODES:
+            if error_code == "payment_required":
+                # HTTP 402 with flat data structure (consistent with rental start)
+                return Response(
+                    {
+                        "success": False,
+                        "error_code": "payment_required",
+                        "data": error_context
+                    },
+                    status=status.HTTP_402_PAYMENT_REQUIRED
+                )
+            elif error_code in self.BUSINESS_BLOCKING_CODES:
+                # Other blocking codes stay HTTP 200
                 payload = {"code": error_code, "message": error_message}
                 if error_context is not None:
                     payload["context"] = error_context

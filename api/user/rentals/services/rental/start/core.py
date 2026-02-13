@@ -33,6 +33,13 @@ from .discount import (
 )
 from .vendor_ejection import check_vendor_free_ejection, log_vendor_free_ejection
 from .revenue import trigger_revenue_distribution
+from .payment_validator import (
+    validate_payment_mode,
+    check_prepaid_sufficiency,
+    check_postpaid_minimum,
+    resolve_resume_preferences,
+)
+from .payment_intent_builder import raise_payment_required
 
 
 class RentalStartMixin:
@@ -125,169 +132,119 @@ class RentalStartMixin:
         rental_metadata, wallet_amount, points_to_use
     ):
         """Validate payment requirements and raise payment_required if needed."""
-        from api.user.payments.services import RentalPaymentFlowService
-        flow_service = RentalPaymentFlowService()
-
+        # Validate payment mode for payment model
+        validate_payment_mode(payment_mode, package.payment_model)
+        
         # Direct mode: always require top-up
         if payment_mode == 'direct':
             if package.payment_model == 'POSTPAID':
-                from api.user.system.services import AppConfigService
-
-                min_balance = Decimal(
-                    str(AppConfigService().get_config_cached('POSTPAID_MINIMUM_BALANCE', '50'))
-                )
-                wallet_balance = (
-                    user.wallet.balance if hasattr(user, 'wallet') and user.wallet else Decimal('0')
-                )
-                required_amount = max(
-                    Decimal('0.00'),
-                    (min_balance - wallet_balance).quantize(Decimal('0.01'))
-                )
-
-                # If POSTPAID minimum is already satisfied, continue without forcing gateway.
-                if required_amount <= 0:
-                    return
-
-                topup_amount = required_amount
-                postpaid_min_balance = min_balance
-            else:
-                # PREPAID direct mode: top-up exactly the discounted payable amount.
-                topup_amount = actual_price.quantize(Decimal('0.01'))
-                postpaid_min_balance = None
-
-            self._raise_payment_required(
-                flow_service, user, payment_method_id, topup_amount, 
-                station_sn, package_id, powerbank_sn, actual_price,
-                discount, discount_amount, rental_metadata, package.payment_model,
-                payment_mode, 'wallet', None, None,
-                postpaid_min_balance=postpaid_min_balance
-            )
-
-        # PREPAID: check wallet/points sufficiency
-        if package.payment_model == 'PREPAID':
-            payment_options = flow_service.calculate_payment_options(
-                user=user,
-                scenario='pre_payment',
-                package_id=str(package.id),
-                amount=actual_price,
-                payment_mode=payment_mode,
-                wallet_amount=wallet_amount,
-                points_to_use=points_to_use,
-            )
-
-            if not payment_options['is_sufficient']:
-                topup_amount = Decimal(str(payment_options.get('topup_amount_required') or payment_options.get('shortfall') or actual_price))
-                resume_mode, resume_wallet, resume_points = self._get_resume_preferences(
-                    payment_mode, wallet_amount, points_to_use, payment_options
-                )
-
-                self._raise_payment_required(
-                    flow_service, user, payment_method_id, topup_amount,
-                    station_sn, package_id, powerbank_sn, actual_price,
-                    discount, discount_amount, rental_metadata, package.payment_model,
-                    payment_mode, resume_mode, resume_wallet, resume_points,
-                    payment_options
-                )
-
-        # POSTPAID: validate payment mode and minimum balance
-        else:
-            if payment_mode in {'points', 'wallet_points'}:
-                raise ServiceException(
-                    detail=f"Payment mode '{payment_mode}' is not supported for POSTPAID packages",
-                    code="payment_mode_not_supported",
-                    context={'payment_mode': payment_mode, 'payment_model': package.payment_model}
-                )
-
-            from api.user.system.services import AppConfigService
-            min_balance = Decimal(str(AppConfigService().get_config_cached('POSTPAID_MINIMUM_BALANCE', '50')))
-            wallet_balance = user.wallet.balance if hasattr(user, 'wallet') and user.wallet else Decimal('0')
-
-            if wallet_balance < min_balance:
-                required_amount = min_balance - wallet_balance
-                self._raise_payment_required(
-                    flow_service, user, payment_method_id, required_amount,
-                    station_sn, package_id, powerbank_sn, actual_price,
-                    discount, discount_amount, rental_metadata, package.payment_model,
-                    payment_mode, self._get_resume_mode(payment_mode), wallet_amount, points_to_use,
+                meets_min, min_balance, current_balance = check_postpaid_minimum(user)
+                if meets_min:
+                    return  # Already meets minimum
+                
+                topup_amount = (min_balance - current_balance).quantize(Decimal('0.01'))
+                raise_payment_required(
+                    user=user,
+                    payment_method_id=payment_method_id,
+                    topup_amount=topup_amount,
+                    station_sn=station_sn,
+                    package_id=package_id,
+                    powerbank_sn=powerbank_sn,
+                    actual_price=actual_price,
+                    discount=discount,
+                    discount_amount=discount_amount,
+                    rental_metadata=rental_metadata,
+                    payment_model=package.payment_model,
+                    payment_mode_requested=payment_mode,
+                    payment_mode_resume='wallet',
+                    wallet_amount=None,
+                    points_to_use=None,
                     postpaid_min_balance=min_balance
                 )
-
-    def _raise_payment_required(
-        self, flow_service, user, payment_method_id, topup_amount,
-        station_sn, package_id, powerbank_sn, actual_price,
-        discount, discount_amount, rental_metadata, payment_model,
-        requested_mode, resume_mode, resume_wallet, resume_points,
-        payment_options=None, postpaid_min_balance=None
-    ):
-        """Create payment intent and raise payment_required exception."""
-        if not payment_method_id:
-            raise ServiceException(
-                detail="Payment method is required when balance is insufficient",
-                code="payment_method_required",
-                context={'payment_mode': requested_mode, 'shortfall': str(topup_amount)}
-            )
-
-        gateway_topup_amount = flow_service.resolve_gateway_topup_amount(
-            payment_method_id=payment_method_id,
-            requested_amount=topup_amount,
-        )
-
-        metadata = {
-            'flow': 'RENTAL_START',
-            'station_sn': station_sn,
-            'package_id': str(package_id),
-            'powerbank_sn': powerbank_sn,
-            'actual_price': str(actual_price),
-            'discount_id': str(discount.id) if discount else None,
-            'discount_amount': str(discount_amount),
-            'discount_metadata': rental_metadata,
-            'payment_model': payment_model,
-            'payment_mode_requested': requested_mode,
-            'payment_mode': resume_mode,
-            'wallet_amount': str(resume_wallet) if resume_wallet is not None else None,
-            'points_to_use': resume_points,
-            'topup_amount_required': str(gateway_topup_amount),
-            'shortfall': str(topup_amount)
-        }
-
-        if payment_options:
-            metadata['payment_breakdown'] = flow_service.serialize_for_metadata(payment_options.get('payment_breakdown'))
-            metadata['shortfall'] = str(payment_options.get('shortfall', topup_amount))
+            else:
+                # PREPAID direct mode
+                topup_amount = actual_price.quantize(Decimal('0.01'))
+                raise_payment_required(
+                    user=user,
+                    payment_method_id=payment_method_id,
+                    topup_amount=topup_amount,
+                    station_sn=station_sn,
+                    package_id=package_id,
+                    powerbank_sn=powerbank_sn,
+                    actual_price=actual_price,
+                    discount=discount,
+                    discount_amount=discount_amount,
+                    rental_metadata=rental_metadata,
+                    payment_model=package.payment_model,
+                    payment_mode_requested=payment_mode,
+                    payment_mode_resume='wallet',
+                    wallet_amount=None,
+                    points_to_use=None
+                )
         
-        if postpaid_min_balance:
-            metadata['postpaid_min_balance'] = str(postpaid_min_balance)
-
-        intent = flow_service.create_topup_intent(
-            user, payment_method_id, gateway_topup_amount, metadata
-        )
-
-        raise ServiceException(
-            detail="Payment required to start rental",
-            code="payment_required",
-            status_code=402,
-            context=flow_service.build_payment_required_context(
-                intent, topup_amount if not payment_options else payment_options.get('shortfall'),
-                requested_mode, payment_options
+        # PREPAID: check wallet/points sufficiency
+        if package.payment_model == 'PREPAID':
+            is_sufficient, payment_options = check_prepaid_sufficiency(
+                user=user,
+                actual_price=actual_price,
+                payment_mode=payment_mode,
+                package_id=str(package.id),
+                wallet_amount=wallet_amount,
+                points_to_use=points_to_use
             )
-        )
-
-    def _get_resume_mode(self, payment_mode: str) -> str:
-        """Determine resume mode after gateway top-up."""
-        return 'wallet' if payment_mode == 'direct' else ('wallet_points' if payment_mode == 'points' else payment_mode)
-
-    def _get_resume_preferences(self, selected_mode, wallet_amount, points_to_use, payment_options):
-        """Build deterministic resume preferences for async rental continuation."""
-        resume_mode = self._get_resume_mode(selected_mode)
-        resume_wallet = wallet_amount
-        resume_points = points_to_use
-
-        # Clear requested split if points are short (gateway can't add points)
-        if selected_mode == 'wallet_points' and wallet_amount is not None and points_to_use is not None:
-            if int(payment_options.get('points_shortfall', 0) or 0) > 0:
-                resume_wallet = None
-                resume_points = None
-
-        return resume_mode, resume_wallet, resume_points
+            
+            if not is_sufficient:
+                topup_amount = Decimal(str(
+                    payment_options.get('topup_amount_required') or 
+                    payment_options.get('shortfall') or 
+                    actual_price
+                ))
+                resume_mode, resume_wallet, resume_points = resolve_resume_preferences(
+                    payment_mode, wallet_amount, points_to_use, payment_options
+                )
+                
+                raise_payment_required(
+                    user=user,
+                    payment_method_id=payment_method_id,
+                    topup_amount=topup_amount,
+                    station_sn=station_sn,
+                    package_id=package_id,
+                    powerbank_sn=powerbank_sn,
+                    actual_price=actual_price,
+                    discount=discount,
+                    discount_amount=discount_amount,
+                    rental_metadata=rental_metadata,
+                    payment_model=package.payment_model,
+                    payment_mode_requested=payment_mode,
+                    payment_mode_resume=resume_mode,
+                    wallet_amount=resume_wallet,
+                    points_to_use=resume_points,
+                    payment_options=payment_options
+                )
+        
+        # POSTPAID: validate minimum balance
+        else:
+            meets_min, min_balance, current_balance = check_postpaid_minimum(user)
+            if not meets_min:
+                required_amount = min_balance - current_balance
+                raise_payment_required(
+                    user=user,
+                    payment_method_id=payment_method_id,
+                    topup_amount=required_amount,
+                    station_sn=station_sn,
+                    package_id=package_id,
+                    powerbank_sn=powerbank_sn,
+                    actual_price=actual_price,
+                    discount=discount,
+                    discount_amount=discount_amount,
+                    rental_metadata=rental_metadata,
+                    payment_model=package.payment_model,
+                    payment_mode_requested=payment_mode,
+                    payment_mode_resume='wallet',
+                    wallet_amount=wallet_amount,
+                    points_to_use=points_to_use,
+                    postpaid_min_balance=min_balance
+                )
 
     @transaction.atomic
     def _start_rental_atomic(

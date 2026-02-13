@@ -163,18 +163,12 @@ class RentalPaymentService(BaseService):
                 )
 
             rental.overdue_amount = Decimal('0')
-            update_fields = ['overdue_amount', 'updated_at']
+            rental.payment_status = 'PAID'
+            update_fields = ['overdue_amount', 'payment_status', 'updated_at']
 
             if is_powerbank_returned:
-                rental.payment_status = 'PAID'
                 rental.status = 'COMPLETED'
-                update_fields.extend(['payment_status', 'status'])
-            else:
-                # Ongoing overdue rentals can accrue new due immediately after settlement.
-                rental.payment_status = (
-                    'PENDING' if rental.status == 'OVERDUE' and rental.ended_at is None else 'PAID'
-                )
-                update_fields.append('payment_status')
+                update_fields.append('status')
 
             rental.save(update_fields=update_fields)
 

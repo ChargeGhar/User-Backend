@@ -84,15 +84,14 @@ class RentalDuePaymentService(BaseService):
                 "transaction_id": transaction.transaction_id,
                 "rental_id": str(rental.id),
                 "rental_code": rental.rental_code,
-                "amount_paid": float(required_due),
-                "payment_breakdown": {
+                "amount_paid": str(required_due),
+                "breakdown": {
+                    "wallet_amount": str(normalized_breakdown["wallet_amount"]),
                     "points_used": normalized_breakdown["points_to_use"],
-                    "wallet_used": float(normalized_breakdown["wallet_amount"]),
-                    "points_to_use": normalized_breakdown["points_to_use"],
-                    "points_amount": float(normalized_breakdown["points_amount"]),
-                    "wallet_amount": float(normalized_breakdown["wallet_amount"]),
+                    "points_amount": str(normalized_breakdown["points_amount"]),
                 },
                 "payment_status": rental.payment_status,
+                "rental_status": rental.status,
                 "account_unblocked": True,
             }
         except Exception as exc:

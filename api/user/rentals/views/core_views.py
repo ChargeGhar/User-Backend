@@ -26,27 +26,25 @@ logger = logging.getLogger(__name__)
     tags=["Rentals"],
     summary="Start Rental",
     description="Initiates a new power bank rental session",
-    responses={201: BaseResponseSerializer}
+    responses={
+        201: BaseResponseSerializer,
+        402: BaseResponseSerializer
+    }
 )
 class RentalStartView(GenericAPIView, BaseAPIView):
     serializer_class = serializers.RentalStartSerializer
     permission_classes = [IsAuthenticated]
-    BUSINESS_BLOCKING_CODES = {
-        'payment_required',
-        'payment_method_required',
-        'payment_mode_not_supported',
-        'invalid_payment_mode',
-        'invalid_wallet_points_split',
-        'split_total_mismatch',
-    }
     
     @extend_schema(
         summary="Start New Rental",
         description="Start a new power bank rental at specified station with selected package",
         request=serializers.RentalStartSerializer,
-        responses={201: BaseResponseSerializer}
+        responses={
+            201: BaseResponseSerializer,
+            402: BaseResponseSerializer
+        }
     )
-    @rate_limit(max_requests=3, window_seconds=60)  # Max 3 rental attempts per minute
+    @rate_limit(max_requests=3, window_seconds=60)
     @log_api_call()
     def post(self, request: Request) -> Response:
         """Start new rental"""
@@ -65,30 +63,42 @@ class RentalStartView(GenericAPIView, BaseAPIView):
                 wallet_amount=serializer.validated_data.get('wallet_amount'),
                 points_to_use=serializer.validated_data.get('points_to_use')
             )
+            
+            # Build success response
+            from api.user.rentals.services.rental.start.response_builder import build_rental_success_data
+            response_data = build_rental_success_data(rental)
+            
+            return self.success_response(
+                data=response_data,
+                message="Rental started successfully",
+                status_code=status.HTTP_201_CREATED
+            )
+            
         except ServiceException as exc:
             error_code = getattr(exc, 'default_code', 'service_error')
-            error_context = getattr(exc, 'context', None) or None
+            error_context = getattr(exc, 'context', None)
             error_message = str(exc)
+            status_code = getattr(exc, 'status_code', status.HTTP_400_BAD_REQUEST)
 
-            if error_code in self.BUSINESS_BLOCKING_CODES:
-                payload = {
-                    'code': error_code,
-                    'message': error_message
-                }
-                if error_context is not None:
-                    payload['context'] = error_context
-                return self.success_response(
-                    data={'error': payload},
+            # Payment required: HTTP 402
+            if error_code == 'payment_required':
+                from api.user.rentals.services.rental.start.payment_required_response import (
+                    build_payment_required_response
+                )
+                return build_payment_required_response(
                     message=error_message,
-                    status_code=status.HTTP_200_OK
+                    error_code=error_code,
+                    data=error_context
                 )
 
+            # Other errors
             return self.error_response(
                 message=error_message,
-                status_code=getattr(exc, 'status_code', status.HTTP_400_BAD_REQUEST),
+                status_code=status_code,
                 error_code=error_code,
                 context=error_context
             )
+            
         except Exception as exc:
             logger.error(f"Failed to start rental: {str(exc)}")
             return self.error_response(
@@ -96,13 +106,6 @@ class RentalStartView(GenericAPIView, BaseAPIView):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 error_code='internal_error'
             )
-
-        response_serializer = serializers.RentalDetailSerializer(rental)
-        return self.success_response(
-            data=response_serializer.data,
-            message="Rental started successfully",
-            status_code=status.HTTP_201_CREATED
-        )
 
 
 

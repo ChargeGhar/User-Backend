@@ -39,7 +39,7 @@ class RentalStartSerializer(serializers.Serializer):
     payment_method_id = serializers.UUIDField(
         required=False,
         allow_null=True,
-        help_text="Optional: Payment method ID (required if payment is needed)/When selected payment_mode is 'direct' payment method ID must be provided"
+        help_text="Payment method ID. Required for 'direct' mode. Optional for other modes (required if balance insufficient)."
     )
     payment_mode = serializers.ChoiceField(
         choices=PAYMENT_MODE_CHOICES,
@@ -88,8 +88,22 @@ class RentalStartSerializer(serializers.Serializer):
             raise serializers.ValidationError({"package_id": "Package not found or inactive"})
 
         payment_mode = attrs.get('payment_mode', 'wallet_points')
+        payment_method_id = attrs.get('payment_method_id')
         wallet_amount = attrs.get('wallet_amount')
         points_to_use = attrs.get('points_to_use')
+
+        # Validate direct mode requires payment_method_id
+        if payment_mode == 'direct' and not payment_method_id:
+            raise serializers.ValidationError({
+                "payment_method_id": "Payment method is required for direct payment mode"
+            })
+
+        # Validate POSTPAID payment modes
+        if package.payment_model == 'POSTPAID':
+            if payment_mode in ['points', 'wallet_points']:
+                raise serializers.ValidationError({
+                    "payment_mode": f"Payment mode '{payment_mode}' is not supported for POSTPAID packages. Use 'wallet' or 'direct'."
+                })
 
         if (wallet_amount is None) ^ (points_to_use is None):
             raise serializers.ValidationError(
@@ -172,8 +186,15 @@ class RentalPayDueSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         payment_mode = attrs.get('payment_mode', 'wallet_points')
+        payment_method_id = attrs.get('payment_method_id')
         wallet_amount = attrs.get('wallet_amount')
         points_to_use = attrs.get('points_to_use')
+
+        # Validate direct mode requires payment_method_id
+        if payment_mode == 'direct' and not payment_method_id:
+            raise serializers.ValidationError({
+                "payment_method_id": "Payment method is required for direct payment mode"
+            })
 
         if (wallet_amount is None) ^ (points_to_use is None):
             raise serializers.ValidationError(
