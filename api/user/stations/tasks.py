@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from decimal import Decimal
 from typing import Any, Dict
 
 from celery import shared_task
@@ -90,19 +91,98 @@ def verify_popup_completion(self, rental_id: str, station_sn: str, expected_powe
             rental.rental_metadata['popup_failed_at'] = timezone.now().isoformat()
             rental.save(update_fields=['status', 'rental_metadata'])
             
-            # TODO: Trigger refund if prepaid
-            # For now, just notify user
+            # Refund if PREPAID
             try:
+                if rental.package.payment_model == 'PREPAID' and rental.payment_status == 'PAID':
+                    from api.user.payments.models import Transaction, WalletTransaction
+                    from api.user.points.models import PointsTransaction
+                    from api.user.payments.services import WalletService
+                    from api.user.points.services import award_points
+                    
+                    txn = Transaction.objects.filter(
+                        related_rental=rental, transaction_type='RENTAL', status='SUCCESS'
+                    ).first()
+                    
+                    if txn:
+                        gateway_response = txn.gateway_response or {}
+                        gateway_wallet_amount = Decimal(
+                            str(gateway_response.get('wallet_amount') or '0')
+                        ).quantize(Decimal('0.01'))
+                        gateway_points_used = int(gateway_response.get('points_used') or 0)
+
+                        # Get actual amounts from related transactions
+                        wallet_txn = WalletTransaction.objects.filter(
+                            transaction=txn, transaction_type='DEBIT'
+                        ).first()
+                        
+                        points_txn = PointsTransaction.objects.filter(
+                            related_rental=rental, transaction_type='SPENT', source='RENTAL_PAYMENT'
+                        ).first()
+
+                        if points_txn is None:
+                            points_txn = PointsTransaction.objects.filter(
+                                user=rental.user,
+                                transaction_type='SPENT',
+                                source='RENTAL_PAYMENT',
+                                description=f"Payment for rental {rental.rental_code}"
+                            ).order_by('-created_at').first()
+
+                        wallet_refund_amount = (
+                            wallet_txn.amount if wallet_txn else gateway_wallet_amount
+                        )
+                        points_refund_amount = (
+                            points_txn.points if points_txn else gateway_points_used
+                        )
+                        
+                        if wallet_refund_amount <= 0 and points_refund_amount <= 0:
+                            logger.error(
+                                f"Unable to determine refund split for failed rental {rental_id}. "
+                                f"Transaction={txn.id}"
+                            )
+                        else:
+                            # Refund wallet amount if deducted
+                            if wallet_refund_amount > 0:
+                                WalletService().add_balance(rental.user, wallet_refund_amount,
+                                    f'Refund for failed rental {rental.rental_code}')
+                            
+                            # Refund points if deducted
+                            if points_refund_amount > 0:
+                                award_points(
+                                    rental.user,
+                                    points_refund_amount,
+                                    'REFUND',
+                                    f'Refund for failed rental {rental.rental_code}',
+                                    async_send=False,
+                                    related_rental=rental
+                                )
+                            
+                            txn.status = 'REFUNDED'
+                            txn.save(update_fields=['status'])
+                            rental.payment_status = 'REFUNDED'
+                            rental.save(update_fields=['payment_status'])
+                            
+                            refund_details = []
+                            if wallet_refund_amount > 0:
+                                refund_details.append(f"wallet NPR {wallet_refund_amount}")
+                            if points_refund_amount > 0:
+                                refund_details.append(f"{points_refund_amount} points")
+                            
+                            logger.info(f"Refunded rental {rental_id}: {', '.join(refund_details)}")
+                
+                elif rental.package.payment_model == 'POSTPAID':
+                    from api.user.payments.models import Transaction
+                    txn = Transaction.objects.filter(
+                        related_rental=rental, transaction_type='RENTAL', status='PENDING'
+                    ).first()
+                    if txn:
+                        txn.status = 'FAILED'
+                        txn.save(update_fields=['status'])
+                
                 from api.user.notifications.services import notify
-                notify(
-                    rental.user,
-                    'rental_popup_failed',
-                    async_send=True,
-                    rental_code=rental.rental_code,
-                    station_name=rental.station.station_name
-                )
-            except Exception as notify_error:
-                logger.error(f"Failed to send popup failure notification: {notify_error}")
+                notify(rental.user, 'rental_popup_failed', async_send=True,
+                      rental_code=rental.rental_code, station_name=rental.station.station_name)
+            except Exception as e:
+                logger.error(f"Failed to process popup failure for rental {rental_id}: {e}")
             
             return {"status": "failed", "reason": "popup not verified after retries"}
             

@@ -17,7 +17,7 @@ Usage:
 
 from __future__ import annotations
 
-from typing import Union
+from typing import Any, Dict, Tuple, Union
 from api.user.points.models import PointsTransaction
 
 
@@ -28,6 +28,41 @@ from api.user.points.services.referral_service import ReferralService
 # Module-level service instances for efficiency
 _points_service = PointsService()
 _referral_service = ReferralService()
+
+def _normalize_points_kwargs(extra_kwargs: Dict[str, Any]) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    """
+    Normalize kwargs for sync service calls and async task metadata.
+
+    - Supports both legacy `metadata={...}` and flat kwargs.
+    - Preserves explicit relation kwargs for sync path.
+    - Serializes relation references for async metadata payload.
+    """
+    payload = dict(extra_kwargs or {})
+
+    relation_kwargs: Dict[str, Any] = {}
+    metadata_payload: Dict[str, Any] = {}
+
+    raw_metadata = payload.pop('metadata', None)
+    if isinstance(raw_metadata, dict):
+        metadata_payload.update(raw_metadata)
+    elif raw_metadata is not None:
+        metadata_payload['value'] = raw_metadata
+
+    for relation_key in ('related_rental', 'related_referral'):
+        relation_val = payload.pop(relation_key, None)
+        if relation_val is not None:
+            relation_kwargs[relation_key] = relation_val
+
+    metadata_payload.update(payload)
+
+    service_kwargs: Dict[str, Any] = {'metadata': metadata_payload}
+    service_kwargs.update(relation_kwargs)
+
+    async_metadata = dict(metadata_payload)
+    for relation_key, relation_val in relation_kwargs.items():
+        async_metadata[f'{relation_key}_id'] = str(getattr(relation_val, 'id', relation_val))
+
+    return service_kwargs, async_metadata
 
 
 def award_points(user, points: int, source: str, description: str, 
@@ -61,6 +96,8 @@ def award_points(user, points: int, source: str, description: str,
         award_points(user, 5, 'REVIEW', 'Left a review')
         award_points(user, 200, 'ACHIEVEMENT', 'Milestone reached')
     """
+    service_kwargs, async_metadata = _normalize_points_kwargs(metadata)
+
     if async_send:
         # Import here to avoid circular imports
         from api.user.points.tasks import award_points_task
@@ -74,7 +111,7 @@ def award_points(user, points: int, source: str, description: str,
             points=points,
             source=source,
             description=description,
-            metadata=metadata
+            metadata=async_metadata
         )
     else:
         # Send sync (immediate)
@@ -83,7 +120,7 @@ def award_points(user, points: int, source: str, description: str,
             points=points,
             source=source,
             description=description,
-            metadata=metadata
+            **service_kwargs
         )
 
 
@@ -114,6 +151,8 @@ def deduct_points(user, points: int, source: str, description: str,
         # Works for ANY scenario
         deduct_points(user, 20, 'REFUND', 'Refunded purchase', order_id='O123')
     """
+    service_kwargs, async_metadata = _normalize_points_kwargs(metadata)
+
     if async_send:
         # Import here to avoid circular imports
         from api.user.points.tasks import deduct_points_task
@@ -127,7 +166,7 @@ def deduct_points(user, points: int, source: str, description: str,
             points=points,
             source=source,
             description=description,
-            metadata=metadata
+            metadata=async_metadata
         )
     else:
         # Send sync (immediate)
@@ -136,7 +175,7 @@ def deduct_points(user, points: int, source: str, description: str,
             points=points,
             source=source,
             description=description,
-            metadata=metadata
+            **service_kwargs
         )
 
 

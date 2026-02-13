@@ -16,6 +16,20 @@ class RentalPaymentService(BaseService):
     def _normalize_payment_breakdown(self, payment_breakdown: Dict[str, Any]) -> Dict[str, Any]:
         return RentalPaymentFlowService().normalize_breakdown(payment_breakdown)
 
+    def _build_payment_gateway_response(
+        self,
+        points_to_use: int,
+        points_amount: Decimal,
+        wallet_amount: Decimal,
+    ) -> Dict[str, Any]:
+        total_amount = (points_amount + wallet_amount).quantize(Decimal('0.01'))
+        return {
+            'points_used': int(points_to_use or 0),
+            'points_amount': str(points_amount.quantize(Decimal('0.01'))),
+            'wallet_amount': str(wallet_amount.quantize(Decimal('0.01'))),
+            'total_amount': str(total_amount),
+        }
+
     @transaction.atomic
     def process_rental_payment(self, user, rental, payment_breakdown: Dict[str, Any]) -> Transaction:
         """Process payment for rental"""
@@ -36,7 +50,12 @@ class RentalPaymentService(BaseService):
                 amount=total_amount,
                 status='SUCCESS',
                 payment_method_type='COMBINATION' if points_to_use > 0 and wallet_amount > 0 else 'POINTS' if points_to_use > 0 else 'WALLET',
-                related_rental=rental
+                related_rental=rental,
+                gateway_response=self._build_payment_gateway_response(
+                    points_to_use=points_to_use,
+                    points_amount=points_amount,
+                    wallet_amount=wallet_amount,
+                ),
             )
 
             # Get rental code or use a placeholder if rental is None
@@ -45,12 +64,14 @@ class RentalPaymentService(BaseService):
             # Deduct points if used
             if points_to_use > 0:
                 from api.user.points.services import deduct_points
+                points_kwargs = {'related_rental': rental} if rental else {}
                 deduct_points(
                     user,
                     points_to_use,
                     'RENTAL_PAYMENT',
                     rental_description,
-                    async_send=False  # Immediate for payment processing
+                    async_send=False,  # Immediate for payment processing
+                    **points_kwargs
                 )
 
             # Deduct wallet balance if used
@@ -140,7 +161,12 @@ class RentalPaymentService(BaseService):
                 amount=total_amount,
                 status='SUCCESS',
                 payment_method_type=payment_type,
-                related_rental=rental
+                related_rental=rental,
+                gateway_response=self._build_payment_gateway_response(
+                    points_to_use=points_to_use,
+                    points_amount=points_amount,
+                    wallet_amount=wallet_amount,
+                ),
             )
 
             if points_to_use > 0:
@@ -150,7 +176,8 @@ class RentalPaymentService(BaseService):
                     points_to_use,
                     'DUE_PAYMENT',
                     f"Due payment for rental {rental.rental_code}",
-                    async_send=False
+                    async_send=False,
+                    related_rental=rental
                 )
 
             if wallet_amount > 0:
