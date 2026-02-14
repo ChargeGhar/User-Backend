@@ -82,7 +82,7 @@ services:
     volumes:
       - cg_redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -93,7 +93,7 @@ services:
           memory: 128M
         reservations:
           memory: 64M
-    command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru
+    command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD}
 
   rabbitmq:
     <<: *common
