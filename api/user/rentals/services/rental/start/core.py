@@ -135,7 +135,9 @@ class RentalStartMixin:
         # Validate payment mode for payment model
         validate_payment_mode(payment_mode, package.payment_model)
         
-        # Direct mode: always require top-up
+        # Direct mode:
+        # - PREPAID: always require gateway top-up for full price.
+        # - POSTPAID: require top-up only when minimum balance is not met.
         if payment_mode == 'direct':
             if package.payment_model == 'POSTPAID':
                 meets_min, min_balance, current_balance = check_postpaid_minimum(user)

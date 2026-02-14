@@ -171,8 +171,6 @@ class PaymentCalculationService(BaseService):
             overdue_minutes = calculate_overdue_minutes(rental)
             if overdue_minutes > 0:
                 amount += calculate_late_fee_amount(rate_per_minute, overdue_minutes)
-        else:
-            amount = rental.package.price
         
         return amount
 

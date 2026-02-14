@@ -132,43 +132,51 @@ class RentalReturnMixin:
     def _auto_collect_payment(self, rental: Rental) -> None:
         """Auto-collect pending payments (POSTPAID charges or late fees)"""
         try:
-            from api.user.payments.services import PaymentCalculationService, RentalPaymentService
+            from api.user.payments.services import (
+                PaymentCalculationService,
+                RentalPaymentFlowService,
+                RentalPaymentService,
+            )
             
-            total_due = rental.amount_paid + rental.overdue_amount
-            if total_due <= 0:
+            flow_service = RentalPaymentFlowService()
+            required_due = flow_service.calculate_required_due(rental)
+            if required_due <= 0:
                 return
             
             calc_service = PaymentCalculationService()
             payment_options = calc_service.calculate_payment_options(
                 user=rental.user,
                 scenario='post_payment',
-                rental_id=str(rental.id)
+                rental_id=str(rental.id),
+                amount=required_due,
             )
             
             if payment_options['is_sufficient']:
                 payment_service = RentalPaymentService()
                 try:
                     transaction = payment_service.pay_rental_due(
-                        rental.user, rental, payment_options['payment_breakdown']
+                        rental.user,
+                        rental,
+                        payment_options['payment_breakdown'],
+                        required_due_override=required_due,
                     )
-                    self.log_info(f"Auto-collected NPR {total_due} for rental {rental.rental_code}")
+                    self.log_info(f"Auto-collected NPR {required_due} for rental {rental.rental_code}")
                     
                     # Update PENDING transaction if exists
                     self._update_pending_transaction(rental, transaction)
                     
-                    # Trigger revenue distribution for POSTPAID
-                    self._trigger_revenue_distribution(rental, transaction)
-                    
                 except Exception as e:
                     self.log_warning(f"Auto-collection failed for {rental.rental_code}: {str(e)}")
-                    self._notify_payment_failed(rental, total_due)
+                    self._notify_payment_failed(rental, required_due)
             else:
                 self.log_info(f"Insufficient balance for auto-collection: {rental.rental_code}")
-                self._notify_payment_required(rental, total_due, payment_options['shortfall'])
+                self._notify_payment_required(rental, required_due, payment_options['shortfall'])
                 
         except Exception as e:
             self.log_error(f"Auto-collection error for {rental.rental_code}: {str(e)}")
-            self._notify_payment_required(rental, rental.amount_paid + rental.overdue_amount, Decimal('0'))
+            fallback_due = (rental.overdue_amount if rental.package.payment_model == 'PREPAID'
+                            else rental.amount_paid + rental.overdue_amount)
+            self._notify_payment_required(rental, fallback_due, Decimal('0'))
     
     def _return_powerbank_to_station(self, rental, return_station, return_slot) -> None:
         """Return power bank to station"""
@@ -201,25 +209,6 @@ class RentalReturnMixin:
         except Exception as e:
             self.log_warning(
                 f"Failed to update PENDING transaction for rental {rental.rental_code}: {str(e)}"
-            )
-    
-    def _trigger_revenue_distribution(self, rental: Rental, transaction) -> None:
-        """Trigger revenue distribution for POSTPAID rental"""
-        try:
-            from api.partners.common.services import RevenueDistributionService
-            
-            rev_service = RevenueDistributionService()
-            distribution = rev_service.create_revenue_distribution(transaction, rental)
-            
-            if distribution:
-                self.log_info(
-                    f"Revenue distribution created for POSTPAID rental {rental.rental_code}: "
-                    f"distribution_id={distribution.id}"
-                )
-        except Exception as e:
-            # Log but don't fail the return - revenue can be recalculated
-            self.log_warning(
-                f"Failed to create revenue distribution for {rental.rental_code}: {str(e)}"
             )
     
     def _award_completion_points(self, rental: Rental) -> None:

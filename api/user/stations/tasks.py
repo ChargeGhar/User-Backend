@@ -6,6 +6,7 @@ from typing import Any, Dict
 
 from celery import shared_task
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.db.models import Count, Q
 from django.utils import timezone
 
@@ -65,18 +66,62 @@ def verify_popup_completion(self, rental_id: str, station_sn: str, expected_powe
                             f"Verified popup for rental {rental_id}: "
                             f"powerbank={popup_sn}"
                         )
-                        started_at = timezone.now()
-                        rental.status = 'ACTIVE'
-                        rental.started_at = started_at
-                        rental.due_at = started_at + timezone.timedelta(
-                            minutes=rental.package.duration_minutes
-                        )
-                        rental.rental_metadata['popup_verified'] = True
-                        rental.rental_metadata['popup_verified_at'] = timezone.now().isoformat()
-                        rental.rental_metadata['verified_powerbank_sn'] = popup_sn
-                        rental.save(
-                            update_fields=['status', 'started_at', 'due_at', 'rental_metadata']
-                        )
+                        from api.user.rentals.services import RentalService
+
+                        with transaction.atomic():
+                            # Recheck under lock to ensure activation happens only once.
+                            rental = Rental.objects.select_for_update().get(id=rental_id)
+                            if rental.status not in ['PENDING', 'PENDING_POPUP']:
+                                logger.info(
+                                    f"Rental {rental_id} already transitioned during verification, "
+                                    f"status={rental.status}"
+                                )
+                                return {"status": "skipped", "reason": f"rental status is {rental.status}"}
+
+                            discount = None
+                            actual_price = rental.amount_paid or rental.package.price
+
+                            rental_meta = rental.rental_metadata or {}
+                            discount_info = rental_meta.get('discount')
+                            if not isinstance(discount_info, dict) or not discount_info:
+                                nested_meta = rental_meta.get('discount_metadata', {})
+                                discount_info = (
+                                    nested_meta.get('discount', {})
+                                    if isinstance(nested_meta, dict)
+                                    else {}
+                                )
+
+                            discount_id = discount_info.get('discount_id')
+                            final_price = discount_info.get('final_price')
+
+                            if final_price is not None:
+                                try:
+                                    actual_price = Decimal(str(final_price))
+                                except Exception:
+                                    pass
+
+                            if discount_id:
+                                try:
+                                    from api.user.promotions.models import Discount
+                                    discount = Discount.objects.get(id=discount_id)
+                                except Exception:
+                                    discount = None
+
+                            # Use the same success finalization path as sync popup success
+                            RentalService()._handle_popup_success(
+                                rental=rental,
+                                station=rental.station,
+                                package=rental.package,
+                                user=rental.user,
+                                popup_result_sn=popup_sn,
+                                discount=discount,
+                                actual_price=actual_price,
+                            )
+
+                            rental.rental_metadata['popup_verified'] = True
+                            rental.rental_metadata['popup_verified_at'] = timezone.now().isoformat()
+                            rental.rental_metadata['verified_powerbank_sn'] = popup_sn
+                            rental.save(update_fields=['rental_metadata'])
                         
                         return {"status": "verified", "powerbank_sn": popup_sn}
         
@@ -150,7 +195,7 @@ def verify_popup_completion(self, rental_id: str, station_sn: str, expected_powe
                                 award_points(
                                     rental.user,
                                     points_refund_amount,
-                                    'REFUND',
+                                    'RENTAL_PAYMENT',
                                     f'Refund for failed rental {rental.rental_code}',
                                     async_send=False,
                                     related_rental=rental

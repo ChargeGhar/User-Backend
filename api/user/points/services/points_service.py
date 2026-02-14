@@ -117,8 +117,18 @@ class PointsService(CRUDService):
             self.handle_service_error(e, "Failed to deduct points")
     
     @transaction.atomic
-    def adjust_points(self, user, points: int, adjustment_type: str, reason: str, admin_user=None) -> PointsTransaction:
-        """Admin adjustment of user points"""
+    def adjust_points(
+        self,
+        user,
+        points: int,
+        adjustment_type: str,
+        reason: str,
+        admin_user=None,
+        source: str = 'ADMIN_ADJUSTMENT',
+        related_rental=None,
+        metadata: Dict[str, Any] | None = None,
+    ) -> PointsTransaction:
+        """Adjust user points (admin by default, can be reused for controlled system adjustments)."""
         try:
             user_points = self.get_or_create_user_points(user)
             
@@ -137,22 +147,27 @@ class PointsService(CRUDService):
             
             user_points.save(update_fields=['current_points', 'total_points', 'last_updated'])
             
+            txn_metadata = {
+                'admin_user_id': str(admin_user.id) if admin_user else None,
+                'adjustment_type': adjustment_type
+            }
+            if metadata:
+                txn_metadata.update(metadata)
+
             # Create transaction record
             points_transaction = PointsTransaction.objects.create(
                 user=user,
                 transaction_type=transaction_type,
-                source='ADMIN_ADJUSTMENT',
+                source=source,
                 points=points,
                 balance_before=balance_before,
                 balance_after=user_points.current_points,
                 description=reason,
-                metadata={
-                    'admin_user_id': str(admin_user.id) if admin_user else None,
-                    'adjustment_type': adjustment_type
-                }
+                metadata=txn_metadata,
+                related_rental=related_rental,
             )
             
-            self.log_info(f"Points adjusted by admin: {user.username} {adjustment_type} {points}")
+            self.log_info(f"Points adjusted: {user.username} {adjustment_type} {points} ({source})")
             return points_transaction
             
         except Exception as e:
@@ -218,12 +233,12 @@ class PointsService(CRUDService):
             
             points_from_rentals = transactions.filter(
                 transaction_type='EARNED',
-                source='RENTAL'
+                source__in=['RENTAL_COMPLETE', 'RENTAL']
             ).aggregate(total=Sum('points'))['total'] or 0
             
             points_from_timely_returns = transactions.filter(
                 transaction_type='EARNED',
-                source='TIMELY_RETURN'
+                source__in=['TIMELY_RETURN', 'ON_TIME_RETURN']
             ).aggregate(total=Sum('points'))['total'] or 0
             
             points_from_coupons = transactions.filter(

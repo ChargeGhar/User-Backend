@@ -8,6 +8,22 @@ from decimal import Decimal
 from typing import Dict, Any, Optional
 
 
+def _extract_discount_info(metadata: Dict[str, Any]) -> Dict[str, Any]:
+    """Support both legacy nested and current flat discount metadata shapes."""
+    payload = metadata or {}
+    discount_info = payload.get('discount')
+    if isinstance(discount_info, dict) and discount_info:
+        return discount_info
+
+    nested = payload.get('discount_metadata', {})
+    if isinstance(nested, dict):
+        nested_discount = nested.get('discount', {})
+        if isinstance(nested_discount, dict):
+            return nested_discount
+
+    return {}
+
+
 def build_rental_success_data(rental) -> Dict[str, Any]:
     """
     Build success response data with nested structure.
@@ -21,12 +37,11 @@ def build_rental_success_data(rental) -> Dict[str, Any]:
     metadata = rental.rental_metadata or {}
     
     # Extract discount info from metadata
-    discount_metadata = metadata.get('discount_metadata', {})
-    discount_info = discount_metadata.get('discount', {})
+    discount_info = _extract_discount_info(metadata)
     
     original_price = str(rental.package.price)
     discount_amount = str(discount_info.get('discount_amount', '0.00'))
-    actual_price = str(discount_info.get('actual_price', rental.package.price))
+    actual_price = str(discount_info.get('final_price', rental.package.price))
     
     return {
         'rental_id': str(rental.id),
@@ -94,17 +109,17 @@ def build_payment_breakdown(rental) -> Optional[Dict[str, Any]]:
     from api.user.payments.models import Transaction
     try:
         txn = Transaction.objects.filter(
-            rental=rental,
+            related_rental=rental,
             transaction_type='RENTAL',
             status='SUCCESS'
         ).first()
         
-        if txn and txn.transaction_metadata:
-            breakdown = txn.transaction_metadata.get('payment_breakdown', {})
+        if txn and txn.gateway_response:
+            breakdown = txn.gateway_response
             return {
-                'wallet_amount': str(breakdown.get('wallet_amount', '0.00')),
-                'points_used': int(breakdown.get('points_used', 0)),
-                'points_amount': str(breakdown.get('points_amount', '0.00'))
+                'wallet_amount': str(Decimal(str(breakdown.get('wallet_amount', '0.00'))).quantize(Decimal('0.01'))),
+                'points_used': int(breakdown.get('points_used', 0) or 0),
+                'points_amount': str(Decimal(str(breakdown.get('points_amount', '0.00'))).quantize(Decimal('0.01')))
             }
     except Exception:
         pass
@@ -146,14 +161,13 @@ def build_discount_data(rental) -> Optional[Dict[str, Any]]:
         Discount data dict or None
     """
     metadata = rental.rental_metadata or {}
-    discount_metadata = metadata.get('discount_metadata', {})
-    discount_info = discount_metadata.get('discount', {})
+    discount_info = _extract_discount_info(metadata)
     
     if not discount_info:
         return None
     
     return {
-        'id': discount_info.get('id'),
+        'id': discount_info.get('discount_id') or discount_info.get('id'),
         'code': discount_info.get('code'),
         'discount_percent': str(discount_info.get('discount_percent', '0.00')),
         'discount_amount': str(discount_info.get('discount_amount', '0.00')),

@@ -174,7 +174,7 @@ class RentalPaymentService(BaseService):
                 deduct_points(
                     user,
                     points_to_use,
-                    'DUE_PAYMENT',
+                    'RENTAL_PAYMENT',
                     f"Due payment for rental {rental.rental_code}",
                     async_send=False,
                     related_rental=rental
