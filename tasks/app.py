@@ -15,12 +15,6 @@ from api.config import celery as config
 app = Celery("main")
 app.config_from_object(config)
 
-# Enforce runtime broker/backend from resolved config values.
-# This prevents plain env URLs (without Redis auth) from overriding
-# password-injected values computed in api.config.celery.
-app.conf.broker_url = config.broker_url
-app.conf.result_backend = config.result_backend
-
 # Auto-discover tasks from all apps
 app.autodiscover_tasks(
     [

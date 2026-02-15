@@ -4,12 +4,11 @@ import logging
 from os import getenv
 from typing import Any
 
-from api.config.redis import get_redis_url
-
 logger = logging.getLogger(__name__)
 
 USE_REDIS_FOR_CACHE = getenv("USE_REDIS_FOR_CACHE", default="true").lower() == "true"
-REDIS_URL = get_redis_url()
+REDIS_URL = getenv("REDIS_URL", default="redis://localhost:6379/0")
+REDIS_PASSWORD = getenv("REDIS_PASSWORD", "")
 
 CACHES: dict[str, Any] = {}
 
@@ -20,6 +19,7 @@ if USE_REDIS_FOR_CACHE:
         "LOCATION": REDIS_URL,
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            **({"PASSWORD": REDIS_PASSWORD} if REDIS_PASSWORD else {}),
         },
     }
 
