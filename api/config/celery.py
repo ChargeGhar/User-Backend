@@ -7,6 +7,7 @@ from api.config.redis import get_redis_url
 
 broker_url = getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 result_backend = get_redis_url(getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0"))
+redis_password = getenv("REDIS_PASSWORD") or None
 
 task_serializer = "json"
 result_serializer = "json"
