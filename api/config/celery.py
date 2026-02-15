@@ -3,9 +3,10 @@ from __future__ import annotations
 from os import getenv
 
 from api.config.application import TIME_ZONE
+from api.config.redis import get_redis_url
 
 broker_url = getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
-result_backend = getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+result_backend = get_redis_url(getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0"))
 
 task_serializer = "json"
 result_serializer = "json"

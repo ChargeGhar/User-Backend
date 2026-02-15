@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rental Flow Tester</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5efe6;
+      --ink: #1b2330;
+      --muted: #556275;
+      --line: #d7dce0;
+      --card: #ffffff;
+      --accent: #cc4c06;
+      --accent2: #0a7d7d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Space Grotesk", "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 10% 10%, #fff8ed, transparent 30%),
+        radial-gradient(circle at 90% 90%, #ddf1ef, transparent 35%),
+        var(--bg);
+      color: var(--ink);
+    }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 16px; }
+    .hero {
+      border: 2px solid var(--ink); border-radius: 12px; background: #fff;
+      padding: 14px; margin-bottom: 12px;
+    }
+    .hero h1 { margin: 0 0 6px; font-size: 1.4rem; }
+    .hero p { margin: 0; color: var(--muted); }
+    .grid { display: grid; gap: 10px; grid-template-columns: repeat(12, 1fr); }
+    .card {
+      grid-column: span 12;
+      border: 2px solid var(--ink); border-radius: 12px; background: var(--card);
+      padding: 12px;
+    }
+    .card h2 { margin: 0 0 8px; font-size: 1rem; }
+    .inputs { display: grid; grid-template-columns: repeat(12, 1fr); gap: 8px; }
+    .f { grid-column: span 12; }
+    .f.half { grid-column: span 6; }
+    .f.third { grid-column: span 4; }
+    label { display: block; margin-bottom: 4px; font-size: .82rem; color: var(--muted); font-weight: 700; }
+    input, select {
+      width: 100%; border: 2px solid var(--line); border-radius: 8px; padding: 8px 9px;
+      font-size: .9rem; color: var(--ink); background: #fff;
+    }
+    input:focus, select:focus { outline: none; border-color: var(--accent); }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    button {
+      border: 2px solid var(--ink); border-radius: 8px; padding: 8px 11px;
+      background: #fff; color: var(--ink); cursor: pointer; font-weight: 700;
+    }
+    .pri { background: var(--accent); color: #fff; }
+    .sec { background: var(--accent2); color: #fff; }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .status {
+      margin-top: 8px; padding: 8px 10px; border: 2px solid var(--ink);
+      border-radius: 8px; background: #fff; font-size: .9rem;
+    }
+    .code, .log {
+      background: #161d27; color: #dce2ea; border: 2px solid #2d3747;
+      border-radius: 8px; padding: 10px; font-family: Consolas, monospace;
+      white-space: pre-wrap; word-break: break-word; overflow: auto;
+    }
+    .code { min-height: 110px; max-height: 250px; font-size: .8rem; }
+    .log { min-height: 240px; max-height: 340px; font-size: .82rem; }
+    @media (min-width: 960px) {
+      .start { grid-column: span 6; }
+      .due { grid-column: span 6; }
+      .cancel { grid-column: span 6; }
+      .snap { grid-column: span 6; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <h1>Rental Flow Tester</h1>
+    <p>Temporary UI. Calls existing APIs only: <code>/rentals/start</code>, <code>/rentals/{id}/pay-due</code>, <code>/rentals/{id}/cancel</code>.</p>
+  </section>
+
+  <main class="grid">
+    <section class="card">
+      <h2>Config</h2>
+      <div class="inputs">
+        <div class="f half">
+          <label for="apiBase">API Base URL</label>
+          <input id="apiBase" type="text" placeholder="http://localhost:8010/api">
+        </div>
+        <div class="f half">
+          <label for="token">Bearer Token</label>
+          <input id="token" type="text" placeholder="eyJ...">
+        </div>
+      </div>
+      <div class="row">
+        <button id="loadAll" class="sec">Load Stations / Packages / Methods / Rentals</button>
+        <button id="loadRentals">Refresh Rentals</button>
+        <button id="openGateway" disabled>Open Gateway From Last payment_required</button>
+        <button id="clearLog">Clear Log</button>
+      </div>
+      <div id="status" class="status">Ready.</div>
+    </section>
+
+    <section class="card start">
+      <h2>Start Rental</h2>
+      <div class="row">
+        <button data-preset="prepaid_wallet">PREPAID wallet</button>
+        <button data-preset="prepaid_split">PREPAID wallet_points</button>
+        <button data-preset="prepaid_direct">PREPAID direct</button>
+        <button data-preset="postpaid_wallet">POSTPAID wallet</button>
+        <button data-preset="postpaid_direct">POSTPAID direct</button>
+      </div>
+      <div class="inputs">
+        <div class="f"><label for="startStation">station_sn</label><select id="startStation"></select></div>
+        <div class="f"><label for="startPackage">package_id</label><select id="startPackage"></select></div>
+        <div class="f third">
+          <label for="startMode">payment_mode</label>
+          <select id="startMode">
+            <option value="wallet">wallet</option>
+            <option value="points">points</option>
+            <option value="wallet_points" selected>wallet_points</option>
+            <option value="direct">direct</option>
+          </select>
+        </div>
+        <div class="f third"><label for="startWalletAmount">wallet_amount</label><input id="startWalletAmount" type="text" placeholder="20.00"></div>
+        <div class="f third"><label for="startPointsToUse">points_to_use</label><input id="startPointsToUse" type="number" placeholder="300"></div>
+        <div class="f half"><label for="startMethod">payment_method_id</label><select id="startMethod"></select></div>
+        <div class="f half"><label for="startPowerbank">powerbank_sn (optional)</label><input id="startPowerbank" type="text"></div>
+      </div>
+      <div class="row"><button id="startBtn" class="pri">Start Rental</button></div>
+    </section>
+
+    <section class="card due">
+      <h2>Pay Due</h2>
+      <div class="inputs">
+        <div class="f"><label for="dueSelect">Due rentals (payment_status=PENDING)</label><select id="dueSelect"></select></div>
+        <div class="f"><label for="dueRentalId">rental_id</label><input id="dueRentalId" type="text"></div>
+        <div class="f third">
+          <label for="dueMode">payment_mode</label>
+          <select id="dueMode">
+            <option value="wallet">wallet</option>
+            <option value="points">points</option>
+            <option value="wallet_points" selected>wallet_points</option>
+            <option value="direct">direct</option>
+          </select>
+        </div>
+        <div class="f third"><label for="dueWalletAmount">wallet_amount</label><input id="dueWalletAmount" type="text" placeholder="20.00"></div>
+        <div class="f third"><label for="duePointsToUse">points_to_use</label><input id="duePointsToUse" type="number" placeholder="100"></div>
+        <div class="f"><label for="dueMethod">payment_method_id</label><select id="dueMethod"></select></div>
+      </div>
+      <div class="row"><button id="dueBtn" class="pri">Pay Due</button></div>
+    </section>
+
+    <section class="card cancel">
+      <h2>Cancel Rental</h2>
+      <div class="inputs">
+        <div class="f"><label for="cancelSelect">Cancelable rentals (PENDING/PENDING_POPUP/ACTIVE)</label><select id="cancelSelect"></select></div>
+        <div class="f"><label for="cancelRentalId">rental_id</label><input id="cancelRentalId" type="text"></div>
+        <div class="f"><label for="cancelReason">reason</label><input id="cancelReason" type="text" value="manual test cancel"></div>
+      </div>
+      <div class="row"><button id="cancelBtn" class="pri">Cancel Rental</button></div>
+    </section>
+
+    <section class="card snap">
+      <h2>Rental Snapshot</h2>
+      <div id="snapshot" class="code">Load rentals to view current state.</div>
+    </section>
+
+    <section class="card">
+      <h2>Last Request / Response</h2>
+      <div class="inputs">
+        <div class="f half"><label>Request</label><div id="lastReq" class="code">-</div></div>
+        <div class="f half"><label>Response</label><div id="lastRes" class="code">-</div></div>
+      </div>
+      <label style="display:block;margin:8px 0 4px;font-size:.82rem;color:var(--muted);font-weight:700;">Flow Log</label>
+      <div id="log" class="log">[ready] tester initialized.</div>
+    </section>
+  </main>
+</div>
+
+<script>
+(() => {
+  const state = { stations: [], packages: [], methods: [], rentals: [], gateway: null };
+  const key = "rentalFlowTesterToken";
+
+  const $ = (id) => document.getElementById(id);
+  const el = {
+    apiBase: $("apiBase"), token: $("token"), status: $("status"), log: $("log"),
+    loadAll: $("loadAll"), loadRentals: $("loadRentals"), openGateway: $("openGateway"), clearLog: $("clearLog"),
+    startStation: $("startStation"), startPackage: $("startPackage"), startMode: $("startMode"),
+    startWalletAmount: $("startWalletAmount"), startPointsToUse: $("startPointsToUse"),
+    startMethod: $("startMethod"), startPowerbank: $("startPowerbank"), startBtn: $("startBtn"),
+    dueSelect: $("dueSelect"), dueRentalId: $("dueRentalId"), dueMode: $("dueMode"),
+    dueWalletAmount: $("dueWalletAmount"), duePointsToUse: $("duePointsToUse"), dueMethod: $("dueMethod"), dueBtn: $("dueBtn"),
+    cancelSelect: $("cancelSelect"), cancelRentalId: $("cancelRentalId"), cancelReason: $("cancelReason"), cancelBtn: $("cancelBtn"),
+    snapshot: $("snapshot"), lastReq: $("lastReq"), lastRes: $("lastRes")
+  };
+
+  const now = () => new Date().toLocaleTimeString();
+  const pretty = (v) => JSON.stringify(v, null, 2);
+  const has = (v) => v !== undefined && v !== null && String(v).trim() !== "";
+  const base = () => (el.apiBase.value || "").trim().replace(/\/+$/, "") || (window.location.origin + "/api");
+  const token = () => (el.token.value || "").trim();
+
+  function setStatus(message) { el.status.textContent = message; }
+  function log(message) {
+    el.log.textContent += "\n[" + now() + "] " + message;
+    el.log.scrollTop = el.log.scrollHeight;
+  }
+  function parseJson(text) { try { return JSON.parse(text); } catch { return null; } }
+  function clearSelect(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+  function addOpt(node, value, text) { const o = document.createElement("option"); o.value = value; o.textContent = text; node.appendChild(o); }
+
+  function detectGatewayPayload(responsePayload) {
+    state.gateway = null;
+    el.openGateway.disabled = true;
+    if (!responsePayload) return;
+    let payload = null;
+    if (responsePayload.data && (responsePayload.data.redirect_url || responsePayload.data.gateway_url)) {
+      payload = responsePayload.data;
+    } else if (responsePayload.data && responsePayload.data.error && responsePayload.data.error.context) {
+      const ctx = responsePayload.data.error.context;
+      if (ctx.redirect_url || ctx.gateway_url) payload = ctx;
+    }
+    if (payload) {
+      state.gateway = payload;
+      el.openGateway.disabled = false;
+      log("payment_required payload captured.");
+    }
+  }
+
+  async function api(path, method = "GET", payload = null) {
+    const url = base() + path;
+    const headers = { "Accept": "application/json" };
+    if (token()) headers["Authorization"] = "Bearer " + token();
+    if (payload !== null) headers["Content-Type"] = "application/json";
+
+    el.lastReq.textContent = pretty({ method, url, payload });
+    const res = await fetch(url, { method, headers, body: payload !== null ? JSON.stringify(payload) : undefined });
+    const raw = await res.text();
+    const json = parseJson(raw);
+    el.lastRes.textContent = pretty(json || { status: res.status, raw });
+    detectGatewayPayload(json);
+    return { status: res.status, body: json, raw };
+  }
+
+  function applyReferenceData() {
+    clearSelect(el.startStation); addOpt(el.startStation, "", "-- select station --");
+    state.stations.forEach((s) => addOpt(el.startStation, s.serial_number || "", (s.name || s.station_name || "station") + " [" + (s.serial_number || "") + "]"));
+
+    clearSelect(el.startPackage); addOpt(el.startPackage, "", "-- select package --");
+    state.packages.forEach((p) => addOpt(el.startPackage, p.id, p.name + " | " + p.payment_model + " | NPR " + p.price));
+
+    [el.startMethod, el.dueMethod].forEach((node) => {
+      clearSelect(node); addOpt(node, "", "-- optional --");
+      state.methods.forEach((m) => addOpt(node, m.id, m.name + " (" + String(m.gateway || "").toUpperCase() + ")"));
+    });
+
+    clearSelect(el.dueSelect); addOpt(el.dueSelect, "", "-- select due rental --");
+    clearSelect(el.cancelSelect); addOpt(el.cancelSelect, "", "-- select cancelable rental --");
+    const due = state.rentals.filter((r) => r.payment_status === "PENDING");
+    const cancelable = state.rentals.filter((r) => ["PENDING", "PENDING_POPUP", "ACTIVE"].includes(r.status));
+    due.forEach((r) => addOpt(el.dueSelect, r.id, r.rental_code + " | " + r.status + " | " + r.payment_status));
+    cancelable.forEach((r) => addOpt(el.cancelSelect, r.id, r.rental_code + " | " + r.status + " | " + r.payment_status));
+    el.snapshot.textContent = pretty({
+      due_count: due.length,
+      cancelable_count: cancelable.length,
+      rentals: state.rentals.slice(0, 30).map((r) => ({
+        id: r.id, rental_code: r.rental_code, status: r.status, payment_status: r.payment_status,
+        amount_paid: r.amount_paid, overdue_amount: r.overdue_amount
+      }))
+    });
+  }
+
+  async function loadAllData() {
+    setStatus("Loading reference data...");
+    const s = await api("/stations?page=1&page_size=50");
+    state.stations = ((((s.body || {}).data || {}).results) || []);
+    log("stations: " + state.stations.length);
+
+    const p = await api("/payments/packages");
+    state.packages = ((((p.body || {}).data || {}).packages) || []);
+    log("packages: " + state.packages.length);
+
+    const m = await api("/payments/methods");
+    state.methods = ((((m.body || {}).data || {}).payment_methods) || []);
+    log("methods: " + state.methods.length);
+
+    const r = await api("/rentals/history?page=1&page_size=50");
+    state.rentals = ((((r.body || {}).data || {}).rentals) || []);
+    log("rentals: " + state.rentals.length);
+
+    applyReferenceData();
+    setStatus("Reference data loaded.");
+  }
+
+  async function refreshRentals() {
+    const r = await api("/rentals/history?page=1&page_size=50");
+    state.rentals = ((((r.body || {}).data || {}).rentals) || []);
+    applyReferenceData();
+    log("rentals refreshed: " + state.rentals.length);
+  }
+
+  function choosePackageByModel(model) {
+    const pkg = state.packages.find((p) => p.payment_model === model);
+    if (pkg) el.startPackage.value = pkg.id;
+  }
+
+  function applyPreset(name) {
+    if (name === "prepaid_wallet") {
+      choosePackageByModel("PREPAID"); el.startMode.value = "wallet"; el.startWalletAmount.value = ""; el.startPointsToUse.value = "";
+    } else if (name === "prepaid_split") {
+      choosePackageByModel("PREPAID"); el.startMode.value = "wallet_points"; el.startWalletAmount.value = "20.00"; el.startPointsToUse.value = "300";
+    } else if (name === "prepaid_direct") {
+      choosePackageByModel("PREPAID"); el.startMode.value = "direct"; el.startWalletAmount.value = ""; el.startPointsToUse.value = "";
+    } else if (name === "postpaid_wallet") {
+      choosePackageByModel("POSTPAID"); el.startMode.value = "wallet"; el.startWalletAmount.value = ""; el.startPointsToUse.value = "";
+    } else if (name === "postpaid_direct") {
+      choosePackageByModel("POSTPAID"); el.startMode.value = "direct"; el.startWalletAmount.value = ""; el.startPointsToUse.value = "";
+    }
+    log("preset applied: " + name);
+    setStatus("Preset applied: " + name);
+  }
+
+  function startPayload() {
+    const payload = { station_sn: el.startStation.value, package_id: el.startPackage.value, payment_mode: el.startMode.value };
+    if (has(el.startPowerbank.value)) payload.powerbank_sn = el.startPowerbank.value.trim();
+    if (has(el.startMethod.value)) payload.payment_method_id = el.startMethod.value;
+    if (has(el.startWalletAmount.value)) payload.wallet_amount = el.startWalletAmount.value.trim();
+    if (has(el.startPointsToUse.value)) payload.points_to_use = Number(el.startPointsToUse.value);
+    return payload;
+  }
+
+  function duePayload() {
+    const payload = { payment_mode: el.dueMode.value };
+    if (has(el.dueMethod.value)) payload.payment_method_id = el.dueMethod.value;
+    if (has(el.dueWalletAmount.value)) payload.wallet_amount = el.dueWalletAmount.value.trim();
+    if (has(el.duePointsToUse.value)) payload.points_to_use = Number(el.duePointsToUse.value);
+    return payload;
+  }
+
+  async function startRental() {
+    const payload = startPayload();
+    if (!payload.station_sn || !payload.package_id) { setStatus("Start requires station_sn and package_id."); return; }
+    const res = await api("/rentals/start", "POST", payload);
+    log("start status: " + res.status);
+    if (res.body && res.body.data && res.body.data.rental_id) {
+      el.cancelRentalId.value = res.body.data.rental_id;
+      el.dueRentalId.value = res.body.data.rental_id;
+    }
+    await refreshRentals();
+    setStatus("Start completed with HTTP " + res.status);
+  }
+
+  async function payDue() {
+    const rid = (el.dueRentalId.value || "").trim();
+    if (!rid) { setStatus("Pay-due requires rental_id."); return; }
+    const res = await api("/rentals/" + rid + "/pay-due", "POST", duePayload());
+    log("pay-due status: " + res.status);
+    await refreshRentals();
+    setStatus("Pay-due completed with HTTP " + res.status);
+  }
+
+  async function cancelRental() {
+    const rid = (el.cancelRentalId.value || "").trim();
+    if (!rid) { setStatus("Cancel requires rental_id."); return; }
+    const res = await api("/rentals/" + rid + "/cancel", "POST", { reason: (el.cancelReason.value || "").trim() });
+    log("cancel status: " + res.status);
+    await refreshRentals();
+    setStatus("Cancel completed with HTTP " + res.status);
+  }
+
+  function openGateway() {
+    if (!state.gateway) { setStatus("No gateway payload available."); return; }
+    const url = state.gateway.redirect_url || state.gateway.gateway_url;
+    const method = String(state.gateway.redirect_method || "GET").toUpperCase();
+    const fields = state.gateway.form_fields || {};
+    if (!url) { setStatus("Gateway payload has no URL."); return; }
+
+    if (method === "POST") {
+      const form = document.createElement("form");
+      form.method = "POST"; form.action = url; form.target = "_blank";
+      Object.keys(fields).forEach((k) => {
+        const i = document.createElement("input");
+        i.type = "hidden"; i.name = k; i.value = String(fields[k]);
+        form.appendChild(i);
+      });
+      document.body.appendChild(form); form.submit(); document.body.removeChild(form);
+      log("gateway opened with POST form.");
+    } else {
+      window.open(url, "_blank");
+      log("gateway opened with GET redirect.");
+    }
+  }
+
+  function bind() {
+    el.loadAll.addEventListener("click", loadAllData);
+    el.loadRentals.addEventListener("click", refreshRentals);
+    el.startBtn.addEventListener("click", startRental);
+    el.dueBtn.addEventListener("click", payDue);
+    el.cancelBtn.addEventListener("click", cancelRental);
+    el.openGateway.addEventListener("click", openGateway);
+    el.clearLog.addEventListener("click", () => { el.log.textContent = "[ready] log cleared."; });
+    el.dueSelect.addEventListener("change", () => { el.dueRentalId.value = el.dueSelect.value; });
+    el.cancelSelect.addEventListener("change", () => { el.cancelRentalId.value = el.cancelSelect.value; });
+    el.token.addEventListener("change", () => { localStorage.setItem(key, el.token.value || ""); });
+    document.querySelectorAll("[data-preset]").forEach((btn) => btn.addEventListener("click", () => applyPreset(btn.dataset.preset)));
+  }
+
+  function init() {
+    el.apiBase.value = window.location.origin + "/api";
+    el.token.value = localStorage.getItem(key) || "";
+    bind();
+    log("api base: " + base());
+    log("set token and load data.");
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

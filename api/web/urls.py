@@ -16,6 +16,7 @@ from drf_spectacular.views import (
 )
 
 from api.config.silk import USE_SILK
+from api.internal.views import rental_flow_tester_view
 from api.config.storage import (
     USE_S3_FOR_MEDIA,
     USE_S3_FOR_STATIC,
@@ -59,6 +60,7 @@ _swagger_urlpatterns = [
 urlpatterns = [
     *_swagger_urlpatterns,
     path("", lambda _request: redirect("docs/"), name="home"),
+    path("tools/rental-flow-tester/", rental_flow_tester_view, name="rental-flow-tester"),
     path("admin/", admin.site.urls),
     
     # Django Allauth URLs

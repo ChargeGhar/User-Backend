@@ -768,5 +768,19 @@
       "created_at": "2026-01-30T10:00:00Z",
       "updated_at": "2026-01-30T10:00:00Z"
     }
+  },
+  {
+    "model": "notifications.notificationtemplate",
+    "pk": 56,
+    "fields": {
+      "name": "Rental Popup Failed",
+      "slug": "rental_popup_failed",
+      "notification_type": "rental",
+      "title_template": "Rental Start Failed",
+      "message_template": "We could not start your rental {{rental_code}} at {{station_name}}. If payment was collected, refund has been processed automatically.",
+      "is_active": true,
+      "created_at": "2026-02-14T10:00:00Z",
+      "updated_at": "2026-02-14T10:00:00Z"
+    }
   }
 ]

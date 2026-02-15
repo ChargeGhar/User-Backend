@@ -4,13 +4,12 @@ import logging
 from os import getenv
 from typing import Any
 
-from django.core.cache import cache
-from redis.exceptions import RedisError
+from api.config.redis import get_redis_url
 
 logger = logging.getLogger(__name__)
 
 USE_REDIS_FOR_CACHE = getenv("USE_REDIS_FOR_CACHE", default="true").lower() == "true"
-REDIS_URL = getenv("REDIS_URL", default="redis://localhost:6379/0")
+REDIS_URL = get_redis_url()
 
 CACHES: dict[str, Any] = {}
 
