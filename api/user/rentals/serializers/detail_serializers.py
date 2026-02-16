@@ -124,11 +124,9 @@ class RentalDetailSerializer(serializers.ModelSerializer):
     
     @extend_schema_field(serializers.BooleanField)
     def get_is_overdue(self, obj) -> bool:
-        if not obj.started_at:
-            return False
-        if obj.status not in ['ACTIVE', 'OVERDUE']:
-            return False
-        return timezone.now() > obj.due_at if obj.due_at else False
+        # Overdue means the rental crossed due_at, regardless of final status.
+        # Returned-late rentals are marked COMPLETED by business logic.
+        return bool(obj.minutes_overdue > 0)
 
     @extend_schema_field(
         {
