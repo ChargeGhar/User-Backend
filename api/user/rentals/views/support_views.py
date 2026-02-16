@@ -43,14 +43,6 @@ class RentalPayDueView(GenericAPIView, BaseAPIView):
     serializer_class = serializers.RentalPayDueSerializer
     permission_classes = [IsAuthenticated]
 
-    BUSINESS_BLOCKING_CODES = {
-        "payment_required",
-        "payment_method_required",
-        "invalid_payment_mode",
-        "invalid_wallet_points_split",
-        "split_total_mismatch",
-    }
-
     @extend_schema(
         summary="Settle Rental Dues",
         description=(
@@ -82,7 +74,7 @@ class RentalPayDueView(GenericAPIView, BaseAPIView):
         1. Validate request.
         2. Validate rental and required due.
         3. Delegate payment decision + processing to service.
-        4. Return success or wrapped business-blocking error.
+        4. Return success or standardized error response.
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -165,16 +157,6 @@ class RentalPayDueView(GenericAPIView, BaseAPIView):
                         "data": error_context
                     },
                     status=status.HTTP_402_PAYMENT_REQUIRED
-                )
-            elif error_code in self.BUSINESS_BLOCKING_CODES:
-                # Other blocking codes stay HTTP 200
-                payload = {"code": error_code, "message": error_message}
-                if error_context is not None:
-                    payload["context"] = error_context
-                return self.success_response(
-                    data={"error": payload},
-                    message=error_message,
-                    status_code=status.HTTP_200_OK,
                 )
 
             return self.error_response(

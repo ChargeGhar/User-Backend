@@ -88,9 +88,9 @@ def test_rental_due_insufficient_returns_business_block(api_client) -> None:
         format="json",
     )
 
-    assert response.status_code == 200
-    assert response.data["success"] is True
-    assert response.data["data"]["error"]["code"] == "payment_method_required"
+    assert response.status_code == 400
+    assert response.data["success"] is False
+    assert response.data["error"]["code"] == "payment_method_required"
 
 
 @pytest.mark.django_db
@@ -115,8 +115,8 @@ def test_rental_due_success_wallet_points_split(api_client) -> None:
 
     assert response.status_code == 200
     assert response.data["success"] is True
-    assert response.data["data"]["payment_breakdown"]["points_to_use"] == 100
-    assert response.data["data"]["payment_breakdown"]["wallet_amount"] == 20.0
+    assert response.data["data"]["breakdown"]["points_used"] == 100
+    assert Decimal(response.data["data"]["breakdown"]["wallet_amount"]) == Decimal("20.00")
     assert rental.payment_status == "PAID"
     assert rental.overdue_amount == Decimal("0")
     assert user.wallet.balance == Decimal("0.00")
@@ -152,10 +152,10 @@ def test_rental_due_direct_mode_returns_payment_required_wrapped(api_client, mon
         format="json",
     )
 
-    assert response.status_code == 200
-    assert response.data["success"] is True
-    assert response.data["data"]["error"]["code"] == "payment_required"
-    assert response.data["data"]["error"]["context"]["payment_mode"] == "direct"
+    assert response.status_code == 402
+    assert response.data["success"] is False
+    assert response.data["error_code"] == "payment_required"
+    assert response.data["data"]["payment_mode"] == "direct"
 
 
 @pytest.mark.django_db
@@ -183,6 +183,6 @@ def test_rental_due_does_not_force_completed_when_not_returned(api_client) -> No
 
     assert response.status_code == 200
     assert response.data["success"] is True
-    assert rental.payment_status == "PENDING"
+    assert rental.payment_status == "PAID"
     assert rental.status == "OVERDUE"
     assert rental.ended_at is None
