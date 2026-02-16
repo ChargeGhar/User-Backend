@@ -80,6 +80,68 @@ class AdminPowerBankService(CRUDService):
         except Exception as e:
             self.handle_service_error(e, "Failed to get powerbanks list")
     
+    
+    def _get_lifecycle_section(self, powerbank: PowerBank) -> Dict[str, Any]:
+        """Get lifecycle section for powerbank detail"""
+        try:
+            stats = powerbank.get_lifecycle_stats()
+            recent_logs = powerbank.get_recent_cycle_logs(5)
+            
+            logs_data = []
+            for log in recent_logs:
+                logs_data.append({
+                    'rental_code': log.rental.rental_code if log.rental else None,
+                    'start_level': log.start_level,
+                    'end_level': log.end_level,
+                    'discharge_percent': str(log.discharge_percent),
+                    'cycle_contribution': str(log.cycle_contribution),
+                    'created_at': log.created_at
+                })
+            
+            return {
+                'total_cycles': str(stats['total_cycles']),
+                'total_rentals': stats['total_rentals'],
+                'avg_cycles_per_rental': str(stats['avg_cycles_per_rental']),
+                'avg_discharge_per_rental': str(stats['avg_discharge_per_rental']),
+                'recent_cycle_logs': logs_data
+            }
+        except Exception as e:
+            self.log_error(f"Failed to get lifecycle section: {str(e)}")
+            return {
+                'total_cycles': str(powerbank.total_cycles),
+                'total_rentals': powerbank.total_rentals,
+                'avg_cycles_per_rental': '0',
+                'avg_discharge_per_rental': '0',
+                'recent_cycle_logs': []
+            }
+    
+    def _get_fleet_lifecycle_stats(self) -> Dict[str, Any]:
+        """Get fleet-wide lifecycle statistics"""
+        try:
+            from django.db.models import Sum, Avg
+            
+            fleet_stats = PowerBank.objects.aggregate(
+                total_cycles_fleet=Sum('total_cycles'),
+                avg_cycles_per_powerbank=Avg('total_cycles'),
+                total_rentals_fleet=Sum('total_rentals')
+            )
+            
+            high_cycle_count = PowerBank.objects.filter(total_cycles__gte=500).count()
+            
+            return {
+                'total_cycles_fleet': str(fleet_stats['total_cycles_fleet'] or 0),
+                'avg_cycles_per_powerbank': str(fleet_stats['avg_cycles_per_powerbank'] or 0),
+                'total_rentals_fleet': fleet_stats['total_rentals_fleet'] or 0,
+                'high_cycle_powerbanks': high_cycle_count
+            }
+        except Exception as e:
+            self.log_error(f"Failed to get fleet lifecycle stats: {str(e)}")
+            return {
+                'total_cycles_fleet': '0',
+                'avg_cycles_per_powerbank': '0',
+                'total_rentals_fleet': 0,
+                'high_cycle_powerbanks': 0
+            }
     def _format_powerbank_list_item(self, powerbank: PowerBank) -> Dict[str, Any]:
         """Format powerbank object for list response"""
         # Get current rental if rented
@@ -111,6 +173,8 @@ class AdminPowerBankService(CRUDService):
             'status': powerbank.status,
             'battery_level': powerbank.battery_level,
             'rental_count': powerbank.rental_count,
+            'total_cycles': str(powerbank.total_cycles),
+            'total_rentals': powerbank.total_rentals,
             'current_station': {
                 'id': str(powerbank.current_station.id),
                 'name': powerbank.current_station.station_name,
@@ -212,6 +276,7 @@ class AdminPowerBankService(CRUDService):
                     'completed_rentals': powerbank.completed_rentals,
                     'total_revenue': str(powerbank.total_revenue or 0)
                 },
+                'lifecycle': self._get_lifecycle_section(powerbank),
                 'recent_history': rental_history,
                 'last_updated': powerbank.last_updated,
                 'created_at': powerbank.created_at
@@ -378,6 +443,7 @@ class AdminPowerBankService(CRUDService):
                     )
                 },
                 'top_performers': top_performers_data,
+                'lifecycle_stats': self._get_fleet_lifecycle_stats(),
                 'station_distribution': [
                     {
                         'station': item['current_station__station_name'],

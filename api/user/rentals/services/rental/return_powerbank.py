@@ -50,9 +50,6 @@ class RentalReturnMixin:
 
             # Battery cycle tracking
             if rental.start_battery_level and battery_level:
-                from decimal import Decimal
-                from api.user.rentals.models import BatteryCycleLog
-
                 rental.return_battery_level = battery_level
 
                 # Check 5-minute rule
@@ -61,24 +58,12 @@ class RentalReturnMixin:
                     rental.is_under_5_min = True
                     rental.hardware_issue_reported = True
 
-                # Calculate and log cycle
-                discharge = max(0, rental.start_battery_level - battery_level)
-                if discharge > 0:
-                    cycle_contribution = Decimal(discharge) / Decimal(100)
-
-                    BatteryCycleLog.objects.create(
-                        powerbank=rental.power_bank,
-                        rental=rental,
-                        start_level=rental.start_battery_level,
-                        end_level=battery_level,
-                        discharge_percent=Decimal(discharge),
-                        cycle_contribution=cycle_contribution
-                    )
-
-                    # Update powerbank stats
-                    rental.power_bank.total_cycles += cycle_contribution
-                    rental.power_bank.total_rentals += 1
-                    rental.power_bank.save(update_fields=['total_cycles', 'total_rentals', 'updated_at'])
+                # Update battery cycle (creates log and updates totals)
+                rental.power_bank.update_battery_cycle(
+                    rental.start_battery_level,
+                    battery_level,
+                    rental
+                )
             
             rental.save(update_fields=[
                 'status', 'ended_at', 'return_station', 'is_returned_on_time',
