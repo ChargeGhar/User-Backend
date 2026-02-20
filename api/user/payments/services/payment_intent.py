@@ -29,10 +29,12 @@ class PaymentIntentService(CRUDService):
         try:
             payment_method = self.method_repository.get_by_id(payment_method_id)
             if not payment_method:
-                 raise ServiceException(
-                    detail="Invalid payment method",
+                raise ServiceException(
+                    detail="Invalid or inactive payment method",
                     code="invalid_payment_method"
                 )
+
+            self._validate_topup_customer_requirements(user, payment_method)
 
             # Validate amount against payment method limits
             if amount < payment_method.min_amount:
@@ -101,10 +103,7 @@ class PaymentIntentService(CRUDService):
                     amount=intent.amount,
                     order_id=intent.intent_id,
                     description=f"Wallet top-up - NPR {intent.amount}",
-                    customer_info={
-                        'name': getattr(intent.user, 'username', 'User'),
-                        'email': getattr(intent.user, 'email', '')
-                    }
+                    customer_info=self._build_khalti_customer_info(intent.user)
                 )
             else:
                 raise ServiceException(
@@ -116,6 +115,32 @@ class PaymentIntentService(CRUDService):
         except Exception as e:
             self.log_error(f"Gateway payment initiation failed: {str(e)}")
             raise
+
+    def _validate_topup_customer_requirements(self, user, payment_method) -> None:
+        """Validate customer profile requirements before gateway initiation."""
+        gateway = (payment_method.gateway or '').lower()
+
+        if gateway == 'khalti' and not getattr(user, 'email', None):
+            raise ServiceException(
+                detail="Email is required for Khalti payment. Please update your profile email first.",
+                code="khalti_email_required"
+            )
+
+    def _build_khalti_customer_info(self, user) -> Dict[str, str]:
+        """Build Khalti-compatible customer payload without null fields."""
+        customer_info: Dict[str, str] = {
+            'name': getattr(user, 'username', None) or 'User'
+        }
+
+        email = getattr(user, 'email', None)
+        if email:
+            customer_info['email'] = email
+
+        phone = getattr(user, 'phone_number', None)
+        if phone:
+            customer_info['phone'] = phone
+
+        return customer_info
 
     @transaction.atomic
     def verify_topup_payment(self, intent_id: str, callback_data: Dict[str, Any]) -> Dict[str, Any]:

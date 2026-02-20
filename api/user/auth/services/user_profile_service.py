@@ -1,8 +1,10 @@
 from __future__ import annotations
 from typing import Dict, Any, List
 from django.db import transaction
-from api.common.services.base import BaseService
-from api.user.auth.models import UserProfile
+
+from api.common.services.base import BaseService, ServiceException
+from api.common.utils.helpers import validate_phone_number
+from api.user.auth.models import User, UserProfile
 from api.user.auth.repositories import ProfileRepository, UserRepository
 from api.user.payments.repositories.wallet_repository import WalletRepository
 from api.user.points.repositories.point_repository import PointRepository
@@ -19,37 +21,178 @@ class UserProfileService(BaseService):
 
     @transaction.atomic
     def update_profile(self, user: User, validated_data: Dict[str, Any]) -> UserProfile:
-        """Update user profile and award completion points"""
+        """Update user profile and contact fields based on provider rules."""
         try:
             profile = self.profile_repo.get_by_user_id(user.id)
             if not profile:
                 profile = self.profile_repo.create_profile(user=user)
-            
+
             was_complete = profile.is_profile_complete
-            
-            # Update fields
+            missing = object()
+            requested_email = validated_data.pop('email', missing)
+            requested_phone = validated_data.pop('phone_number', missing)
+
+            contact_updates = self._resolve_contact_updates(
+                user=user,
+                requested_email=requested_email,
+                requested_phone=requested_phone,
+                missing=missing
+            )
+
+            user_update_fields = []
+
+            # Update profile fields
             for field, value in validated_data.items():
                 if value is not None:
                     setattr(profile, field, value)
+
                     # Sync avatar_url to user.profile_picture for consistency
-                    if field == 'avatar_url':
+                    if field == 'avatar_url' and user.profile_picture != value:
                         user.profile_picture = value
-                        user.save(update_fields=['profile_picture'])
-            
+                        user_update_fields.append('profile_picture')
+
+            # Apply user contact updates
+            for field, value in contact_updates.items():
+                if getattr(user, field) != value:
+                    setattr(user, field, value)
+                    user_update_fields.append(field)
+
+            if user_update_fields:
+                user.save(update_fields=list(set(user_update_fields)))
+
             # Check completeness
             required_fields = ['full_name', 'date_of_birth', 'address']
             profile.is_profile_complete = all(getattr(profile, field) for field in required_fields)
             profile.save()
-            
+
             if profile.is_profile_complete and not was_complete:
                 self._award_profile_completion_points(user)
             elif not profile.is_profile_complete:
                 self._send_completion_reminder(user, profile)
-                
+
             self.log_info(f"Profile updated for user: {user.username}")
             return profile
         except Exception as e:
             self.handle_service_error(e, "Failed to update profile")
+
+    def _resolve_contact_updates(
+        self,
+        user: User,
+        requested_email: Any,
+        requested_phone: Any,
+        missing: object
+    ) -> Dict[str, str]:
+        """Validate and resolve contact-field updates by social provider policy."""
+        provider = (user.social_provider or '').upper()
+        updates: Dict[str, str] = {}
+
+        if requested_email is not missing:
+            if requested_email is None:
+                raise ServiceException(
+                    detail="Email cannot be cleared from profile",
+                    code="email_immutable"
+                )
+
+            email = str(requested_email).strip().lower()
+            current_email = (user.email or '').strip().lower()
+
+            if provider in ('GOOGLE', 'APPLE'):
+                if email != current_email:
+                    raise ServiceException(
+                        detail="Email cannot be changed for social-login accounts",
+                        code="email_immutable"
+                    )
+            elif provider == 'EMAIL':
+                if email != current_email:
+                    raise ServiceException(
+                        detail="Primary email cannot be changed",
+                        code="email_immutable"
+                    )
+            elif provider == 'PHONE':
+                if current_email:
+                    if email != current_email:
+                        raise ServiceException(
+                            detail="Email is already set and cannot be changed",
+                            code="email_immutable"
+                        )
+                else:
+                    self._ensure_email_available(user=user, email=email)
+                    updates['email'] = email
+            else:
+                if current_email and email != current_email:
+                    raise ServiceException(
+                        detail="Email cannot be changed",
+                        code="email_immutable"
+                    )
+                if not current_email:
+                    self._ensure_email_available(user=user, email=email)
+                    updates['email'] = email
+
+        if requested_phone is not missing:
+            if requested_phone is None:
+                raise ServiceException(
+                    detail="Phone number cannot be cleared from profile",
+                    code="phone_immutable"
+                )
+
+            phone = str(requested_phone).strip()
+            current_phone = (user.phone_number or '').strip()
+
+            if not phone:
+                raise ServiceException(
+                    detail="Phone number cannot be empty",
+                    code="invalid_phone_number"
+                )
+
+            if not validate_phone_number(phone):
+                raise ServiceException(
+                    detail="Invalid phone number format",
+                    code="invalid_phone_number"
+                )
+
+            if provider == 'PHONE':
+                if phone != current_phone:
+                    raise ServiceException(
+                        detail="Primary phone number cannot be changed",
+                        code="phone_immutable"
+                    )
+            elif provider in ('EMAIL', 'GOOGLE', 'APPLE'):
+                if current_phone:
+                    if phone != current_phone:
+                        raise ServiceException(
+                            detail="Phone number is already set and cannot be changed",
+                            code="phone_immutable"
+                        )
+                else:
+                    self._ensure_phone_available(user=user, phone=phone)
+                    updates['phone_number'] = phone
+            else:
+                if current_phone and phone != current_phone:
+                    raise ServiceException(
+                        detail="Phone number cannot be changed",
+                        code="phone_immutable"
+                    )
+                if not current_phone:
+                    self._ensure_phone_available(user=user, phone=phone)
+                    updates['phone_number'] = phone
+
+        return updates
+
+    def _ensure_email_available(self, user: User, email: str) -> None:
+        """Ensure email is not already used by another user."""
+        if User.objects.filter(email=email).exclude(id=user.id).exists():
+            raise ServiceException(
+                detail="Email is already in use",
+                code="email_already_exists"
+            )
+
+    def _ensure_phone_available(self, user: User, phone: str) -> None:
+        """Ensure phone number is not already used by another user."""
+        if User.objects.filter(phone_number=phone).exclude(id=user.id).exists():
+            raise ServiceException(
+                detail="Phone number is already in use",
+                code="phone_already_exists"
+            )
 
     def get_detailed_profile(self, user: User) -> Dict[str, Any]:
         """Consolidate user data for /me endpoint"""

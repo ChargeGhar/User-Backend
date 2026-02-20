@@ -1,22 +1,41 @@
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from typing import Dict, Any
+
+from api.common.utils.helpers import validate_phone_number
 from api.user.auth.models import User, UserProfile
 
 class UserProfileSerializer(serializers.ModelSerializer):
     """Serializer for user profile"""
+    email = serializers.EmailField(required=False, allow_null=True, write_only=True)
+    phone_number = serializers.CharField(required=False, allow_null=True, write_only=True)
+
     class Meta:
         model = UserProfile
         fields = [
-            'id', 'full_name', 'date_of_birth', 'address', 
-            'avatar_url', 'is_profile_complete', 'created_at', 'updated_at'
+            'id', 'full_name', 'date_of_birth', 'address',
+            'avatar_url', 'email', 'phone_number',
+            'is_profile_complete', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'is_profile_complete', 'created_at', 'updated_at']
-    
+
     def validate_full_name(self, value):
         if value and len(value.strip()) < 2:
             raise serializers.ValidationError("Full name must be at least 2 characters")
         return value.strip() if value else value
+
+    def validate_phone_number(self, value):
+        if value is None:
+            return value
+
+        phone = value.strip()
+        if not phone:
+            return None
+
+        if not validate_phone_number(phone):
+            raise serializers.ValidationError("Invalid phone number format")
+
+        return phone
 
 class UserSerializer(serializers.ModelSerializer):
     """Standard user serializer with essential real-time data"""
