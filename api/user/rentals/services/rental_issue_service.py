@@ -16,11 +16,13 @@ Date: 2025-10-17
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Any
+from datetime import datetime
+from typing import TYPE_CHECKING, Dict, Any, Optional
 from django.db import transaction
 from django.contrib.auth import get_user_model
 
 from api.common.services.base import CRUDService, ServiceException
+from api.common.utils.helpers import paginate_queryset
 from api.user.rentals.models import RentalIssue, Rental
 
 if TYPE_CHECKING:
@@ -89,6 +91,44 @@ class RentalIssueService(CRUDService):
         except Exception as e:
             self.handle_service_error(e, "Failed to report rental issue")
     
+    def get_user_reported_issues_queryset(
+        self,
+        user: User,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ):
+        """Get base queryset for rental issues reported by user with optional date filtering."""
+        queryset = RentalIssue.objects.filter(
+            rental__user=user
+        ).select_related('rental').order_by('-reported_at', '-created_at')
+
+        if start_date:
+            queryset = queryset.filter(reported_at__gte=start_date)
+
+        if end_date:
+            queryset = queryset.filter(reported_at__lte=end_date)
+
+        return queryset
+
+    def get_user_reported_issues(
+        self,
+        user: User,
+        page: int = 1,
+        page_size: int = 20,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ) -> Dict[str, Any]:
+        """Get rental issues reported by user with pagination and optional date filtering."""
+        try:
+            queryset = self.get_user_reported_issues_queryset(
+                user=user,
+                start_date=start_date,
+                end_date=end_date,
+            )
+            return paginate_queryset(queryset, page, page_size)
+        except Exception as e:
+            self.handle_service_error(e, "Failed to get user reported rental issues")
+
     def _notify_admins_of_issue(
         self,
         rental: Rental,

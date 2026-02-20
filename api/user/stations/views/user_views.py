@@ -14,7 +14,10 @@ from api.common.routers import CustomViewRouter
 from api.common.mixins import BaseAPIView
 from api.common.decorators import log_api_call
 from api.user.stations import serializers
-from api.user.stations.services import StationFavoriteService, StationIssueService
+from api.user.stations.services import (
+    StationFavoriteService,
+    UserIssueReportService,
+)
 
 user_router = CustomViewRouter()
 logger = logging.getLogger(__name__)
@@ -67,47 +70,60 @@ class UserFavoriteStationsView(GenericAPIView, BaseAPIView):
 # USER STATION REPORTS (must be before <str:serial_number> route)
 # ===============================
 
-@user_router.register("stations/my-reports", name="user-station-reports")
+@user_router.register("issues/my-reports", name="user-issue-reports")
 @extend_schema(
     tags=["Stations"],
     summary="My Issue Reports",
-    description="Get issues reported by the authenticated user",
+    description="Get station and rental issues reported by the authenticated user",
     parameters=[
+        OpenApiParameter("issue_scope", OpenApiTypes.STR, description="all | station | rental"),
+        OpenApiParameter("start_date", OpenApiTypes.DATE, description="Filter from reported date (YYYY-MM-DD)"),
+        OpenApiParameter("end_date", OpenApiTypes.DATE, description="Filter to reported date (YYYY-MM-DD)"),
         OpenApiParameter("page", OpenApiTypes.INT, description="Page number"),
         OpenApiParameter("page_size", OpenApiTypes.INT, description="Items per page (max 50)"),
     ],
-    responses={200: serializers.UserStationReportsResponseSerializer}
+    responses={200: serializers.UserIssueReportsResponseSerializer}
 )
-class UserStationReportsView(GenericAPIView, BaseAPIView):
-    serializer_class = serializers.StationIssueSerializer
+class UserIssueReportsView(GenericAPIView, BaseAPIView):
     permission_classes = [IsAuthenticated]
-    
+
     @log_api_call()
     def get(self, request: Request) -> Response:
-        """Get user's reported issues"""
+        """Get unified issue reports for authenticated user."""
+
         def operation():
-            page = int(request.query_params.get('page', 1))
-            page_size = min(int(request.query_params.get('page_size', 20)), 50)
-            
-            issue_service = StationIssueService()
-            result = issue_service.get_user_reported_issues(request.user, page, page_size)
-            
-            serializer = self.get_serializer(
-                result.get('results', []), 
-                many=True, 
-                context={'request': request}
+            query_serializer = serializers.UserIssueReportsQuerySerializer(data=request.query_params)
+            query_serializer.is_valid(raise_exception=True)
+
+            issue_scope = query_serializer.validated_data.get('issue_scope', 'all')
+            page = query_serializer.validated_data.get('page', 1)
+            page_size = query_serializer.validated_data.get('page_size', 20)
+            start_date, end_date = query_serializer.get_reported_at_range()
+
+            issue_service = UserIssueReportService()
+            result = issue_service.get_user_issue_reports(
+                user=request.user,
+                issue_scope=issue_scope,
+                page=page,
+                page_size=page_size,
+                start_date=start_date,
+                end_date=end_date,
             )
-            
+
+            payload_serializer = serializers.UserIssueReportSerializer(
+                result.get('results', []), many=True, context={'request': request}
+            )
+
             return {
                 'count': result['pagination']['total_count'],
-                'next': result['pagination']['has_previous'],
+                'next': result['pagination']['has_next'],
                 'previous': result['pagination']['has_previous'],
-                'results': serializer.data
+                'results': payload_serializer.data,
             }
-        
+
         return self.handle_service_operation(
             operation,
             success_message="Reports retrieved successfully",
-            error_message="Failed to retrieve reports"
+            error_message="Failed to retrieve reports",
         )
 

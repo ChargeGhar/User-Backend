@@ -9,7 +9,8 @@ Date: 2025-10-18 23:01:23
 """
 from __future__ import annotations
 
-from typing import Dict, Any
+from datetime import datetime
+from typing import Dict, Any, Optional
 from django.db import transaction
 from django.utils import timezone
 from api.common.services.base import CRUDService, ServiceException
@@ -90,14 +91,41 @@ class StationIssueService(CRUDService):
     
 # REMOVED: get_station_issues - No corresponding view implemented
     
-    def get_user_reported_issues(self, user, page: int = 1, page_size: int = 20) -> Dict[str, Any]:
-        """Get issues reported by user"""
+    def get_user_reported_issues_queryset(
+        self,
+        user,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ):
+        """Get base queryset for station issues reported by user with optional date filtering."""
+        queryset = StationIssue.objects.filter(
+            reported_by=user
+        ).select_related('station').order_by('-reported_at', '-created_at')
+
+        if start_date:
+            queryset = queryset.filter(reported_at__gte=start_date)
+
+        if end_date:
+            queryset = queryset.filter(reported_at__lte=end_date)
+
+        return queryset
+
+    def get_user_reported_issues(
+        self,
+        user,
+        page: int = 1,
+        page_size: int = 20,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ) -> Dict[str, Any]:
+        """Get station issues reported by user with optional date filtering."""
         try:
-            queryset = StationIssue.objects.filter(
-                reported_by=user
-            ).select_related('station').order_by('-created_at')
-            
+            queryset = self.get_user_reported_issues_queryset(
+                user=user,
+                start_date=start_date,
+                end_date=end_date,
+            )
             return paginate_queryset(queryset, page, page_size)
-            
+
         except Exception as e:
             self.handle_service_error(e, "Failed to get user reported issues")

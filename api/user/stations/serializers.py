@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from typing import Optional
+from datetime import datetime, time
+
 from rest_framework import serializers
 from django.db.models import Count, Avg
+from django.utils import timezone
 from decimal import Decimal
 from drf_spectacular.utils import extend_schema_field
 
@@ -299,9 +302,79 @@ class UserFavoriteStationsResponseSerializer(serializers.Serializer):
     results = serializers.ListField(child=StationListSerializer())
 
 
-class UserStationReportsResponseSerializer(serializers.Serializer):
-    """Response serializer for user station reports"""
+class UserIssueReportsQuerySerializer(serializers.Serializer):
+    """Query serializer for unified issue reports endpoint."""
+    issue_scope = serializers.ChoiceField(
+        choices=['all', 'station', 'rental'],
+        required=False,
+        help_text="Scope of issue reports: all | station | rental"
+    )
+    start_date = serializers.DateField(required=False)
+    end_date = serializers.DateField(required=False)
+    page = serializers.IntegerField(default=1, min_value=1)
+    page_size = serializers.IntegerField(default=20, min_value=1, max_value=50)
+
+    def validate(self, attrs):
+        start_date = attrs.get('start_date')
+        end_date = attrs.get('end_date')
+
+        if start_date and end_date and start_date > end_date:
+            raise serializers.ValidationError("start_date cannot be after end_date")
+
+        return attrs
+
+    def get_reported_at_range(self) -> tuple[Optional[datetime], Optional[datetime]]:
+        """Build inclusive datetime range for reported_at from validated date inputs."""
+        start_date = self.validated_data.get('start_date')
+        end_date = self.validated_data.get('end_date')
+
+        start_dt = None
+        end_dt = None
+
+        if start_date:
+            start_dt = datetime.combine(start_date, time.min)
+            if timezone.is_naive(start_dt):
+                start_dt = timezone.make_aware(start_dt, timezone.get_current_timezone())
+
+        if end_date:
+            end_dt = datetime.combine(end_date, time.max)
+            if timezone.is_naive(end_dt):
+                end_dt = timezone.make_aware(end_dt, timezone.get_current_timezone())
+
+        return start_dt, end_dt
+
+
+class IssueStationMetaSerializer(serializers.Serializer):
+    """Station metadata inside unified issue row."""
+    id = serializers.UUIDField()
+    serial_number = serializers.CharField()
+    station_name = serializers.CharField()
+
+
+class IssueRentalMetaSerializer(serializers.Serializer):
+    """Rental metadata inside unified issue row."""
+    id = serializers.UUIDField()
+    rental_code = serializers.CharField()
+
+
+class UserIssueReportSerializer(serializers.Serializer):
+    """Unified issue row serializer for station and rental reports."""
+    id = serializers.UUIDField()
+    issue_scope = serializers.ChoiceField(choices=['station', 'rental'])
+    issue_type = serializers.CharField()
+    description = serializers.CharField()
+    images = serializers.ListField(child=serializers.CharField(), default=list)
+    status = serializers.CharField()
+    priority = serializers.CharField(allow_null=True, required=False)
+    reported_at = serializers.DateTimeField()
+    resolved_at = serializers.DateTimeField(allow_null=True, required=False)
+    station = IssueStationMetaSerializer(allow_null=True, required=False)
+    rental = IssueRentalMetaSerializer(allow_null=True, required=False)
+
+
+class UserIssueReportsResponseSerializer(serializers.Serializer):
+    """Response serializer for unified user issue reports."""
     count = serializers.IntegerField()
     next = serializers.BooleanField()
     previous = serializers.BooleanField()
-    results = serializers.ListField(child=StationIssueSerializer())
+    results = UserIssueReportSerializer(many=True)
