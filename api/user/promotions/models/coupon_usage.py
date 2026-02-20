@@ -15,7 +15,6 @@ class CouponUsage(BaseModel):
         db_table = "coupon_usages"
         verbose_name = "Coupon Usage"
         verbose_name_plural = "Coupon Usages"
-        unique_together = ['coupon', 'user']
     
     def __str__(self):
         return f"{self.user.username} used {self.coupon.code}"

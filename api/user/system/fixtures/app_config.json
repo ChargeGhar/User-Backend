@@ -225,7 +225,7 @@
     "pk": "550e8400-e29b-41d4-a716-446655440518",
     "fields": {
       "key": "NEED_RENTALS_PROFILE_COMPLETE",
-      "value": "true",
+      "value": "false",
       "description": "Whether users need to complete their profile before renting a power bank",
       "is_active": true,
       "is_public": true,
@@ -238,7 +238,7 @@
     "pk": "550e8400-e29b-41d4-a716-446655440519",
     "fields": {
       "key": "NEED_RENTALS_KYC_VERIFIED",
-      "value": "true",
+      "value": "false",
       "description": "Whether users need to complete KYC verification before renting a power bank",
       "is_active": true,
       "is_public": true,
@@ -251,7 +251,7 @@
     "pk": "550e8400-e29b-41d4-a716-446655440520",
     "fields": {
       "key": "MASTER_OTP_ENABLED",
-      "value": "false",
+      "value": "true",
       "description": "Enable master OTP for development/testing (true/false)",
       "is_active": true,
       "is_public": false,
@@ -264,7 +264,7 @@
     "pk": "550e8400-e29b-41d4-a716-446655440521",
     "fields": {
       "key": "MASTER_OTP_NUMBERS",
-      "value": "9869251732",
+      "value": "+9779869251732",
       "description": "Comma-separated list of phone numbers/emails allowed to use master OTP",
       "is_active": true,
       "is_public": false,

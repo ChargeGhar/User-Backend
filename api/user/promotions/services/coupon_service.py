@@ -12,7 +12,7 @@ from __future__ import annotations
 import random
 import string
 from typing import Dict, Any, List
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 from django.db.models import Q
 from api.common.services.base import CRUDService, ServiceException
@@ -115,27 +115,40 @@ class CouponService(CRUDService):
     def apply_coupon(self, coupon_code: str, user) -> Dict[str, Any]:
         """Apply coupon and award points to user"""
         try:
-            # First validate the coupon
+            coupon_code = coupon_code.strip().upper()
+
+            # Lock coupon row to reduce race conditions around usage-limit checks.
+            coupon = Coupon.objects.select_for_update().get(code=coupon_code)
+
+            # Validate coupon state and date window.
             validation = self.validate_coupon(coupon_code, user)
-            
             if not validation['can_use']:
                 raise ServiceException(
                     detail=validation['message'],
                     code="coupon_not_usable"
                 )
-            
-            coupon = Coupon.objects.get(code=coupon_code.upper())
-            
-            # Create coupon usage record
+
+            # Re-check usage count within the transaction before write.
+            user_usage_count = CouponUsage.objects.filter(
+                coupon=coupon,
+                user=user,
+            ).count()
+            if user_usage_count >= coupon.max_uses_per_user:
+                raise ServiceException(
+                    detail='You have already used this coupon the maximum number of times',
+                    code="coupon_not_usable"
+                )
+
+            # Create coupon usage record.
             coupon_usage = CouponUsage.objects.create(
                 coupon=coupon,
                 user=user,
                 points_awarded=coupon.points_value
             )
-            
-            # Award points to user
+
+            # Award points to user.
             from api.user.points.services import award_points
-            
+
             award_points(
                 user=user,
                 points=coupon.points_value,
@@ -145,8 +158,8 @@ class CouponService(CRUDService):
                 coupon_code=coupon.code,
                 coupon_usage_id=str(coupon_usage.id)
             )
-            
-            # Send coupon notification using universal notification system
+
+            # Send coupon notification using universal notification system.
             try:
                 from api.user.notifications.services import notify
                 notify(
@@ -157,11 +170,11 @@ class CouponService(CRUDService):
                     points=coupon.points_value
                 )
             except Exception as e:
-                # Notification failure shouldn't block coupon application
+                # Notification failure shouldn't block coupon application.
                 self.log_warning(f"Could not send coupon notification: {str(e)}")
-            
+
             self.log_info(f"Coupon applied: {coupon.code} by {user.username}")
-            
+
             return {
                 'success': True,
                 'coupon_code': coupon.code,
@@ -169,11 +182,16 @@ class CouponService(CRUDService):
                 'points_awarded': coupon.points_value,
                 'message': f'Coupon applied successfully! You received {coupon.points_value} points.'
             }
-            
+
         except Coupon.DoesNotExist:
             raise ServiceException(
                 detail="Invalid coupon code",
                 code="invalid_coupon"
+            )
+        except IntegrityError:
+            raise ServiceException(
+                detail='You have already used this coupon the maximum number of times',
+                code="coupon_not_usable"
             )
         except Exception as e:
             self.handle_service_error(e, "Failed to apply coupon")
