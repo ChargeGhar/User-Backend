@@ -103,11 +103,15 @@ class UserProfileService(BaseService):
                         code="email_immutable"
                     )
             elif provider == 'EMAIL':
-                if email != current_email:
-                    raise ServiceException(
-                        detail="Primary email cannot be changed",
-                        code="email_immutable"
-                    )
+                if current_email:
+                    if email != current_email:
+                        raise ServiceException(
+                            detail="Primary email cannot be changed",
+                            code="email_immutable"
+                        )
+                else:
+                    self._ensure_email_available(user=user, email=email)
+                    updates['email'] = email
             elif provider == 'PHONE':
                 if current_email:
                     if email != current_email:
