@@ -67,7 +67,7 @@ class RentalReturnMixin:
             
             rental.save(update_fields=[
                 'status', 'ended_at', 'return_station', 'is_returned_on_time',
-                'overdue_amount', 'payment_status',
+                'overdue_amount', 'payment_status', 'amount_paid',
                 'return_battery_level', 'is_under_5_min', 'hardware_issue_reported'
             ])
             
