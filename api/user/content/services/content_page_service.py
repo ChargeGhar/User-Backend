@@ -8,7 +8,7 @@ from api.user.content.models import ContentPage
 
 class ContentPageService(BaseService):
     """Service for content page operations"""
-    
+
     def get_page_by_type(self, page_type: str):
         """Get content page by type"""
         page = ContentPageRepository.get_by_type(page_type)
@@ -18,7 +18,11 @@ class ContentPageService(BaseService):
                 code="page_not_found"
             )
         return page
-    
+
+    def get_all_pages(self):
+        """Get all content pages"""
+        return ContentPageRepository.get_all()
+
     @transaction.atomic
     def update_page_content(self, page_type: str, title: str, content: str, admin_user) -> ContentPage:
         """Update content page"""

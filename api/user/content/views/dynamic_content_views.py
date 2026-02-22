@@ -15,43 +15,11 @@ from api.common.decorators import log_api_call, cached_response
 from api.common.serializers import BaseResponseSerializer, PaginatedResponseSerializer
 from api.user.content import serializers
 from api.user.content.services import (
-    FAQService, ContactInfoService, BannerService
+    FAQService, BannerService
 )
 
 dynamic_content_router = CustomViewRouter()
 logger = logging.getLogger(__name__)
-
-@dynamic_content_router.register("content/contact", name="content-contact")
-@extend_schema(
-    tags=["Content"],
-    summary="Contact Information",
-    description="Retrieve all contact information (cached for performance)",
-    responses={200: BaseResponseSerializer}
-)
-class ContactView(GenericAPIView, BaseAPIView):
-    """Contact information endpoint with caching"""
-    serializer_class = serializers.ContactInfoPublicSerializer
-    permission_classes = [AllowAny]
-
-    @cached_response(timeout=3600)  # 1 hour cache for contact info
-    @log_api_call()  # Log API calls for monitoring
-    def get(self, request: Request) -> Response:
-        """Get contact information with caching"""
-        def operation():
-            service = ContactInfoService()
-            contact_info = service.get_all_contact_info()
-            
-            if not contact_info:
-                return []
-            
-            serializer = self.get_serializer(contact_info, many=True)
-            return serializer.data
-
-        return self.handle_service_operation(
-            operation,
-            success_message="Contact information retrieved successfully",
-            error_message="Failed to retrieve contact information"
-        )
 
 @dynamic_content_router.register("content/faq", name="content-faq")
 @extend_schema(

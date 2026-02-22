@@ -11,7 +11,7 @@ class ContentPage(BaseModel):
         PRIVACY_POLICY = 'privacy-policy', 'Privacy Policy'
         ABOUT = 'about', 'About Us'
         CONTACT = 'contact', 'Contact Us'
-        FAQ = 'faq', 'FAQ'
+        RENTING_POLICY = 'renting-policy', 'Renting Policy'
     
     page_type = models.CharField(max_length=255, choices=PageTypeChoices.choices, unique=True)
     title = models.CharField(max_length=255)

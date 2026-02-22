@@ -16,11 +16,10 @@ from django.db import transaction
 
 from api.admin.models import AdminActionLog
 from api.common.services.base import BaseService
-from api.user.content.models import ContentPage, FAQ, ContactInfo, Banner
+from api.user.content.models import ContentPage, FAQ, Banner
 from api.user.content.services import (
     ContentPageService,
     FAQService,
-    ContactInfoService,
     BannerService,
     ContentAnalyticsService
 )
@@ -39,12 +38,25 @@ class AdminContentService(BaseService):
         super().__init__()
         self.content_service = ContentPageService()
         self.faq_service = FAQService()
-        self.contact_service = ContactInfoService()
         self.banner_service = BannerService()
         self.analytics_service = ContentAnalyticsService()
     
     # ==================== Content Pages ====================
-    
+
+    def get_all_content_pages(self):
+        """Get all content pages (direct delegation)"""
+        try:
+            return self.content_service.get_all_pages()
+        except Exception as e:
+            self.handle_service_error(e, "Failed to get content pages")
+
+    def get_content_page_by_type(self, page_type: str) -> ContentPage:
+        """Get content page by type (direct delegation)"""
+        try:
+            return self.content_service.get_page_by_type(page_type)
+        except Exception as e:
+            self.handle_service_error(e, "Failed to get content page")
+
     @transaction.atomic
     def update_content_page(
         self, page_type: str, title: str, content: str, admin_user
@@ -131,77 +143,24 @@ class AdminContentService(BaseService):
             )
             
             logger.info(f"Admin {admin_user.username} deleted FAQ: {faq_id}")
-            
+
         except Exception as e:
             self.handle_service_error(e, "Failed to delete FAQ")
-    
+
     def get_all_faqs(self) -> List[FAQ]:
         """Get all FAQs (direct delegation)"""
         try:
             return self.faq_service.get_all()
         except Exception as e:
             self.handle_service_error(e, "Failed to get FAQs")
-    
+
     def get_faq_by_id(self, faq_id: str) -> FAQ:
         """Get FAQ by ID (direct delegation)"""
         try:
             return self.faq_service.get_by_id(faq_id)
         except Exception as e:
             self.handle_service_error(e, "Failed to get FAQ")
-    
-    # ==================== Contact Info ====================
-    
-    @transaction.atomic
-    def update_contact_info(
-        self, info_type: str, label: str, value: str, 
-        description: str, admin_user
-    ) -> ContactInfo:
-        """Update contact info with admin logging"""
-        try:
-            contact = self.contact_service.update_contact_info(
-                info_type, label, value, description, admin_user
-            )
-            
-            self._log_admin_action(
-                admin_user, 'CONTACT_UPDATE', 'ContactInfo',
-                str(contact.id), {'info_type': info_type, 'label': label}
-            )
-            
-            logger.info(f"Admin {admin_user.username} updated contact info: {info_type}")
-            return contact
-            
-        except Exception as e:
-            self.handle_service_error(e, "Failed to update contact info")
-    
-    @transaction.atomic
-    def delete_contact_info(self, contact_id: str, admin_user) -> None:
-        """Delete contact info with admin logging"""
-        try:
-            self.contact_service.delete_by_id(contact_id)
-            
-            self._log_admin_action(
-                admin_user, 'CONTACT_DELETE', 'ContactInfo', contact_id, {}
-            )
-            
-            logger.info(f"Admin {admin_user.username} deleted contact info: {contact_id}")
-            
-        except Exception as e:
-            self.handle_service_error(e, "Failed to delete contact info")
-    
-    def get_all_contact_info(self) -> List[ContactInfo]:
-        """Get all contact info (direct delegation)"""
-        try:
-            return self.contact_service.get_all()
-        except Exception as e:
-            self.handle_service_error(e, "Failed to get contact info")
-    
-    def get_contact_info_by_id(self, contact_id: str) -> ContactInfo:
-        """Get contact info by ID (direct delegation)"""
-        try:
-            return self.contact_service.get_by_id(contact_id)
-        except Exception as e:
-            self.handle_service_error(e, "Failed to get contact info")
-    
+
     # ==================== Banners ====================
     
     @transaction.atomic

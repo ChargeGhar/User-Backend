@@ -29,9 +29,8 @@ logger = logging.getLogger(__name__)
 @content_admin_router.register(r"admin/content/pages", name="admin-content-pages")
 @extend_schema(
     tags=["Admin - Contents"],
-    summary="Admin Content Pages",
-    description="Manage content pages (admin only)",
-    request=serializers.ContentPageSerializer,
+    summary="Admin Content Pages List",
+    description="List all content pages (admin only)",
     responses={200: BaseResponseSerializer}
 )
 class AdminContentPagesView(GenericAPIView, BaseAPIView):
@@ -39,23 +38,79 @@ class AdminContentPagesView(GenericAPIView, BaseAPIView):
     serializer_class = serializers.ContentPageSerializer
     permission_classes = [IsStaffPermission]
 
+    @log_api_call()
+    def get(self, request: Request) -> Response:
+        """List all content pages"""
+        def operation():
+            service = AdminContentService()
+            pages = service.get_all_content_pages()
+            return self.get_serializer(pages, many=True).data
+
+        return self.handle_service_operation(
+            operation,
+            "Content pages retrieved successfully",
+            "Failed to retrieve content pages"
+        )
+
+
+@content_admin_router.register(r"admin/content/pages/<str:page_type>", name="admin-content-page-detail")
+class AdminContentPageDetailView(GenericAPIView, BaseAPIView):
+    """Admin content page detail management"""
+    serializer_class = serializers.ContentPageSerializer
+    permission_classes = [IsStaffPermission]
+
+    @extend_schema(
+        operation_id="admin_content_page_detail_retrieve",
+        tags=["Admin - Contents"],
+        summary="Get Content Page by Type",
+        description="Retrieve specific content page by type (admin only)",
+        responses={200: BaseResponseSerializer}
+    )
+    @log_api_call()
+    def get(self, request: Request, page_type: str) -> Response:
+        """Get content page by type"""
+        def operation():
+            service = AdminContentService()
+            page = service.get_content_page_by_type(page_type)
+            return self.get_serializer(page).data
+
+        return self.handle_service_operation(
+            operation,
+            "Content page retrieved successfully",
+            "Failed to retrieve content page"
+        )
+
+    @extend_schema(
+        operation_id="admin_content_page_detail_update",
+        tags=["Admin - Contents"],
+        summary="Update Content Page",
+        description="Update specific content page (admin only)",
+        request=serializers.ContentPageSerializer,
+        responses={200: BaseResponseSerializer}
+    )
     @log_api_call(include_request_data=True)
-    def put(self, request: Request) -> Response:
+    def put(self, request: Request, page_type: str) -> Response:
         """Update content page"""
         def operation():
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            
             service = AdminContentService()
+
+            # Get existing page first
+            existing_page = service.get_content_page_by_type(page_type)
+
+            # Validate with partial=True and instance to allow update
+            serializer = self.get_serializer(existing_page, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+
+            # Update the page
             page = service.update_content_page(
-                page_type=serializer.validated_data['page_type'],
-                title=serializer.validated_data['title'],
-                content=serializer.validated_data['content'],
+                page_type=page_type,
+                title=serializer.validated_data.get('title', existing_page.title),
+                content=serializer.validated_data.get('content', existing_page.content),
                 admin_user=request.user
             )
-            
+
             return self.get_serializer(page).data
-        
+
         return self.handle_service_operation(
             operation,
             "Content page updated successfully",
@@ -222,109 +277,6 @@ class AdminFAQDetailView(GenericAPIView, BaseAPIView):
             operation,
             "FAQ deleted successfully",
             "Failed to delete FAQ"
-        )
-
-
-# ==================== Contact Info ====================
-
-@content_admin_router.register(r"admin/content/contact", name="admin-content-contact")
-@extend_schema(
-    tags=["Admin - Contents"],
-    summary="Admin Contact Info Management",
-    description="List and create/update contact information (admin only)",
-    request=serializers.ContactInfoSerializer,
-    responses={200: BaseResponseSerializer}
-)
-class AdminContactInfoView(GenericAPIView, BaseAPIView):
-    """Admin contact info management"""
-    serializer_class = serializers.ContactInfoSerializer
-    permission_classes = [IsStaffPermission]
-
-    @log_api_call()
-    def get(self, request: Request) -> Response:
-        """List all contact info"""
-        def operation():
-            service = AdminContentService()
-            contact_info = service.get_all_contact_info()
-            return self.get_serializer(contact_info, many=True).data
-        
-        return self.handle_service_operation(
-            operation,
-            "Contact info retrieved successfully",
-            "Failed to retrieve contact info"
-        )
-
-    @log_api_call(include_request_data=True)
-    def post(self, request: Request) -> Response:
-        """Create/Update contact info"""
-        def operation():
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            
-            service = AdminContentService()
-            contact_info = service.update_contact_info(
-                info_type=serializer.validated_data['info_type'],
-                label=serializer.validated_data['label'],
-                value=serializer.validated_data['value'],
-                description=serializer.validated_data.get('description', ''),
-                admin_user=request.user
-            )
-            
-            return self.get_serializer(contact_info).data
-        
-        return self.handle_service_operation(
-            operation,
-            "Contact info updated successfully",
-            "Failed to update contact info"
-        )
-
-
-@content_admin_router.register(r"admin/content/contact/<str:contact_id>", name="admin-content-contact-detail")
-class AdminContactInfoDetailView(GenericAPIView, BaseAPIView):
-    """Admin contact info detail management"""
-    serializer_class = serializers.ContactInfoSerializer
-    permission_classes = [IsStaffPermission]
-
-    @extend_schema(
-        operation_id="admin_content_contact_detail_retrieve",
-        tags=["Admin - Contents"],
-        summary="Get Contact Info by ID",
-        description="Retrieve specific contact info details (admin only)",
-        responses={200: BaseResponseSerializer}
-    )
-    @log_api_call()
-    def get(self, request: Request, contact_id: str) -> Response:
-        """Get contact info by ID"""
-        def operation():
-            service = AdminContentService()
-            contact_info = service.get_contact_info_by_id(contact_id)
-            return self.get_serializer(contact_info).data
-        
-        return self.handle_service_operation(
-            operation,
-            "Contact info retrieved successfully",
-            "Failed to retrieve contact info"
-        )
-
-    @extend_schema(
-        operation_id="admin_content_contact_detail_delete",
-        tags=["Admin - Contents"],
-        summary="Delete Contact Info",
-        description="Delete specific contact info (admin only)",
-        responses={200: BaseResponseSerializer}
-    )
-    @log_api_call(include_request_data=True)
-    def delete(self, request: Request, contact_id: str) -> Response:
-        """Delete contact info"""
-        def operation():
-            service = AdminContentService()
-            service.delete_contact_info(contact_id, request.user)
-            return {"deleted": True}
-        
-        return self.handle_service_operation(
-            operation,
-            "Contact info deleted successfully",
-            "Failed to delete contact info"
         )
 
 

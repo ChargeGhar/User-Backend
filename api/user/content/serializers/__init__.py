@@ -8,10 +8,6 @@ from .faq_serializer import (
     FAQPublicSerializer,
     FAQCategorySerializer,
 )
-from .contact_info_serializer import (
-    ContactInfoSerializer,
-    ContactInfoPublicSerializer,
-)
 from .banner_serializer import (
     BannerSerializer,
     BannerListSerializer,
@@ -28,8 +24,6 @@ __all__ = [
     'FAQSerializer',
     'FAQPublicSerializer',
     'FAQCategorySerializer',
-    'ContactInfoSerializer',
-    'ContactInfoPublicSerializer',
     'BannerSerializer',
     'BannerListSerializer',
     'BannerPublicSerializer',

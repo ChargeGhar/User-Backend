@@ -12,7 +12,6 @@ from __future__ import annotations
 
 from .content_page_service import ContentPageService
 from .faq_service import FAQService
-from .contact_info_service import ContactInfoService
 from .banner_service import BannerService
 
 
@@ -23,7 +22,6 @@ from .content_analytics_service import ContentAnalyticsService
 __all__ = [
 
     "BannerService",
-    "ContactInfoService",
     "ContentAnalyticsService",
     "ContentPageService",
 

@@ -29,6 +29,11 @@ class ContentPageRepository:
         return list(ContentPage.objects.filter(is_active=True))
 
     @staticmethod
+    def get_all() -> List[ContentPage]:
+        """Get all content pages (including inactive)"""
+        return list(ContentPage.objects.all().order_by('-updated_at'))
+
+    @staticmethod
     def count_active() -> int:
         """Count active content pages"""
         return ContentPage.objects.filter(is_active=True).count()
