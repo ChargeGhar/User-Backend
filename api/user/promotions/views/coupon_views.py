@@ -36,33 +36,34 @@ class CouponApplyView(GenericAPIView, BaseAPIView):
         def operation():
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            
+
             coupon_service = CouponService()
-            
+
             # First validate the coupon
             validation_result = coupon_service.validate_coupon(
                 coupon_code=serializer.validated_data['coupon_code'],
                 user=request.user
             )
-            
-            # If validation fails, return validation details
+
+            # If validation fails, raise ServiceException
             if not validation_result['can_use']:
-                return {
-                    'success': False,
-                    'validation': validation_result,
-                    'message': validation_result['message']
-                }
-            
+                from api.common.services.base import ServiceException
+                raise ServiceException(
+                    detail=validation_result['message'],
+                    code='coupon_validation_failed',
+                    context={'validation': validation_result}
+                )
+
             # Apply the coupon
             result = coupon_service.apply_coupon(
                 coupon_code=serializer.validated_data['coupon_code'],
                 user=request.user
             )
-            
+
             # Include validation details in response
             result['validation'] = validation_result
             return result
-        
+
         return self.handle_service_operation(
             operation,
             "Coupon applied successfully",
