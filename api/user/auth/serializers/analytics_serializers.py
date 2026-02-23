@@ -13,11 +13,11 @@ class UserAnalyticsSerializer(serializers.Serializer):
     member_since = serializers.DateTimeField()
 
 class UserWalletResponseSerializer(serializers.Serializer):
-    """MVP serializer for wallet response - real-time data"""
+    """Serializer for wallet response - real-time data"""
     balance = serializers.DecimalField(max_digits=10, decimal_places=2)
+    total_topup = serializers.DecimalField(max_digits=10, decimal_places=2)
     currency = serializers.CharField(max_length=3, default='NPR')
     points = serializers.DictField()
-    last_updated = serializers.DateTimeField(read_only=True)
 
 class UserFilterSerializer(serializers.Serializer):
     """Serializer for user filtering parameters"""

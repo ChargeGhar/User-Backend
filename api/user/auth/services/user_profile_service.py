@@ -3,7 +3,7 @@ from typing import Dict, Any, List
 from django.db import transaction
 
 from api.common.services.base import BaseService, ServiceException
-from api.common.utils.helpers import validate_phone_number
+from api.common.utils.helpers import validate_phone_number, convert_points_to_amount
 from api.user.auth.models import User, UserProfile
 from api.user.auth.repositories import ProfileRepository, UserRepository
 from api.user.payments.repositories.wallet_repository import WalletRepository
@@ -291,18 +291,29 @@ class UserProfileService(BaseService):
         return {'can_rent': can_rent, 'reasons': reasons}
 
     def get_wallet_summary(self, user: User) -> Dict[str, Any]:
-        """Get wallet balance and topup history"""
+        """Get wallet balance, topup history and user points"""
         try:
             wallet, _ = self.wallet_repo.get_or_create(user=user)
             total_topup = self.wallet_repo.get_total_topup(str(user.id))
+            points, _ = self.point_repo.get_or_create(user=user)
             return {
-                'balance': str(wallet.balance), 
-                'total_topup': str(total_topup), 
-                'currency': wallet.currency
+                'balance': str(wallet.balance),
+                'total_topup': str(total_topup),
+                'currency': wallet.currency,
+                'points': {
+                    'current_points': points.current_points,
+                    'total_points': points.total_points,
+                    'points_value': float(convert_points_to_amount(points.current_points)),
+                },
             }
         except Exception as e:
             self.log_error(f"Wallet summary failed: {str(e)}")
-            return {'balance': '0.00', 'total_topup': '0.00', 'currency': 'NPR'}
+            return {
+                'balance': '0.00',
+                'total_topup': '0.00',
+                'currency': 'NPR',
+                'points': {'current_points': 0, 'total_points': 0, 'points_value': 0.0},
+            }
 
     def get_user_analytics(self, user: User) -> Dict[str, Any]:
         """Get user usage analytics"""
