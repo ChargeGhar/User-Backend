@@ -126,15 +126,19 @@ class NearbyStationsView(GenericAPIView, BaseAPIView):
             
             # Get full station objects
             station_ids = [station['id'] for station in nearby_stations]
-            stations = Station.objects.filter(id__in=station_ids).prefetch_related(
+            stations_qs = Station.objects.filter(id__in=station_ids).prefetch_related(
                 'slots',
                 'media__media_upload'
             )
-            
+
+            # Preserve nearest-to-farthest order from the service
+            distance_map = {s['id']: s['distance'] for s in nearby_stations}
+            stations = sorted(stations_qs, key=lambda s: distance_map[s.id])
+
             # Serialize results
             serializer = serializers.StationListSerializer(
-                stations, 
-                many=True, 
+                stations,
+                many=True,
                 context={'request': request}
             )
             
