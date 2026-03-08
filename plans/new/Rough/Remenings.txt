@@ -1,8 +1,0 @@
-# now
-
-Need to make GET endpoint for ststions and Rentals issue type in user app with single endpoint
-Need to fix the admin endpoints of get ststion with all ststion details missing (media urls)
-Need to fix the update or new ststion endpoiton of the admin regarding the lattidude and longetude length we are geting error rekated to its too big length we need to extend it more which is 10% accuate as lattitude and longetude length need to be
-
-# Not Now
-Need to make Google map realted endpoint into our backend for Modbile app and we bought the api_key of Google () (InFuture)
