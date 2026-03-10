@@ -16,6 +16,7 @@ class Coupon(BaseModel):
     name = models.CharField(max_length=100)
     points_value = models.IntegerField()
     max_uses_per_user = models.IntegerField(default=1)
+    is_public = models.BooleanField(default=True)
     valid_from = models.DateTimeField()
     valid_until = models.DateTimeField()
     status = models.CharField(max_length=50, choices=StatusChoices.choices, default=StatusChoices.ACTIVE)

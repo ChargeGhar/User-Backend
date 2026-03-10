@@ -15,12 +15,13 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from api.admin import serializers
+from api.admin.services import AdminCouponService
 from api.common.decorators import log_api_call
 from api.common.mixins import BaseAPIView
 from api.common.routers import CustomViewRouter
 from api.common.serializers import BaseResponseSerializer
-from api.user.promotions.services import CouponService
 from api.user.auth.permissions import IsStaffPermission
+from api.user.promotions.serializers import CouponSerializer, CouponUsageSerializer
 
 coupon_router = CustomViewRouter()
 logger = logging.getLogger(__name__)
@@ -49,21 +50,12 @@ class AdminCouponView(GenericAPIView, BaseAPIView):
     def get(self, request: Request) -> Response:
         """Get coupon list with filters"""
         def operation():
-            # Parse filters
-            filters = {
-                'status': request.query_params.get('status'),
-                'search': request.query_params.get('search'),
-                'start_date': request.query_params.get('start_date'),
-                'end_date': request.query_params.get('end_date'),
-                'page': int(request.query_params.get('page', 1)),
-                'page_size': int(request.query_params.get('page_size', 20))
-            }
-            
-            service = CouponService()
-            paginated_result = service.get_coupons_list(filters)
-            
-            # Serialize the coupons
-            from api.user.promotions.serializers import CouponSerializer
+            filter_serializer = serializers.CouponListSerializer(data=request.query_params)
+            filter_serializer.is_valid(raise_exception=True)
+
+            service = AdminCouponService()
+            paginated_result = service.get_coupons(filter_serializer.validated_data)
+
             serializer = CouponSerializer(paginated_result['results'], many=True)
             paginated_result['results'] = serializer.data
             
@@ -86,19 +78,10 @@ class AdminCouponView(GenericAPIView, BaseAPIView):
         def operation():
             create_serializer = serializers.CreateCouponSerializer(data=request.data)
             create_serializer.is_valid(raise_exception=True)
-            
-            service = CouponService()
-            coupon = service.create_coupon(
-                code=create_serializer.validated_data['code'],
-                name=create_serializer.validated_data['name'],
-                points_value=create_serializer.validated_data['points_value'],
-                max_uses_per_user=create_serializer.validated_data['max_uses_per_user'],
-                valid_from=create_serializer.validated_data['valid_from'],
-                valid_until=create_serializer.validated_data['valid_until'],
-                admin_user=request.user
-            )
-            
-            from api.user.promotions.serializers import CouponSerializer
+
+            service = AdminCouponService()
+            coupon = service.create_coupon(create_serializer.validated_data, request.user, request=request)
+
             serializer = CouponSerializer(coupon)
             return serializer.data
         
@@ -129,21 +112,10 @@ class AdminCouponBulkView(GenericAPIView, BaseAPIView):
         def operation():
             bulk_serializer = serializers.BulkCreateCouponSerializer(data=request.data)
             bulk_serializer.is_valid(raise_exception=True)
-            
-            service = CouponService()
-            coupons = service.bulk_create_coupons(
-                name_prefix=bulk_serializer.validated_data['name_prefix'],
-                points_value=bulk_serializer.validated_data['points_value'],
-                max_uses_per_user=bulk_serializer.validated_data['max_uses_per_user'],
-                valid_from=bulk_serializer.validated_data['valid_from'],
-                valid_until=bulk_serializer.validated_data['valid_until'],
-                quantity=bulk_serializer.validated_data['quantity'],
-                code_length=bulk_serializer.validated_data.get('code_length', 8),
-                admin_user=request.user
-            )
-            
-            # Serialize the created coupons
-            from api.user.promotions.serializers import CouponSerializer
+
+            service = AdminCouponService()
+            coupons = service.bulk_create_coupons(bulk_serializer.validated_data, request.user, request=request)
+
             serializer = CouponSerializer(coupons, many=True)
             
             return {
@@ -181,26 +153,12 @@ class AdminCouponDetailView(GenericAPIView, BaseAPIView):
     def get(self, request: Request, coupon_code: str) -> Response:
         """Get coupon details"""
         def operation():
-            from api.user.promotions.models import Coupon, CouponUsage
-            from api.user.promotions.serializers import CouponSerializer
-            
-            coupon = Coupon.objects.get(code=coupon_code.upper())
-            
-            # Get usage statistics
-            total_uses = CouponUsage.objects.filter(coupon=coupon).count()
-            unique_users = CouponUsage.objects.filter(coupon=coupon).values('user').distinct().count()
-            total_points_awarded = sum(
-                usage.points_awarded 
-                for usage in CouponUsage.objects.filter(coupon=coupon)
-            )
-            
-            serializer = CouponSerializer(coupon)
+            service = AdminCouponService()
+            coupon_detail = service.get_coupon_detail(coupon_code)
+
+            serializer = CouponSerializer(coupon_detail['coupon'])
             data = serializer.data
-            data['usage_stats'] = {
-                'total_uses': total_uses,
-                'unique_users': unique_users,
-                'total_points_awarded': total_points_awarded
-            }
+            data['usage_stats'] = coupon_detail['usage_stats']
             
             return data
         
@@ -211,40 +169,20 @@ class AdminCouponDetailView(GenericAPIView, BaseAPIView):
         )
     
     @extend_schema(
-        summary="Update Coupon Status",
-        description="Update coupon status (activate/deactivate)",
+        summary="Update Coupon",
+        description="Update coupon status and/or public visibility",
         request=serializers.UpdateCouponStatusSerializer
     )
     @log_api_call()
     def patch(self, request: Request, coupon_code: str) -> Response:
-        """Update coupon status"""
+        """Update coupon status/visibility"""
         def operation():
-            from api.user.promotions.models import Coupon
-            from api.user.promotions.serializers import CouponSerializer
-            
             status_serializer = serializers.UpdateCouponStatusSerializer(data=request.data)
             status_serializer.is_valid(raise_exception=True)
-            
-            coupon = Coupon.objects.get(code=coupon_code.upper())
-            old_status = coupon.status
-            new_status = status_serializer.validated_data['status']
-            
-            coupon.status = new_status
-            coupon.save(update_fields=['status', 'updated_at'])
-            
-            # Log admin action
-            from api.admin.models import AdminActionLog
-            AdminActionLog.objects.create(
-                admin_user=request.user,
-                action_type='UPDATE_COUPON_STATUS',
-                target_model='Coupon',
-                target_id=str(coupon.id),
-                changes={'old_status': old_status, 'new_status': new_status},
-                description=f"Updated coupon {coupon_code} status from {old_status} to {new_status}",
-                ip_address=request.META.get('REMOTE_ADDR', ''),
-                user_agent=request.META.get('HTTP_USER_AGENT', '')
-            )
-            
+
+            service = AdminCouponService()
+            coupon = service.update_coupon(coupon_code, status_serializer.validated_data, request.user, request=request)
+
             serializer = CouponSerializer(coupon)
             return serializer.data
         
@@ -262,29 +200,9 @@ class AdminCouponDetailView(GenericAPIView, BaseAPIView):
     def delete(self, request: Request, coupon_code: str) -> Response:
         """Delete coupon"""
         def operation():
-            from api.user.promotions.models import Coupon
-            
-            coupon = Coupon.objects.get(code=coupon_code.upper())
-            coupon_id = str(coupon.id)
-            coupon.name
-            
-            # Soft delete by setting status to inactive
-            coupon.status = Coupon.StatusChoices.INACTIVE
-            coupon.save(update_fields=['status', 'updated_at'])
-            
-            # Log admin action
-            from api.admin.models import AdminActionLog
-            AdminActionLog.objects.create(
-                admin_user=request.user,
-                action_type='DELETE_COUPON',
-                target_model='Coupon',
-                target_id=coupon_id,
-                changes={'status': 'inactive'},
-                description=f"Deleted coupon: {coupon_code}",
-                ip_address=request.META.get('REMOTE_ADDR', ''),
-                user_agent=request.META.get('HTTP_USER_AGENT', '')
-            )
-            
+            service = AdminCouponService()
+            service.soft_delete_coupon(coupon_code, request.user, request=request)
+
             return {'message': f'Coupon {coupon_code} deleted successfully'}
         
         return self.handle_service_operation(
@@ -309,21 +227,12 @@ class AdminCouponUsageView(GenericAPIView, BaseAPIView):
     def get(self, request: Request, coupon_code: str) -> Response:
         """Get coupon usage history"""
         def operation():
-            from api.user.promotions.models import Coupon, CouponUsage
-            from api.user.promotions.serializers import CouponUsageSerializer
-            from api.common.utils.helpers import paginate_queryset
-            
-            coupon = Coupon.objects.get(code=coupon_code.upper())
-            
-            queryset = CouponUsage.objects.filter(coupon=coupon).select_related('user')
-            queryset = queryset.order_by('-used_at')
-            
             page = int(request.query_params.get('page', 1))
             page_size = int(request.query_params.get('page_size', 20))
-            
-            paginated = paginate_queryset(queryset, page, page_size)
-            
-            # Serialize the results
+
+            service = AdminCouponService()
+            paginated = service.get_coupon_usages(coupon_code, page=page, page_size=page_size)
+
             serializer = CouponUsageSerializer(paginated['results'], many=True)
             paginated['results'] = serializer.data
             

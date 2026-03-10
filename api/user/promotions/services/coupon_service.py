@@ -12,6 +12,7 @@ from __future__ import annotations
 import random
 import string
 from typing import Dict, Any, List
+from django.core.cache import cache
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from django.db.models import Q
@@ -22,22 +23,33 @@ from api.user.promotions.models import Coupon, CouponUsage
 class CouponService(CRUDService):
     """Service for coupon operations"""
     model = Coupon
-    
-    def get_active_coupons(self) -> List[Coupon]:
-        """Get currently active and valid coupons"""
+    PUBLIC_ACTIVE_COUPONS_CACHE_KEY = "promotions:public:active_coupons"
+
+    @classmethod
+    def invalidate_public_active_coupons_cache(cls) -> None:
+        """Clear cached public coupon list."""
+        cache.delete(cls.PUBLIC_ACTIVE_COUPONS_CACHE_KEY)
+
+    def get_public_active_coupons(self) -> List[Coupon]:
+        """Get currently active, valid, public coupons for user discovery."""
         try:
             now = timezone.now()
             coupons = Coupon.objects.filter(
                 status=Coupon.StatusChoices.ACTIVE,
+                is_public=True,
                 valid_from__lte=now,
                 valid_until__gte=now
             ).order_by('-points_value')
-            
+
             return coupons
 
         except Exception as e:
-            self.log_error(f"Failed to get active coupons: {str(e)}")
+            self.log_error(f"Failed to get public active coupons: {str(e)}")
             return []
+    
+    def get_active_coupons(self) -> List[Coupon]:
+        """Backward-compatible alias for public active coupons."""
+        return self.get_public_active_coupons()
     
     def validate_coupon(self, coupon_code: str, user) -> Dict[str, Any]:
         """Validate if a coupon can be used by the user"""
@@ -210,7 +222,7 @@ class CouponService(CRUDService):
     @transaction.atomic
     def create_coupon(self, code: str, name: str, points_value: int, max_uses_per_user: int,
                      valid_from: timezone.datetime, valid_until: timezone.datetime,
-                     admin_user) -> Coupon:
+                     admin_user, is_public: bool = True) -> Coupon:
         """Create new coupon (Admin)"""
         try:
             coupon = Coupon.objects.create(
@@ -218,12 +230,13 @@ class CouponService(CRUDService):
                 name=name,
                 points_value=points_value,
                 max_uses_per_user=max_uses_per_user,
+                is_public=is_public,
                 valid_from=valid_from,
                 valid_until=valid_until,
                 status=Coupon.StatusChoices.ACTIVE
             )
             
-            # Cache clearing moved to view decorators
+            self.invalidate_public_active_coupons_cache()
             
             # Log admin action
             from api.admin.models import AdminActionLog
@@ -236,7 +249,8 @@ class CouponService(CRUDService):
                     'code': code,
                     'name': name,
                     'points_value': points_value,
-                    'max_uses_per_user': max_uses_per_user
+                    'max_uses_per_user': max_uses_per_user,
+                    'is_public': is_public,
                 },
                 description=f"Created coupon: {code}",
                 ip_address="127.0.0.1",
@@ -252,7 +266,8 @@ class CouponService(CRUDService):
     @transaction.atomic
     def bulk_create_coupons(self, name_prefix: str, points_value: int, max_uses_per_user: int,
                            valid_from: timezone.datetime, valid_until: timezone.datetime,
-                           quantity: int, code_length: int, admin_user) -> List[Coupon]:
+                           quantity: int, code_length: int, admin_user,
+                           is_public: bool = True) -> List[Coupon]:
         """Bulk create coupons (Admin)"""
         try:
             created_coupons = []
@@ -269,6 +284,7 @@ class CouponService(CRUDService):
                     name=f"{name_prefix} #{i+1}",
                     points_value=points_value,
                     max_uses_per_user=max_uses_per_user,
+                    is_public=is_public,
                     valid_from=valid_from,
                     valid_until=valid_until,
                     status=Coupon.StatusChoices.ACTIVE
@@ -278,7 +294,7 @@ class CouponService(CRUDService):
             # Bulk create
             Coupon.objects.bulk_create(created_coupons)
             
-            # Cache clearing moved to view decorators
+            self.invalidate_public_active_coupons_cache()
             
             # Log admin action
             from api.admin.models import AdminActionLog
@@ -290,7 +306,8 @@ class CouponService(CRUDService):
                 changes={
                     'name_prefix': name_prefix,
                     'points_value': points_value,
-                    'quantity': quantity
+                    'quantity': quantity,
+                    'is_public': is_public,
                 },
                 description=f"Bulk created {quantity} coupons",
                 ip_address="127.0.0.1",
@@ -325,6 +342,9 @@ class CouponService(CRUDService):
                         Q(code__icontains=search_term) |
                         Q(name__icontains=search_term)
                     )
+
+                if filters.get('is_public') is not None:
+                    queryset = queryset.filter(is_public=filters['is_public'])
                 
                 if filters.get('start_date'):
                     queryset = queryset.filter(valid_from__gte=filters['start_date'])

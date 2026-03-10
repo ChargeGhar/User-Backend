@@ -31,12 +31,15 @@ class ActiveCouponsView(GenericAPIView, BaseAPIView):
         responses={200: serializers.ActiveCouponsResponseSerializer}
     )
     @log_api_call()
-    @cached_response(timeout=900)  # Cache for 15 minutes - coupons don't change frequently
+    @cached_response(
+        timeout=900,
+        key_func=lambda self, request, *args, **kwargs: CouponService.PUBLIC_ACTIVE_COUPONS_CACHE_KEY,
+    )
     def get(self, request: Request) -> Response:
         """Get active coupons - CACHED for performance"""
         def operation():
             coupon_service = CouponService()
-            coupons = coupon_service.get_active_coupons()
+            coupons = coupon_service.get_public_active_coupons()
             
             # Use MVP public serializer for performance
             serializer = serializers.CouponPublicSerializer(coupons, many=True)

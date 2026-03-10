@@ -43,7 +43,7 @@ class CouponDetailSerializer(serializers.ModelSerializer):
         model = Coupon
         fields = [
             'id', 'code', 'name', 'points_value', 'max_uses_per_user',
-            'valid_from', 'valid_until', 'status', 'created_at',
+            'is_public', 'valid_from', 'valid_until', 'status', 'created_at',
             'is_currently_valid', 'days_remaining', 'total_uses'
         ]
         read_only_fields = ['id', 'created_at', 'status']
@@ -172,6 +172,7 @@ class CouponFilterSerializer(serializers.Serializer):
         choices=Coupon.StatusChoices.choices,
         required=False
     )
+    is_public = serializers.BooleanField(required=False)
     search = serializers.CharField(required=False, allow_blank=True)
     start_date = serializers.DateTimeField(required=False)
     end_date = serializers.DateTimeField(required=False)
