@@ -42,11 +42,10 @@ class KhaltiGatewayClient(BaseGatewayClient):
     Wraps nepal-gateways KhaltiClient with standardized interface.
     
     Configuration (Django settings NEPAL_GATEWAYS_CONFIG['khalti']):
-        - secret_key: Khalti secret key
-        - public_key: Khalti public key
-        - environment: 'sandbox' or 'production'
-        - return_url: URL for callback after payment
-        - website_url: Your website URL
+        - live_secret_key: Khalti live secret key (format: 'live_secret_key_...')
+        - mode: 'sandbox' or 'live'
+        - return_url_config: URL for callback after payment
+        - website_url_config: Your website URL
     
     Note:
         Khalti uses paisa (1 NPR = 100 paisa) for amounts.

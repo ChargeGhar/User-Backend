@@ -18,18 +18,17 @@ Configuration (Django):
     
     NEPAL_GATEWAYS_CONFIG = {
         'esewa': {
-            'merchant_id': 'your_merchant_id',
+            'product_code': 'your_product_code',
             'secret_key': 'your_secret_key',
-            'environment': 'sandbox',  # or 'production'
+            'mode': 'sandbox',  # or 'live'
             'success_url': 'https://yoursite.com/payments/esewa/success',
             'failure_url': 'https://yoursite.com/payments/esewa/failure',
         },
         'khalti': {
-            'secret_key': 'your_secret_key',
-            'public_key': 'your_public_key',
-            'environment': 'sandbox',  # or 'production'
-            'return_url': 'https://yoursite.com/payments/khalti/callback',
-            'website_url': 'https://yoursite.com',
+            'live_secret_key': 'your_live_secret_key',
+            'mode': 'sandbox',  # or 'live'
+            'return_url_config': 'https://yoursite.com/payments/khalti/callback',
+            'website_url_config': 'https://yoursite.com',
         }
     }
 

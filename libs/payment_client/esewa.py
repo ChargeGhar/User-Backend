@@ -45,9 +45,9 @@ class EsewaGatewayClient(BaseGatewayClient):
     Wraps nepal-gateways EsewaClient with standardized interface.
     
     Configuration (Django settings NEPAL_GATEWAYS_CONFIG['esewa']):
-        - merchant_id: eSewa merchant ID
-        - secret_key: eSewa secret key for signature
-        - environment: 'sandbox' or 'production'
+        - product_code: eSewa product code (e.g. 'NP-ES-CHARGEGHAR')
+        - secret_key: eSewa merchant secret key for HMAC-SHA256 signature
+        - mode: 'sandbox' or 'live'
         - success_url: URL for successful payments
         - failure_url: URL for failed payments
     
