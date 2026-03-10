@@ -44,7 +44,8 @@ class AdminCouponView(GenericAPIView, BaseAPIView):
 
     @extend_schema(
         summary="List Coupons",
-        description="Get paginated list of coupons with filters"
+        description="Get paginated list of coupons with filters",
+        parameters=[serializers.CouponListSerializer]
     )
     @log_api_call()
     def get(self, request: Request) -> Response:

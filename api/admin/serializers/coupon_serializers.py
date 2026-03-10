@@ -15,7 +15,7 @@ class CouponListSerializer(serializers.Serializer):
         choices=Coupon.StatusChoices.values,
         required=False
     )
-    is_public = serializers.BooleanField(required=False)
+    is_public = serializers.BooleanField(required=False, allow_null=True)
     search = serializers.CharField(required=False, max_length=200, allow_blank=True)
     start_date = serializers.DateTimeField(required=False)
     end_date = serializers.DateTimeField(required=False)
