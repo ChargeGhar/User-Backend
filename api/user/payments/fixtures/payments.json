@@ -7,7 +7,11 @@
       "gateway": "khalti",
       "icon": "https://seeklogo.com/images/K/khalti-logo-F0B049E67E-seeklogo.com.png",
       "is_active": true,
-      "configuration": {"public_key": "test_public_key", "secret_key": "test_secret_key"},
+      "configuration": {
+        "live_key": "21993fd18d10447ebadf08915aa26983",
+        "test_key": "5b24a15d19c94a0ea4d40f1ad0e3bf65",
+        "mode": "sandbox"
+      },
       "min_amount": "10.00",
       "max_amount": "100000.00",
       "supported_currencies": ["NPR"],
@@ -23,7 +27,12 @@
       "gateway": "esewa",
       "icon": "https://img.logokit.com/esewa.com.np",
       "is_active": true,
-      "configuration": {"merchant_id": "test_merchant", "secret_key": "test_secret"},
+      "configuration": {
+        "live_key": "8gBm/:&EnhH.1/q",
+        "test_key": "8gBm/:&EnhH.1/q",
+        "product_code": "EPAYTEST",
+        "mode": "sandbox"
+      },
       "min_amount": "10.00",
       "max_amount": "50000.00",
       "supported_currencies": ["NPR"],
@@ -43,54 +52,6 @@
       "min_amount": "10.00",
       "max_amount": "100.00",
       "supported_currencies": ["GBP"],
-      "created_at": "2024-01-01T00:00:00Z",
-      "updated_at": "2024-01-01T00:00:00Z"
-    }
-  },
-  {
-    "model": "payments.wallet",
-    "pk": "550e8400-e29b-41d4-a716-446655440402",
-    "fields": {
-      "user": 3,
-      "balance": "250.00",
-      "currency": "NPR",
-      "is_active": true,
-      "created_at": "2024-01-01T00:00:00Z",
-      "updated_at": "2024-01-01T00:00:00Z"
-    }
-  },
-  {
-    "model": "payments.transaction",
-    "pk": "550e8400-e29b-41d4-a716-446655440501",
-    "fields": {
-      "user": 2,
-      "related_rental": null,
-      "transaction_id": "TXN202509190000001ABCDE",
-      "transaction_type": "TOPUP",
-      "amount": "500.00",
-      "currency": "NPR",
-      "status": "SUCCESS",
-      "payment_method_type": "GATEWAY",
-      "gateway_reference": "khalti_ref_001",
-      "gateway_response": {"status": "success", "reference": "khalti_ref_001"},
-      "created_at": "2024-01-01T00:00:00Z",
-      "updated_at": "2024-01-01T00:00:00Z"
-    }
-  },
-  {
-    "model": "payments.transaction",
-    "pk": "550e8400-e29b-41d4-a716-446655440502",
-    "fields": {
-      "user": 3,
-      "related_rental": null,
-      "transaction_id": "TXN202509190000002ABCDE",
-      "transaction_type": "TOPUP",
-      "amount": "250.00",
-      "currency": "NPR",
-      "status": "SUCCESS",
-      "payment_method_type": "GATEWAY",
-      "gateway_reference": "esewa_ref_001",
-      "gateway_response": {"status": "success", "reference": "esewa_ref_001"},
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
     }
