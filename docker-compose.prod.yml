@@ -13,10 +13,7 @@ x-common: &common
 services:
   api:
     <<: *common
-    build:
-      context: .
-      dockerfile: Dockerfile.prod
-    image: cg-api:prod
+    image: ghcr.io/chargeghar/user-backend:latest
     container_name: cg-api
     ports:
       - "${API_PORT:-8010}:80"
@@ -119,10 +116,7 @@ services:
 
   celery:
     <<: *common
-    build:
-      context: .
-      dockerfile: Dockerfile.prod
-    image: cg-api:prod
+    image: ghcr.io/chargeghar/user-backend:latest
     container_name: cg-celery
     command: python -m celery -A tasks.app worker --loglevel=INFO --concurrency=2 --max-tasks-per-child=100 --prefetch-multiplier=1
     depends_on:
@@ -137,10 +131,7 @@ services:
 
   celery_beat:
     <<: *common
-    build:
-      context: .
-      dockerfile: Dockerfile.prod
-    image: cg-api:prod
+    image: ghcr.io/chargeghar/user-backend:latest
     container_name: cg-celery-beat
     command: python -m celery -A tasks.app beat --loglevel=INFO --schedule=/tmp/celerybeat-schedule
     depends_on:
@@ -157,10 +148,7 @@ services:
 
   migrations:
     <<: *common
-    build:
-      context: .
-      dockerfile: Dockerfile.prod
-    image: cg-api:prod
+    image: ghcr.io/chargeghar/user-backend:latest
     container_name: cg-migrations
     command: sh -c "sleep 15 && python manage.py migrate"
     depends_on:
@@ -170,10 +158,7 @@ services:
 
   collectstatic:
     <<: *common
-    build:
-      context: .
-      dockerfile: Dockerfile.prod
-    image: cg-api:prod
+    image: ghcr.io/chargeghar/user-backend:latest
     container_name: cg-collectstatic
     command: sh -c "sleep 15 && python manage.py collectstatic --noinput"
     depends_on:
