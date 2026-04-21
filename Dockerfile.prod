@@ -1,5 +1,5 @@
 # Stage 1: Builder
-FROM python:3.12 as builder
+FROM python:3.12 AS builder
 
 # Install system dependencies needed for building Python packages
 RUN apt-get update && apt-get install -y \
@@ -12,48 +12,42 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 WORKDIR /application
 
-# Create a non-root user
-RUN useradd --create-home --shell /bin/bash appuser
-
-# Copy dependency files
+# Copy dependency files first (cache layer — only rebuilds when deps change)
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies into a virtual environment
-RUN uv sync --frozen
+# Install production dependencies only (no dev deps like ruff, pytest, mypy)
+RUN uv sync --frozen --no-dev
 
-# Copy the rest of the application code
-COPY . .
+# Copy application code explicitly (not COPY . . to avoid junk)
+COPY api/ ./api/
+COPY tasks/ ./tasks/
+COPY libs/ ./libs/
+COPY manage.py ./
+COPY Makefile ./
+COPY load_fixtures.py load_fixtures_safe.py ./
+COPY load-fixtures.sh load-fixtures-safe.sh ./
+COPY apple_auth_key.p8 ./
+COPY endpoints.py ./
 
-# Change ownership to the app user
-RUN chown -R appuser:appuser /application
-
-# Stage 2: Final Image
+# Stage 2: Runtime (slim — no build tools)
 FROM python:3.12-slim
 
 WORKDIR /application
 
-# Install system dependencies including PostgreSQL client libraries
+# Runtime dependencies ONLY: libpq5 for psycopg2, curl for healthchecks
 RUN apt-get update && apt-get install -y \
     curl \
-    git \
-    libpq-dev \
-    gcc \
+    libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
-# Create the non-root user
+# Create non-root user
 RUN useradd --create-home --shell /bin/bash appuser
 
-# Copy uv from the builder stage
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
-
-# Copy the virtual environment from the builder stage
-COPY --from=builder /application/.venv ./.venv
-
-# Copy the application code from the builder stage
+# Copy everything from builder (includes .venv + app code)
 COPY --from=builder --chown=appuser:appuser /application .
 
-# Set the PATH to use the virtual environment and include uv
-ENV PATH="/application/.venv/bin:/bin:$PATH"
+# Set the PATH to use the virtual environment
+ENV PATH="/application/.venv/bin:$PATH"
 
 # Switch to the non-root user
 USER appuser
@@ -61,4 +55,4 @@ USER appuser
 # Expose the port the app runs on
 EXPOSE 80
 
-# The command to run the application will be specified in the docker-compose file
+# The command to run the application is specified in docker-compose
