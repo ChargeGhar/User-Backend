@@ -58,8 +58,8 @@ We're building a **smart charging station network** for Nepal that allows users 
 ### 1-Minute Setup
 ```bash
 # Clone the repository
-git clone https://github.com/itzmejanak/ChargeGhar.git
-cd ChargeGhar
+git clone https://github.com/ChargeGhar/User-Backend.git
+cd User-Backend
 
 # Install dependencies
 uv sync --all-extras --dev
@@ -258,7 +258,7 @@ This guide outlines the steps to deploy the application to a production environm
     *   Connect to your VPS as the `root` user.
     *   Download and run the setup script. This will install Docker and create a dedicated user (`powerbank`) for your application.
     ```bash
-    curl -O https://raw.githubusercontent.com/itzmejanak/ChargeGhar/main/deploy-server-setup.sh
+    curl -O https://raw.githubusercontent.com/ChargeGhar/User-Backend/main/deploy-server-setup.sh
     chmod +x deploy-server-setup.sh
     ./deploy-server-setup.sh
     ```
@@ -270,7 +270,7 @@ This guide outlines the steps to deploy the application to a production environm
         ```
     *   Clone your repository into the `/opt/powerbank` directory:
         ```bash
-        git clone https://github.com/itzmejanak/ChargeGhar.git /opt/powerbank
+        git clone https://github.com/ChargeGhar/User-Backend.git /opt/powerbank
         cd /opt/powerbank
         ```
     *   **Securely create the `.env` file:** Copy the contents of your local `.env` file and paste it into a new file on the server at `/opt/powerbank/.env`. You can use a command-line editor like `nano`:
