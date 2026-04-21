@@ -37,7 +37,10 @@ class OTPRequestView(GenericAPIView, BaseAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return self.handle_service_operation(
-            lambda: AuthService().generate_otp(serializer.validated_data['identifier']),
+            lambda: AuthService().generate_otp(
+                serializer.validated_data['identifier'],
+                platform=serializer.validated_data.get('platform')
+            ),
             success_message="OTP sent successfully"
         )
 

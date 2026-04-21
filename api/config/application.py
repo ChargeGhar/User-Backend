@@ -139,6 +139,7 @@ USE_I18N = True
 SPARROW_SMS_TOKEN = getenv("SPARROW_SMS_TOKEN")
 SPARROW_SMS_FROM = getenv("SPARROW_SMS_FROM", "Demo")
 SPARROW_SMS_BASE_URL = getenv("SPARROW_SMS_BASE_URL", "https://sms.sparrowsms.com/v2/sms/")
+ANDROID_SMS_HASH = getenv("ANDROID_SMS_HASH", "")
 
 # Firebase Configuration
 FIREBASE_CREDENTIALS_PATH = getenv("FIREBASE_CREDENTIALS_PATH", "firebase-credentials.json")

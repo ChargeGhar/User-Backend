@@ -21,6 +21,7 @@ from __future__ import annotations
 import logging
 from typing import Dict, Any
 from celery import shared_task
+from django.conf import settings
 from django.contrib.auth import get_user_model
 
 logger = logging.getLogger(__name__)
@@ -153,6 +154,7 @@ def send_otp_task(
     otp: str,
     purpose: str = "verification",
     expiry_minutes: int = 5,
+    platform: str = None,
 ):
     """
     Send OTP asynchronously - handles both existing and non-existing users
@@ -223,6 +225,10 @@ def send_otp_task(
         message_template = Template(template.message_template)
         rendered_title = title_template.render(Context(context))
         rendered_message = message_template.render(Context(context))
+
+        # Add Android SMS Retriever markers for Android clients only
+        if not is_email and platform == "android" and settings.ANDROID_SMS_HASH:
+            rendered_message = f"<#> {rendered_message}\n{settings.ANDROID_SMS_HASH}"
 
         if user:
             # User exists - use full notification system

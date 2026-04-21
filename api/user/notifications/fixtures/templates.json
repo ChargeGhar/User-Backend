@@ -385,7 +385,7 @@
       "slug": "otp_sms",
       "notification_type": "system",
       "title_template": "ChargeGhar OTP",
-      "message_template": "<#>. Your ChargeGhar {{purpose}} OTP is: {{otp}}. Valid for {{expiry_minutes}} minutes. Do not share this code.\np8Lo9qZbQHK",
+      "message_template": "Your ChargeGhar {{purpose}} OTP is: {{otp}}. Valid for {{expiry_minutes}} minutes. Do not share this code.",
       "is_active": true,
       "created_at": "2025-09-13T10:00:00Z",
       "updated_at": "2025-09-13T10:00:00Z"

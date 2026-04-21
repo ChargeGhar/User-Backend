@@ -450,7 +450,7 @@ def notify_bulk(users: list, template_slug: str, async_send: bool = True, **cont
 
 
 def send_otp(identifier: str, otp: str, purpose: str = 'verification', 
-             expiry_minutes: int = 5, async_send: bool = True):
+             expiry_minutes: int = 5, platform: str = None, async_send: bool = True):
     """
     🚀 Universal OTP sender - Handles both existing and non-existing users
     
@@ -486,7 +486,8 @@ def send_otp(identifier: str, otp: str, purpose: str = 'verification',
             identifier=identifier,
             otp=otp,
             purpose=purpose,
-            expiry_minutes=expiry_minutes
+            expiry_minutes=expiry_minutes,
+            platform=platform
         )
     else:
         # Send sync (immediate) - call the task function directly
@@ -501,7 +502,7 @@ def send_otp(identifier: str, otp: str, purpose: str = 'verification',
                 pass
         
         mock_task = MockTask()
-        return send_otp_task(mock_task, identifier, otp, purpose, expiry_minutes)
+        return send_otp_task(mock_task, identifier, otp, purpose, expiry_minutes, platform)
 
 
 # Export the universal methods

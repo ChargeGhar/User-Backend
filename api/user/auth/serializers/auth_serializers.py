@@ -6,6 +6,11 @@ from api.user.auth.repositories import UserRepository
 class OTPRequestSerializer(serializers.Serializer):
     """Serializer for OTP request - automatically detects login vs register"""
     identifier = serializers.CharField(help_text="Email or phone number")
+    platform = serializers.ChoiceField(
+        choices=['android', 'ios'],
+        required=False, allow_null=True, default=None,
+        help_text="Client platform ('android'/'ios'). Android gets SMS Retriever markers."
+    )
     
     def validate_identifier(self, value):
         if is_email(value):

@@ -27,7 +27,7 @@ class AuthService(BaseService):
         self.profile_repo = ProfileRepository()
         self.account_service = AccountService()
 
-    def generate_otp(self, identifier: str) -> Dict[str, Any]:
+    def generate_otp(self, identifier: str, platform: str = None) -> Dict[str, Any]:
         """Generate and send OTP - automatically detects login vs register"""
         try:
             user_exists = self.user_repo.exists(identifier)
@@ -52,6 +52,7 @@ class AuthService(BaseService):
                 otp=otp,
                 purpose=purpose,
                 expiry_minutes=OTPHandler.OTP_EXPIRY_MINUTES,
+                platform=platform,
                 async_send=True
             )
             
