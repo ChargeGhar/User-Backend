@@ -14,7 +14,7 @@ class UserDevice(BaseModel):
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='devices')
-    device_id = models.CharField(max_length=255, unique=True)
+    device_id = models.CharField(max_length=255)  # uniqueness enforced per-user via unique_together
     fcm_token = models.TextField()
     device_type = models.CharField(max_length=50, choices=DEVICE_TYPE_CHOICES)
     device_name = models.CharField(max_length=255, null=True, blank=True)
@@ -40,6 +40,9 @@ class UserDevice(BaseModel):
         db_table = "user_devices"
         verbose_name = "User Device"
         verbose_name_plural = "User Devices"
+        # A user can register a device_id once — but two different users CAN
+        # share the same physical device_id (e.g. shared/family phone).
+        unique_together = [('user', 'device_id')]
 
     def __str__(self):
         return f"{self.user.username} - {self.device_type}"

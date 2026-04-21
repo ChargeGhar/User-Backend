@@ -17,7 +17,7 @@ from api.common.decorators import rate_limit, log_api_call
 from api.common.serializers import BaseResponseSerializer
 from api.user.auth import serializers
 from api.user.auth.models import User
-from api.user.auth.services import AuthService, UserDeviceService, UserProfileService
+from api.user.auth.services import AuthService, UserDeviceService, UserProfileService, AccountService
 
 auth_router = CustomViewRouter()
 logger = logging.getLogger(__name__)
@@ -182,6 +182,7 @@ class MeView(GenericAPIView, BaseAPIView):
 @extend_schema(
     tags=["Authentication - Profile"],
     summary="Delete Account",
+    description="Soft-deletes the authenticated user account. PII is anonymized and the account is deactivated. Financial records (transactions, rentals, etc.) are preserved.",
     responses={200: BaseResponseSerializer}
 )
 class DeleteAccountView(GenericAPIView, BaseAPIView):
@@ -191,8 +192,7 @@ class DeleteAccountView(GenericAPIView, BaseAPIView):
     @log_api_call()
     def delete(self, request: Request) -> Response:
         def operation():
-            user = request.user
-            user.delete()
+            AccountService().delete_account(user=request.user, request=request)
             return {'message': 'Account deleted successfully'}
         return self.handle_service_operation(
             operation,

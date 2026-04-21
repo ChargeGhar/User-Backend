@@ -67,6 +67,10 @@ class StationService(CRUDService):
                     status__in=['ONLINE', 'OFFLINE']  # Exclude other statuses
                 )
             
+            # Filter by explicit status if requested (ONLINE or OFFLINE)
+            if filters and filters.get('status') in ('ONLINE', 'OFFLINE'):
+                queryset = queryset.filter(status=filters['status'])
+            
             # Pagination
             page = filters.get('page', 1) if filters else 1
             page_size = min(filters.get('page_size', 20) if filters else 20, 50)  # Max 50 per page

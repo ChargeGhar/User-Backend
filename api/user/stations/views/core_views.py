@@ -29,6 +29,8 @@ logger = logging.getLogger(__name__)
     parameters=[
         OpenApiParameter("lat", OpenApiTypes.FLOAT, description="User latitude for distance calculation"),
         OpenApiParameter("lng", OpenApiTypes.FLOAT, description="User longitude for distance calculation"),
+        OpenApiParameter("max_distance", OpenApiTypes.FLOAT, description="Max radius in km when lat/lng provided (default 10, max 50)"),
+        OpenApiParameter("status", OpenApiTypes.STR, description="Filter by station status: ONLINE or OFFLINE (default: both)"),
         OpenApiParameter("search", OpenApiTypes.STR, description="Search by station name or address"),
         OpenApiParameter("page", OpenApiTypes.INT, description="Page number"),
         OpenApiParameter("page_size", OpenApiTypes.INT, description="Items per page (max 50)"),
@@ -57,12 +59,19 @@ class StationListView(GenericAPIView, BaseAPIView):
                 try:
                     filters['lat'] = float(request.query_params.get('lat'))
                     filters['lng'] = float(request.query_params.get('lng'))
-                    filters['radius'] = 10.0  # Fixed 10km radius for list
+                    # max_distance from query param, default 10km, hard cap at 50km
+                    raw_distance = request.query_params.get('max_distance', 10.0)
+                    filters['radius'] = min(float(raw_distance), 50.0)
                 except (ValueError, TypeError):
                     raise ServiceException(
-                        detail="Invalid coordinates",
+                        detail="Invalid coordinates or max_distance value",
                         code="invalid_coordinates"
                     )
+            
+            # Status filter — ONLINE or OFFLINE only
+            raw_status = request.query_params.get('status', '').upper()
+            if raw_status in ('ONLINE', 'OFFLINE'):
+                filters['status'] = raw_status
             
             # Get stations from service
             service = StationService()
