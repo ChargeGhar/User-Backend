@@ -13,6 +13,31 @@ from django.utils import timezone
 from api.common.services.base import BaseService, ServiceException
 from api.common.utils.helpers import paginate_queryset
 from api.partners.common.models import Partner, StationDistribution
+from api.partners.common.repositories import StationDistributionRepository
+
+
+def _get_assigned_partner_info(station_id: str) -> Dict:
+    """
+    Get unified assigned partner info for a station.
+    Uses priority: FRANCHISE_TO_VENDOR > CHARGEGHAR_TO_FRANCHISE > CHARGEGHAR_TO_VENDOR
+    """
+    partner = StationDistributionRepository.get_assigned_partner(station_id)
+    if not partner:
+        return {
+            "isAssigned": False,
+            "assignedPartner": None
+        }
+    return {
+        "isAssigned": True,
+        "assignedPartner": {
+            "id": str(partner.id),
+            "code": partner.code,
+            "businessName": partner.business_name,
+            "partnerType": partner.partner_type,
+            "vendorType": partner.vendor_type if partner.is_vendor else None,
+            "status": partner.status,
+        }
+    }
 
 
 class PartnerStationService(BaseService):
@@ -115,17 +140,8 @@ class PartnerStationService(BaseService):
                 is_active=True
             ).first()
             
-            # Get assigned partner info (vendor for franchise, or franchise for vendor)
-            assigned_partner = None
-            if partner.is_franchise:
-                # Check if assigned to vendor
-                vendor_dist = StationDistribution.objects.filter(
-                    station_id=station.id,
-                    distribution_type=StationDistribution.DistributionType.FRANCHISE_TO_VENDOR,
-                    is_active=True
-                ).select_related('partner').first()
-                if vendor_dist:
-                    assigned_partner = vendor_dist.partner
+            # Get unified assigned partner info
+            assigned_partner_info = _get_assigned_partner_info(station.id)
             
             # Get amenities
             amenities = [
@@ -166,14 +182,7 @@ class PartnerStationService(BaseService):
                     'effective_date': own_dist.effective_date,
                     'is_active': own_dist.is_active,
                 } if own_dist else None,
-                'assigned_partner': {
-                    'id': assigned_partner.id,
-                    'code': assigned_partner.code,
-                    'business_name': assigned_partner.business_name,
-                    'partner_type': assigned_partner.partner_type,
-                    'vendor_type': assigned_partner.vendor_type if assigned_partner.is_vendor else None,
-                    'status': assigned_partner.status,
-                } if assigned_partner else None,
+                **assigned_partner_info,
                 'revenue_stats': {
                     'today_transactions': revenue_today.get(station_id, {}).get('transactions', 0),
                     'today_revenue': revenue_today.get(station_id, {}).get('revenue', Decimal('0')),
@@ -241,16 +250,8 @@ class PartnerStationService(BaseService):
             is_active=True
         ).first()
         
-        # Get assigned partner (vendor for franchise, franchise for vendor)
-        assigned_partner = None
-        if partner.is_franchise:
-            vendor_dist = StationDistribution.objects.filter(
-                station_id=station.id,
-                distribution_type=StationDistribution.DistributionType.FRANCHISE_TO_VENDOR,
-                is_active=True
-            ).select_related('partner').first()
-            if vendor_dist:
-                assigned_partner = vendor_dist.partner
+        # Get unified assigned partner info
+        assigned_partner_info = _get_assigned_partner_info(station.id)
         
         # Get amenities
         amenities = [{
@@ -338,14 +339,7 @@ class PartnerStationService(BaseService):
                 'effective_date': own_dist.effective_date,
                 'is_active': own_dist.is_active,
             } if own_dist else None,
-            'assigned_partner': {
-                'id': assigned_partner.id,
-                'code': assigned_partner.code,
-                'business_name': assigned_partner.business_name,
-                'partner_type': assigned_partner.partner_type,
-                'vendor_type': assigned_partner.vendor_type if assigned_partner.is_vendor else None,
-                'status': assigned_partner.status,
-            } if assigned_partner else None
+            **assigned_partner_info,
         }
     
     def _get_revenue_stats_bulk(self, partner_id: str, station_ids: list, start_date: date, end_date: date) -> Dict:

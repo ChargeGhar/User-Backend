@@ -199,6 +199,16 @@ class AdminStationSerializer(serializers.Serializer):
     total_powerbanks = serializers.SerializerMethodField()
     available_powerbanks = serializers.SerializerMethodField()
     
+    # Assignment info (populated by AdminStationService)
+    isAssigned = serializers.SerializerMethodField()
+    assignedPartner = serializers.SerializerMethodField()
+    
+    def get_isAssigned(self, obj):
+        return getattr(obj, '_is_assigned', False)
+    
+    def get_assignedPartner(self, obj):
+        return getattr(obj, '_assigned_partner', None)
+    
     def get_amenities(self, obj):
         """Get amenity names only (minimal)"""
         amenity_mappings = obj.amenity_mappings.select_related('amenity').filter(
@@ -257,6 +267,16 @@ class AdminStationDetailSerializer(serializers.Serializer):
     media = serializers.SerializerMethodField()
     slots = serializers.SerializerMethodField()
     powerbanks = serializers.SerializerMethodField()
+    
+    # Assignment info (populated by AdminStationService)
+    isAssigned = serializers.SerializerMethodField()
+    assignedPartner = serializers.SerializerMethodField()
+    
+    def get_isAssigned(self, obj):
+        return getattr(obj, '_is_assigned', False)
+    
+    def get_assignedPartner(self, obj):
+        return getattr(obj, '_assigned_partner', None)
     
     def get_amenities(self, obj):
         """Get all amenities assigned to this station"""

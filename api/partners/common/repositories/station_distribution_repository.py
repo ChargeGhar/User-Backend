@@ -75,6 +75,50 @@ class StationDistributionRepository:
         return None
 
     @staticmethod
+    def get_assigned_partner(station_id: str) -> Optional[Partner]:
+        """
+        Get the partner that should be shown as 'assignedPartner' for a station.
+
+        Priority (highest first):
+        1. FRANCHISE_TO_VENDOR  (operating vendor)
+        2. CHARGEGHAR_TO_FRANCHISE (owning franchise)
+        3. CHARGEGHAR_TO_VENDOR (direct vendor under ChargeGhar)
+
+        Returns Partner or None if no active distribution exists.
+        """
+        # Try vendor under franchise first (highest priority)
+        vendor_dist = StationDistribution.objects.filter(
+            station_id=station_id,
+            is_active=True,
+            distribution_type=StationDistribution.DistributionType.FRANCHISE_TO_VENDOR
+        ).select_related('partner').first()
+
+        if vendor_dist:
+            return vendor_dist.partner
+
+        # Then franchise owner
+        franchise_dist = StationDistribution.objects.filter(
+            station_id=station_id,
+            is_active=True,
+            distribution_type=StationDistribution.DistributionType.CHARGEGHAR_TO_FRANCHISE
+        ).select_related('partner').first()
+
+        if franchise_dist:
+            return franchise_dist.partner
+
+        # Finally direct vendor under ChargeGhar
+        direct_vendor_dist = StationDistribution.objects.filter(
+            station_id=station_id,
+            is_active=True,
+            distribution_type=StationDistribution.DistributionType.CHARGEGHAR_TO_VENDOR
+        ).select_related('partner').first()
+
+        if direct_vendor_dist:
+            return direct_vendor_dist.partner
+
+        return None
+
+    @staticmethod
     def get_station_franchise(station_id: str) -> Optional[Partner]:
         """
         Get the franchise that owns a station (if any).

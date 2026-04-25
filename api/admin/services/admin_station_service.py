@@ -15,10 +15,28 @@ from django.db.models import Q
 from api.common.services.base import CRUDService, ServiceException
 from api.common.utils.helpers import paginate_queryset
 from api.admin.models import AdminActionLog
+from api.partners.common.repositories import StationDistributionRepository
 from api.user.stations.models import (
-    Station, StationAmenity, StationAmenityMapping, 
+    Station, StationAmenity, StationAmenityMapping,
     StationMedia
 )
+
+
+def _build_assigned_partner_info(partner):
+    """Build assignedPartner dict from Partner instance"""
+    if not partner:
+        return {"isAssigned": False, "assignedPartner": None}
+    return {
+        "isAssigned": True,
+        "assignedPartner": {
+            "id": str(partner.id),
+            "code": partner.code,
+            "businessName": partner.business_name,
+            "partnerType": partner.partner_type,
+            "vendorType": partner.vendor_type if partner.is_vendor else None,
+            "status": partner.status,
+        }
+    }
 
 class AdminStationService(CRUDService):
     """Service for admin station management"""
@@ -56,7 +74,18 @@ class AdminStationService(CRUDService):
             page = filters.get('page', 1) if filters else 1
             page_size = filters.get('page_size', 20) if filters else 20
             
-            return paginate_queryset(queryset, page, page_size)
+            result = paginate_queryset(queryset, page, page_size)
+            
+            # Enrich each station with assigned partner info
+            stations = result.get('results', [])
+            if stations:
+                for station in stations:
+                    partner = StationDistributionRepository.get_assigned_partner(str(station.id))
+                    info = _build_assigned_partner_info(partner)
+                    station._is_assigned = info["isAssigned"]
+                    station._assigned_partner = info["assignedPartner"]
+            
+            return result
             
         except Exception as e:
             self.handle_service_error(e, "Failed to get stations list")
@@ -360,6 +389,12 @@ class AdminStationService(CRUDService):
                 'issues__assigned_to',                # Issues with assignee info
                 'media__media_upload'                 # Media files
             ).get(serial_number=station_sn, is_deleted=False)
+            
+            # Enrich with assigned partner info
+            partner = StationDistributionRepository.get_assigned_partner(str(station.id))
+            info = _build_assigned_partner_info(partner)
+            station._is_assigned = info["isAssigned"]
+            station._assigned_partner = info["assignedPartner"]
             
             return station
             
