@@ -77,11 +77,11 @@ class AdminPartnerSerializer(serializers.Serializer):
     balance = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     total_earnings = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     created_at = serializers.DateTimeField(read_only=True)
-    
+
     # Parent info
     parent_id = serializers.UUIDField(source='parent.id', read_only=True, allow_null=True)
     parent_name = serializers.CharField(source='parent.business_name', read_only=True, allow_null=True)
-    
+
     # User info
     user_id = serializers.IntegerField(source='user.id', read_only=True)
     user_email = serializers.EmailField(source='user.email', read_only=True)
@@ -98,11 +98,11 @@ class AdminPartnerDetailSerializer(AdminPartnerSerializer):
     assigned_by_name = serializers.CharField(source='assigned_by.username', read_only=True, allow_null=True)
     notes = serializers.CharField(read_only=True, allow_null=True)
     updated_at = serializers.DateTimeField(read_only=True)
-    
+
     # Computed fields
     stations_count = serializers.SerializerMethodField()
     vendors_count = serializers.SerializerMethodField()
-    
+
     def get_stations_count(self, obj):
         """Get count of stations assigned to this partner"""
         from api.partners.common.models import StationDistribution
@@ -110,7 +110,7 @@ class AdminPartnerDetailSerializer(AdminPartnerSerializer):
             partner=obj,
             is_active=True
         ).count()
-    
+
     def get_vendors_count(self, obj):
         """Get count of vendors under this partner (for franchises)"""
         if obj.partner_type == 'FRANCHISE':
@@ -180,44 +180,48 @@ class CreateFranchiseSerializer(serializers.Serializer):
         help_text="Initial password for partner login"
     )
     notes = serializers.CharField(required=False, allow_null=True, allow_blank=True)
-    
+
     def validate_user_id(self, value):
         """Validate user exists and is not already a partner"""
         from api.user.auth.models import User
         from api.partners.common.repositories import PartnerRepository
         from api.partners.common.models import Partner
-        
+
         try:
             User.objects.get(id=value)
         except User.DoesNotExist:
             raise serializers.ValidationError("User not found")
-        
+
         existing_partner = PartnerRepository.get_by_user_id(value)
         if existing_partner and existing_partner.status != Partner.Status.PENDING:
             raise serializers.ValidationError("User is already a partner")
-        
+
         return value
-    
+
     def validate_station_ids(self, value):
         """Validate stations exist and are not already assigned"""
         if not value:
             return value
-        
+
+        # Check for duplicates
+        if len(value) != len(set(str(s) for s in value)):
+            raise serializers.ValidationError("Duplicate station IDs are not allowed.")
+
         from api.user.stations.models import Station
         from api.partners.common.repositories import StationDistributionRepository
-        
+
         for station_id in value:
             # Check station exists
             if not Station.objects.filter(id=station_id).exists():
                 raise serializers.ValidationError(f"Station {station_id} not found")
-            
+
             # Check station not already assigned
             existing = StationDistributionRepository.get_active_by_station(str(station_id))
             if existing.exists():
                 raise serializers.ValidationError(
                     f"Station {station_id} is already assigned to another partner"
                 )
-        
+
         return value
 
 
@@ -234,8 +238,11 @@ class CreateVendorSerializer(serializers.Serializer):
     contact_phone = serializers.CharField(max_length=20)
     contact_email = serializers.EmailField(required=False, allow_null=True)
     address = serializers.CharField(required=False, allow_null=True)
-    station_id = serializers.UUIDField(
-        help_text="Single station UUID to assign to vendor"
+    station_ids = serializers.ListField(
+        child=serializers.UUIDField(),
+        required=True,
+        min_length=1,
+        help_text="List of station UUIDs to assign to vendor"
     )
     # Revenue model fields (required for REVENUE vendors)
     revenue_model = serializers.ChoiceField(
@@ -261,39 +268,46 @@ class CreateVendorSerializer(serializers.Serializer):
         help_text="Initial password (required for REVENUE vendors)"
     )
     notes = serializers.CharField(required=False, allow_null=True, allow_blank=True)
-    
+
     def validate_user_id(self, value):
         """Validate user exists and is not already a partner"""
         from api.user.auth.models import User
         from api.partners.common.repositories import PartnerRepository
         from api.partners.common.models import Partner
-        
+
         try:
             User.objects.get(id=value)
         except User.DoesNotExist:
             raise serializers.ValidationError("User not found")
-        
+
         existing_partner = PartnerRepository.get_by_user_id(value)
         if existing_partner and existing_partner.status != Partner.Status.PENDING:
             raise serializers.ValidationError("User is already a partner")
-        
+
         return value
-    
-    def validate_station_id(self, value):
-        """Validate station exists and is available for vendor assignment"""
+
+    def validate_station_ids(self, value):
+        """Validate all stations exist and are available for vendor assignment"""
+        # Check for duplicates
+        if len(value) != len(set(str(s) for s in value)):
+            raise serializers.ValidationError("Duplicate station IDs are not allowed.")
+
         from api.user.stations.models import Station
         from api.partners.common.repositories import StationDistributionRepository
-        
-        # Check station exists
-        if not Station.objects.filter(id=value).exists():
-            raise serializers.ValidationError("Station not found")
-        
-        # Check station doesn't already have a vendor operator
-        if StationDistributionRepository.station_has_operator(str(value)):
-            raise serializers.ValidationError("Station already has an operator assigned")
-        
+
+        for station_id in value:
+            # Check station exists
+            if not Station.objects.filter(id=station_id).exists():
+                raise serializers.ValidationError(f"Station {station_id} not found")
+
+            # Check station doesn't already have a vendor operator
+            if StationDistributionRepository.station_has_operator(str(station_id)):
+                raise serializers.ValidationError(
+                    f"Station {station_id} already has an operator assigned"
+                )
+
         return value
-    
+
     def validate(self, data):
         """Cross-field validation"""
         vendor_type = data.get('vendor_type')
@@ -301,31 +315,81 @@ class CreateVendorSerializer(serializers.Serializer):
         partner_percent = data.get('partner_percent')
         fixed_amount = data.get('fixed_amount')
         password = data.get('password')
-        
+
         if vendor_type == 'REVENUE':
             # REVENUE vendors require revenue model
             if not revenue_model:
                 raise serializers.ValidationError({
                     "revenue_model": "Revenue model is required for REVENUE vendors"
                 })
-            
+
             if revenue_model == 'PERCENTAGE' and partner_percent is None:
                 raise serializers.ValidationError({
                     "partner_percent": "Partner percent is required for PERCENTAGE model"
                 })
-            
+
             if revenue_model == 'FIXED' and fixed_amount is None:
                 raise serializers.ValidationError({
                     "fixed_amount": "Fixed amount is required for FIXED model"
                 })
-            
+
             # REVENUE vendors need password for dashboard access
             if not password:
                 raise serializers.ValidationError({
                     "password": "Password is required for REVENUE vendors (dashboard access)"
                 })
-        
+
         return data
+
+
+class AssignStationsToVendorSerializer(serializers.Serializer):
+    """Serializer for assigning additional stations to an existing vendor"""
+    vendor_id = serializers.UUIDField(
+        help_text="Vendor partner UUID"
+    )
+    station_ids = serializers.ListField(
+        child=serializers.UUIDField(),
+        required=True,
+        min_length=1,
+        help_text="List of station UUIDs to assign to the vendor"
+    )
+    notes = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+
+    def validate_vendor_id(self, value):
+        """Validate vendor exists and is a VENDOR type"""
+        from api.partners.common.repositories import PartnerRepository
+        from api.partners.common.models import Partner
+
+        partner = PartnerRepository.get_by_id(str(value))
+        if not partner:
+            raise serializers.ValidationError("Vendor not found")
+
+        if partner.partner_type != Partner.PartnerType.VENDOR:
+            raise serializers.ValidationError("Partner is not a vendor")
+
+        return value
+
+    def validate_station_ids(self, value):
+        """Validate all stations exist and are available"""
+        # Check for duplicates
+        if len(value) != len(set(str(s) for s in value)):
+            raise serializers.ValidationError("Duplicate station IDs are not allowed.")
+
+        from api.user.stations.models import Station
+        from api.partners.common.repositories import StationDistributionRepository
+
+        for station_id in value:
+            # Check station exists
+            if not Station.objects.filter(id=station_id).exists():
+                raise serializers.ValidationError(f"Station {station_id} not found")
+
+            # Check station doesn't already have a vendor operator
+            if StationDistributionRepository.station_has_operator(str(station_id)):
+                raise serializers.ValidationError(
+                    f"Station {station_id} already has an operator assigned"
+                )
+
+        return value
 
 
 class UpdatePartnerSerializer(serializers.Serializer):
@@ -442,7 +506,7 @@ class AdminResetPartnerPasswordSerializer(serializers.Serializer):
         write_only=True,
         help_text="Confirm new password"
     )
-    
+
     def validate(self, data):
         if data['new_password'] != data['confirm_password']:
             raise serializers.ValidationError({
@@ -458,12 +522,12 @@ class AdminResetPartnerPasswordSerializer(serializers.Serializer):
 class ChangeVendorTypeSerializer(serializers.Serializer):
     """
     Serializer for changing vendor type (NON_REVENUE <-> REVENUE).
-    
+
     When changing to REVENUE:
     - password is required (for dashboard access)
     - revenue_model is required
     - partner_percent or fixed_amount is required based on revenue_model
-    
+
     When changing to NON_REVENUE:
     - No additional fields required
     - Revenue share will be deleted
@@ -509,31 +573,31 @@ class ChangeVendorTypeSerializer(serializers.Serializer):
         allow_blank=True,
         help_text="Reason for vendor type change (added to notes)"
     )
-    
+
     def validate(self, data):
         vendor_type = data.get('vendor_type')
-        
+
         if vendor_type == 'REVENUE':
             # Validate required fields for REVENUE
             if not data.get('password'):
                 raise serializers.ValidationError({
                     "password": "Password is required when changing to REVENUE vendor"
                 })
-            
+
             if not data.get('revenue_model'):
                 raise serializers.ValidationError({
                     "revenue_model": "Revenue model is required when changing to REVENUE vendor"
                 })
-            
+
             revenue_model = data.get('revenue_model')
             if revenue_model == 'PERCENTAGE' and data.get('partner_percent') is None:
                 raise serializers.ValidationError({
                     "partner_percent": "Partner percent is required for PERCENTAGE model"
                 })
-            
+
             if revenue_model == 'FIXED' and data.get('fixed_amount') is None:
                 raise serializers.ValidationError({
                     "fixed_amount": "Fixed amount is required for FIXED model"
                 })
-        
+
         return data

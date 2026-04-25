@@ -84,7 +84,7 @@ class AdminCreateVendorView(GenericAPIView, BaseAPIView):
     @extend_schema(
         tags=["Admin - Partners"],
         summary="Create Vendor",
-        description="Create a new ChargeGhar-level vendor partner with station assignment",
+        description="Create a new ChargeGhar-level vendor partner with station assignments (multiple stations supported)",
         request=serializers.CreateVendorSerializer,
         responses={200: BaseResponseSerializer}
     )
@@ -102,7 +102,7 @@ class AdminCreateVendorView(GenericAPIView, BaseAPIView):
                 vendor_type=data['vendor_type'],
                 business_name=data['business_name'],
                 contact_phone=data['contact_phone'],
-                station_id=str(data['station_id']),
+                station_ids=data['station_ids'],
                 admin_user=request.user,
                 contact_email=data.get('contact_email'),
                 address=data.get('address'),
@@ -119,6 +119,47 @@ class AdminCreateVendorView(GenericAPIView, BaseAPIView):
             operation,
             "Vendor created successfully",
             "Failed to create vendor"
+        )
+
+
+@partner_admin_router.register(r"admin/partners/stations/assign", name="admin-partners-stations-assign")
+class AdminAssignStationsToVendorView(GenericAPIView, BaseAPIView):
+    """Assign stations to existing vendor"""
+    permission_classes = [IsStaffPermission]
+    serializer_class = serializers.AssignStationsToVendorSerializer
+
+    @extend_schema(
+        tags=["Admin - Partners"],
+        summary="Assign Stations to Vendor",
+        description="Assign one or more stations to an existing vendor. Copies the vendor's existing revenue configuration.",
+        request=serializers.AssignStationsToVendorSerializer,
+        responses={200: BaseResponseSerializer}
+    )
+    @log_api_call()
+    def post(self, request: Request) -> Response:
+        """Assign stations to existing vendor"""
+        def operation():
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            data = serializer.validated_data
+            
+            service = AdminPartnerService()
+            distributions = service.assign_stations_to_vendor(
+                vendor_id=str(data['vendor_id']),
+                station_ids=data['station_ids'],
+                admin_user=request.user,
+                notes=data.get('notes')
+            )
+            
+            return [
+                serializers.AdminStationDistributionSerializer(d).data
+                for d in distributions
+            ]
+        
+        return self.handle_service_operation(
+            operation,
+            "Stations assigned to vendor successfully",
+            "Failed to assign stations to vendor"
         )
 
 
@@ -567,12 +608,12 @@ class AdminChangeVendorTypeView(GenericAPIView, BaseAPIView):
         description="""
         Change vendor type between REVENUE and NON_REVENUE.
         
-        **NON_REVENUE → REVENUE:**
+        **NON_REVENUE -> REVENUE:**
         - Requires password (for dashboard access)
         - Requires revenue_model (PERCENTAGE or FIXED)
         - Requires partner_percent or fixed_amount based on model
         
-        **REVENUE → NON_REVENUE:**
+        **REVENUE -> NON_REVENUE:**
         - No additional fields required
         - Revenue share will be deleted
         - Dashboard access will be revoked via permissions

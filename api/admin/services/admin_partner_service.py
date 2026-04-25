@@ -116,7 +116,7 @@ class AdminPartnerService(BaseService):
         1. Create partner record
         2. Set user.is_partner = True
         3. Set user password
-        4. Assign stations (if provided)
+        4. Assign stationss (if provided)
         
         Args:
             user_id: Existing user ID
@@ -176,7 +176,7 @@ class AdminPartnerService(BaseService):
         vendor_type: str,
         business_name: str,
         contact_phone: str,
-        station_id: str,
+        station_ids: List[str],
         admin_user,
         contact_email: Optional[str] = None,
         address: Optional[str] = None,
@@ -193,15 +193,15 @@ class AdminPartnerService(BaseService):
         1. Create partner record
         2. Set user.is_partner = True (for REVENUE vendors)
         3. Set user password (for REVENUE vendors)
-        4. Assign station
-        5. Create revenue share (for REVENUE vendors)
+        4. Assign stations
+        5. Create revenue share for each station (for REVENUE vendors)
         
         Args:
             user_id: Existing user ID
             vendor_type: REVENUE or NON_REVENUE
             business_name: Vendor business name
             contact_phone: Contact phone
-            station_id: Station UUID to assign
+            station_ids: List of Station UUIDs to assign
             admin_user: Admin user creating the partner
             contact_email: Optional email
             address: Optional address
@@ -236,26 +236,65 @@ class AdminPartnerService(BaseService):
             user.set_password(password)
             user.save(update_fields=['is_partner', 'password'])
         
-        # Create station distribution
-        distribution = StationDistributionRepository.create(
-            station_id=station_id,
-            partner_id=str(partner.id),
-            distribution_type=StationDistribution.DistributionType.CHARGEGHAR_TO_VENDOR,
-            assigned_by_id=admin_user.id
-        )
-        
-        # Create revenue share for REVENUE vendors
-        if vendor_type == Partner.VendorType.REVENUE:
-            StationRevenueShareRepository.create(
-                distribution_id=str(distribution.id),
-                revenue_model=revenue_model,
-                partner_percent=float(partner_percent) if partner_percent else None,
-                fixed_amount=float(fixed_amount) if fixed_amount else None
+        # Create station distributions for all stations
+        for station_id in station_ids:
+            distribution = StationDistributionRepository.create(
+                station_id=str(station_id),
+                partner_id=str(partner.id),
+                distribution_type=StationDistribution.DistributionType.CHARGEGHAR_TO_VENDOR,
+                assigned_by_id=admin_user.id
             )
-        
-        self.log_info(f"Vendor created: {partner.code} ({vendor_type}) by admin {admin_user.id}")
+
+            # Create revenue share for REVENUE vendors (same config for all stations)
+            if vendor_type == Partner.VendorType.REVENUE:
+                StationRevenueShareRepository.create(
+                    distribution_id=str(distribution.id),
+                    revenue_model=revenue_model,
+                    partner_percent=float(partner_percent) if partner_percent else None,
+                    fixed_amount=float(fixed_amount) if fixed_amount else None
+                )
+
+        self.log_info(f"Vendor created: {partner.code} ({vendor_type}) with {len(station_ids)} stations by admin {admin_user.id}")
         return partner
-    
+
+    @transaction.atomic
+    def assign_stations_to_vendor(
+        self,
+        vendor_id: str,
+        station_ids: List[str],
+        admin_user,
+        notes: Optional[str] = None
+    ) -> List:
+        """
+        Assign additional stations to an existing vendor.
+        Copies the vendor's existing revenue configuration to new stations.
+
+        Args:
+            vendor_id: Vendor Partner UUID
+            station_ids: List of Station UUIDs to assign
+            admin_user: Admin user making the assignment
+            notes: Optional notes
+
+        Returns:
+            List of created StationDistribution instances
+        """
+        from api.partners.common.services.station_assignment_service import StationAssignmentService
+
+        service = StationAssignmentService()
+        results = service.assign_stations_to_vendor(
+            partner_id=vendor_id,
+            station_ids=station_ids,
+            assigned_by_id=admin_user.id,
+            distribution_type=StationDistribution.DistributionType.CHARGEGHAR_TO_VENDOR,
+            notes=notes
+        )
+
+        distributions = [r['distribution'] for r in results]
+        self.log_info(
+            f"Assigned {len(distributions)} stations to vendor {vendor_id} by admin {admin_user.id}"
+        )
+        return distributions
+
     @transaction.atomic
     def update_partner(self, partner_id: str, data: Dict, admin_user) -> Partner:
         """

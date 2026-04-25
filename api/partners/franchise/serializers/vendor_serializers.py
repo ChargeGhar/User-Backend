@@ -14,7 +14,7 @@ class VendorStationSerializer(serializers.Serializer):
 
 
 class FranchiseVendorListSerializer(serializers.Serializer):
-    """Vendor list item for franchise"""
+    """Vendor list item for franchise (updated for multi-station)"""
     id = serializers.UUIDField()
     code = serializers.CharField()
     business_name = serializers.CharField()
@@ -25,11 +25,12 @@ class FranchiseVendorListSerializer(serializers.Serializer):
     balance = serializers.DecimalField(max_digits=12, decimal_places=2)
     total_earnings = serializers.DecimalField(max_digits=12, decimal_places=2)
     created_at = serializers.DateTimeField()
-    station = VendorStationSerializer(allow_null=True)
+    stations = VendorStationSerializer(many=True, allow_null=True)
+    station_count = serializers.IntegerField(default=0)
 
 
 class CreateVendorSerializer(serializers.Serializer):
-    """Create vendor request"""
+    """Create vendor request (updated for multi-station)"""
     user_id = serializers.IntegerField(required=True, help_text="Existing user ID to link as vendor")
     vendor_type = serializers.ChoiceField(
         choices=['REVENUE', 'NON_REVENUE'],
@@ -40,7 +41,12 @@ class CreateVendorSerializer(serializers.Serializer):
     contact_phone = serializers.CharField(required=True, max_length=20)
     contact_email = serializers.EmailField(required=False, allow_blank=True)
     address = serializers.CharField(required=False, allow_blank=True)
-    station_id = serializers.UUIDField(required=True, help_text="Station UUID to assign to vendor")
+    station_ids = serializers.ListField(
+        child=serializers.UUIDField(),
+        required=True,
+        min_length=1,
+        help_text="List of station UUIDs to assign to vendor"
+    )
     revenue_model = serializers.ChoiceField(
         choices=['PERCENTAGE', 'FIXED'],
         required=False,
@@ -68,6 +74,12 @@ class CreateVendorSerializer(serializers.Serializer):
         help_text="Initial password (required for REVENUE vendors)"
     )
     notes = serializers.CharField(required=False, allow_blank=True)
+
+    def validate_station_ids(self, value):
+        """Validate station IDs - no duplicates"""
+        if len(value) != len(set(str(s) for s in value)):
+            raise serializers.ValidationError("Duplicate station IDs are not allowed.")
+        return value
 
 
 class UpdateVendorSerializer(serializers.Serializer):

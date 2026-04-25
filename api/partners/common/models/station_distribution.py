@@ -5,49 +5,49 @@ from api.common.models import BaseModel
 class StationDistribution(BaseModel):
     """
     StationDistribution - Links stations to partners.
-    
+
     Distribution Types:
     - CHARGEGHAR_TO_FRANCHISE: ChargeGhar assigns station to Franchise (ownership + operation)
     - CHARGEGHAR_TO_VENDOR: ChargeGhar assigns station operation to Direct Vendor
     - FRANCHISE_TO_VENDOR: Franchise assigns their station operation to Sub-Vendor
-    
+
     Business Rules:
     - BR2.1: ChargeGhar assigns to CG Vendors while creating them
     - BR2.2: Franchise assigns to F Vendors while creating them
-    - BR2.3: Vendor can have ONLY ONE station (service layer validation)
-    - BR2.4: Station can have only ONE operator at a time (unique index)
+    - BR2.3: Vendor can have MULTIPLE stations (updated from one-to-one)
+    - BR2.4: Station can have only ONE operator at a time
     """
-    
+
     class DistributionType(models.TextChoices):
         CHARGEGHAR_TO_FRANCHISE = 'CHARGEGHAR_TO_FRANCHISE', 'ChargeGhar to Franchise'
         CHARGEGHAR_TO_VENDOR = 'CHARGEGHAR_TO_VENDOR', 'ChargeGhar to Vendor'
         FRANCHISE_TO_VENDOR = 'FRANCHISE_TO_VENDOR', 'Franchise to Vendor'
-    
+
     # Station being assigned
     station = models.ForeignKey(
         'stations.Station',
         on_delete=models.CASCADE,
         related_name='partner_distributions'
     )
-    
+
     # Partner receiving station
     partner = models.ForeignKey(
         'partners.Partner',
         on_delete=models.CASCADE,
         related_name='station_distributions'
     )
-    
+
     # Distribution type (determined by hierarchy)
     distribution_type = models.CharField(
         max_length=30,
         choices=DistributionType.choices
     )
-    
+
     # Validity period
     effective_date = models.DateField(auto_now_add=True)
     expiry_date = models.DateField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
-    
+
     # Admin tracking
     assigned_by = models.ForeignKey(
         'users.User',
@@ -84,12 +84,12 @@ class StationDistribution(BaseModel):
 
     def __str__(self):
         return f"{self.station.station_name} -> {self.partner.business_name}"
-    
+
     @property
     def is_ownership(self):
         """Check if this is ownership assignment (Franchise)"""
         return self.distribution_type == self.DistributionType.CHARGEGHAR_TO_FRANCHISE
-    
+
     @property
     def is_operation(self):
         """Check if this is operation assignment (Vendor)"""
@@ -97,7 +97,7 @@ class StationDistribution(BaseModel):
             self.DistributionType.CHARGEGHAR_TO_VENDOR,
             self.DistributionType.FRANCHISE_TO_VENDOR
         ]
-    
+
     # NOTE: Query methods moved to StationDistributionRepository:
     # - get_station_operator() -> StationDistributionRepository.get_station_operator()
     # - get_station_franchise() -> StationDistributionRepository.get_station_franchise()

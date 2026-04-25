@@ -79,28 +79,36 @@ class PartnerRepository:
         ).select_related('user')
     
     @staticmethod
-    def generate_partner_code(partner_type: str) -> str:
+    def generate_partner_code(partner_type: str, vendor_type: Optional[str] = None) -> str:
         """
         Generate unique partner code.
         
-        Format: FR-001 for Franchise, VN-001 for Vendor
+        Format:
+        - FR-001 for Franchise
+        - VN-001 for Non-Revenue Vendor
+        - VNREV-001 for Revenue Vendor
         """
-        prefix = 'FR' if partner_type == Partner.PartnerType.FRANCHISE else 'VN'
-        
-        last_partner = Partner.objects.filter(
-            code__startswith=prefix
-        ).order_by('-code').first()
-        
-        if last_partner:
-            try:
-                last_num = int(last_partner.code.split('-')[1])
-                new_num = last_num + 1
-            except (IndexError, ValueError):
-                new_num = 1
+        if partner_type == Partner.PartnerType.FRANCHISE:
+            prefix = 'FR'
+        elif partner_type == Partner.PartnerType.VENDOR and vendor_type == Partner.VendorType.REVENUE:
+            prefix = 'VNREV'
         else:
-            new_num = 1
+            prefix = 'VN'
         
-        return f"{prefix}-{new_num:03d}"
+        # Use regex to match only exact prefix pattern (e.g., VN-001, not VN-DUMMY-...)
+        existing_codes = Partner.objects.filter(
+            code__regex=rf'^{prefix}-\d+$'
+        ).values_list('code', flat=True)
+        
+        max_num = 0
+        for code in existing_codes:
+            try:
+                num = int(code.split('-')[-1])
+                max_num = max(max_num, num)
+            except (IndexError, ValueError):
+                pass
+        
+        return f"{prefix}-{max_num + 1:03d}"
     
     @staticmethod
     def user_is_already_partner(user_id: int) -> bool:
@@ -136,7 +144,7 @@ class PartnerRepository:
             if partner_type and existing_partner.partner_type != partner_type:
                 existing_partner.partner_type = partner_type
                 update_fields.append('partner_type')
-                existing_partner.code = PartnerRepository.generate_partner_code(partner_type)
+                existing_partner.code = PartnerRepository.generate_partner_code(partner_type, vendor_type)
                 update_fields.append('code')
 
             if partner_type == Partner.PartnerType.FRANCHISE:
@@ -199,7 +207,7 @@ class PartnerRepository:
             existing_partner.save(update_fields=update_fields)
             return existing_partner
 
-        code = PartnerRepository.generate_partner_code(partner_type)
+        code = PartnerRepository.generate_partner_code(partner_type, vendor_type)
         
         create_kwargs = {
             'user_id': user_id,
