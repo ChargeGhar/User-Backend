@@ -37,4 +37,4 @@ class AdDistribution(BaseModel):
         ordering = ['-created_at']
     
     def __str__(self):
-        return f"{self.ad_content.ad_request.title or 'Untitled'} -> {self.station.name}"
+        return f"{self.ad_content.ad_request.title or 'Untitled'} -> {self.station.station_name}"
