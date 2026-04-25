@@ -11,6 +11,9 @@ from api.internal.serializers.iot_serializers import (
     IoTModeRequestSerializer,
     IoTEjectRequestSerializer,
 )
+from api.internal.serializers.ad_serializers import (
+    AdDistributionItemSerializer,
+)
 
 __all__ = [
     'IoTStationActionSerializer',
@@ -19,4 +22,5 @@ __all__ = [
     'IoTVolumeRequestSerializer',
     'IoTModeRequestSerializer',
     'IoTEjectRequestSerializer',
+    'AdDistributionItemSerializer',
 ]

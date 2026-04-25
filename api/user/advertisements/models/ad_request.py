@@ -152,6 +152,14 @@ class AdRequest(BaseModel):
         help_text="When ad was completed"
     )
     
+    # Device-facing fields
+    redirect_url = models.URLField(
+        max_length=500,
+        null=True,
+        blank=True,
+        help_text="Click-through redirect URL for device tap"
+    )
+    
     class Meta:
         db_table = 'ad_requests'
         verbose_name = 'Ad Request'
