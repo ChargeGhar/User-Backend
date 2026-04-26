@@ -1,6 +1,6 @@
 from __future__ import annotations
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from django.db import transaction
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -167,24 +167,51 @@ class AuthService(BaseService):
             'tokens': self._get_tokens(refresh)
         }
 
-    def logout_user(self, refresh_token: str, user: User, request=None) -> Dict[str, Any]:
-        """Logout user and invalidate token"""
-        try:
-            token = RefreshToken(refresh_token)
-            if str(token.payload.get('user_id')) != str(user.id):
-                raise ServiceException(detail="Token mismatch", code="token_user_mismatch")
-            
-            token.blacklist()
-            if request:
+    def logout_user(self, refresh_token: Optional[str], user: User, request=None) -> Dict[str, Any]:
+        """Logout user with best-effort token revocation."""
+        token_revoked = False
+        revocation_reason = "token_missing"
+
+        normalized_refresh = (refresh_token or "").strip()
+        if normalized_refresh:
+            try:
+                token = RefreshToken(normalized_refresh)
+                token_user_id = str(token.payload.get("user_id"))
+                if token_user_id != str(user.id):
+                    revocation_reason = "token_mismatch"
+                    self.log_warning(
+                        f"Logout refresh token mismatch for user {user.id}: token user {token_user_id}"
+                    )
+                else:
+                    token.blacklist()
+                    token_revoked = True
+                    revocation_reason = "valid_blacklisted"
+            except (TokenError, InvalidToken):
+                revocation_reason = "already_invalid"
+                self.log_warning(f"Logout token already invalid for user {user.id}")
+            except Exception as e:
+                revocation_reason = "already_invalid"
+                self.log_warning(f"Unexpected logout revocation issue for user {user.id}: {str(e)}")
+
+        if request:
+            try:
                 self.account_service.log_auth_action(user, 'LOGOUT', request)
-            
-            return {'message': 'Logout successful', 'logged_out_at': timezone.now().isoformat()}
-        except (TokenError, InvalidToken) as e:
-            self.handle_service_error(e, "Invalid refresh token", code="invalid_refresh_token")
+            except Exception as e:
+                self.log_warning(f"Failed to write logout audit for user {user.id}: {str(e)}")
+
+        return {
+            'message': 'Logout successful',
+            'logged_out_at': timezone.now().isoformat(),
+            'token_revoked': token_revoked,
+            'revocation_reason': revocation_reason
+        }
 
     def refresh_token(self, refresh_token: str, request=None) -> Dict[str, Any]:
         """Refresh access token"""
         try:
+            if not refresh_token:
+                raise ServiceException(detail="Invalid refresh token", code="invalid_refresh_token")
+
             refresh = RefreshToken(refresh_token)
             user_id = refresh.payload.get('user_id')
             user = self.user_repo.get_by_id(user_id)
@@ -202,8 +229,10 @@ class AuthService(BaseService):
                 'expires_in': 3600,
                 'token_type': 'Bearer'
             }
-        except (TokenError, InvalidToken) as e:
-            self.handle_service_error(e, "Token refresh failed", code="invalid_refresh_token")
+        except (TokenError, InvalidToken):
+            raise ServiceException(detail="Invalid refresh token", code="invalid_refresh_token")
+        except ServiceException:
+            raise
         except Exception as e:
             self.handle_service_error(e, "Token refresh failed")
 
