@@ -104,7 +104,10 @@ class LogoutView(GenericAPIView, BaseAPIView):
     
     @log_api_call(include_request_data=True)
     def post(self, request: Request) -> Response:
-        serializer = self.get_serializer(data=request.data)
+        payload = request.data.copy()
+        if not payload.get("refresh_token") and payload.get("refresh"):
+            payload["refresh_token"] = payload.get("refresh")
+        serializer = self.get_serializer(data=payload)
         serializer.is_valid(raise_exception=True)
         return self.handle_service_operation(
             lambda: AuthService().logout_user(

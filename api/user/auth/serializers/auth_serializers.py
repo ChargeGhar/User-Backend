@@ -53,18 +53,9 @@ class LogoutSerializer(serializers.Serializer):
         allow_blank=True,
         help_text="JWT refresh token to blacklist",
     )
-    refresh = serializers.CharField(
-        required=False,
-        allow_blank=True,
-        write_only=True,
-        help_text="Alias of refresh_token",
-    )
 
     def validate(self, attrs):
-        refresh_token = (attrs.get("refresh_token") or "").strip()
-        refresh_alias = (attrs.get("refresh") or "").strip()
-        attrs["refresh_token"] = refresh_token or refresh_alias or None
-        attrs.pop("refresh", None)
+        attrs["refresh_token"] = (attrs.get("refresh_token") or "").strip() or None
         return attrs
 
 
