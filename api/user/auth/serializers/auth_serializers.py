@@ -48,9 +48,23 @@ class AuthCompleteSerializer(serializers.Serializer):
 
 class LogoutSerializer(serializers.Serializer):
     """Serializer for user logout"""
-    refresh_token = serializers.CharField(help_text="JWT refresh token to blacklist")
-    
-    def validate_refresh_token(self, value):
-        if not value or not value.strip():
+    refresh_token = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        help_text="JWT refresh token to blacklist",
+    )
+
+    def validate(self, attrs):
+        attrs["refresh_token"] = (attrs.get("refresh_token") or "").strip() or None
+        return attrs
+
+
+class TokenRefreshRequestSerializer(serializers.Serializer):
+    """Serializer for token refresh request."""
+    refresh = serializers.CharField(help_text="JWT refresh token")
+
+    def validate_refresh(self, value):
+        value = (value or "").strip()
+        if not value:
             raise serializers.ValidationError("Refresh token is required")
-        return value.strip()
+        return value

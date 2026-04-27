@@ -9,7 +9,6 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
 from api.common.routers import CustomViewRouter
 from api.common.mixins import BaseAPIView
@@ -105,11 +104,14 @@ class LogoutView(GenericAPIView, BaseAPIView):
     
     @log_api_call(include_request_data=True)
     def post(self, request: Request) -> Response:
-        serializer = self.get_serializer(data=request.data)
+        payload = request.data.copy()
+        if not payload.get("refresh_token") and payload.get("refresh"):
+            payload["refresh_token"] = payload.get("refresh")
+        serializer = self.get_serializer(data=payload)
         serializer.is_valid(raise_exception=True)
         return self.handle_service_operation(
             lambda: AuthService().logout_user(
-                refresh_token=serializer.validated_data['refresh_token'],
+                refresh_token=serializer.validated_data.get('refresh_token'),
                 user=request.user,
                 request=request
             ),
@@ -123,7 +125,7 @@ class LogoutView(GenericAPIView, BaseAPIView):
     responses={200: BaseResponseSerializer}
 )
 class CustomTokenRefreshView(GenericAPIView, BaseAPIView):
-    serializer_class = TokenRefreshSerializer
+    serializer_class = serializers.TokenRefreshRequestSerializer
     permission_classes = [AllowAny]
     
     @rate_limit(max_requests=10, window_seconds=300)
