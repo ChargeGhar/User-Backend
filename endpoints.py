@@ -98,7 +98,7 @@ class CodeAnalyzer:
                     for item in node.body:
                         if isinstance(item, ast.FunctionDef):
                             methods.append(item.name)
-                            
+ 
         except Exception as e:
             print(f"  ⚠ Error extracting methods: {e}")
             
