@@ -54,7 +54,7 @@ if [[ -n "$NGINX_CONFIG" ]]; then
         sed -i '/location \/ {/i\
     # Serve static files\
     location /static/ {\
-        alias /opt/powerbank/staticfiles/;\
+        alias /opt/User-Backend/staticfiles/;\
         expires 1y;\
         add_header Cache-Control "public, immutable";\
     }\
@@ -71,14 +71,14 @@ if [[ -n "$NGINX_CONFIG" ]]; then
     
     if [[ -n "$API_CONTAINER" ]]; then
         # Copy static files from container to host
-        mkdir -p /opt/powerbank/staticfiles
-        docker cp "$API_CONTAINER:/application/staticfiles/." /opt/powerbank/staticfiles/
+        mkdir -p /opt/User-Backend/staticfiles
+        docker cp "$API_CONTAINER:/application/staticfiles/." /opt/User-Backend/staticfiles/
         
         print_status "Copied static files from container to host"
         
         # Set proper permissions
-        chown -R www-data:www-data /opt/powerbank/staticfiles/ 2>/dev/null || true
-        chmod -R 755 /opt/powerbank/staticfiles/
+        chown -R www-data:www-data /opt/User-Backend/staticfiles/ 2>/dev/null || true
+        chmod -R 755 /opt/User-Backend/staticfiles/
         
         print_status "Set proper permissions"
     else

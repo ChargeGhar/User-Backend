@@ -91,7 +91,7 @@ else
 fi
 
 # Create project directory
-PROJECT_DIR="/opt/powerbank"
+PROJECT_DIR="/opt/User-Backend"
 if [[ ! -d "$PROJECT_DIR" ]]; then
     print_status "Creating project directory: $PROJECT_DIR"
     mkdir -p "$PROJECT_DIR"

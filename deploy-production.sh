@@ -9,7 +9,7 @@ echo "🚀 PowerBank Django Production Deployment"
 echo "=========================================="
 
 # Configuration
-PROJECT_DIR="/opt/powerbank"
+PROJECT_DIR="/opt/User-Backend"
 REPO_URL="https://github.com/ChargeGhar/User-Backend.git"
 BRANCH="main"
 DOCKER_COMPOSE_FILE="docker-compose.prod.yml"
