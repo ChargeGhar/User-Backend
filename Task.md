@@ -1,5 +1,4 @@
-Logout problem for Users on logout endpoint
-User is reporting that the Logout endpoint is not working as expected and user facing problem on it as per the report user saying that the user who login first time they can logout but the user who login later can't do it on same device.
+The admin user list api is not showing the data accuartly: like evern suer subbimited the kusy the staus its return not submitted like that we need to mad eeach returned data fuield one by one in each flow and figure out the gaps and issue 
 
 Docker contxt:
 PS UserBackend> 

@@ -15,7 +15,6 @@ from api.common.mixins import BaseAPIView
 from api.common.routers import CustomViewRouter
 from api.common.serializers import BaseResponseSerializer
 from api.user.auth.permissions import IsStaffPermission
-from api.user.auth.serializers import UserSerializer
 
 user_management_router = CustomViewRouter()
 logger = logging.getLogger(__name__)
@@ -44,7 +43,10 @@ class AdminUserListView(GenericAPIView, BaseAPIView):
             
             # Serialize the users in the results
             if result and 'results' in result:
-                serialized_users = UserSerializer(result['results'], many=True).data
+                serialized_users = admin_serializers.AdminUserResponseSerializer(
+                    result['results'],
+                    many=True
+                ).data
                 result['results'] = serialized_users
             
             return result
@@ -75,7 +77,7 @@ class AdminUserDetailView(GenericAPIView, BaseAPIView):
             user = service.get_user_detail(user_id)
             
             # Serialize user with profile data
-            serializer = UserSerializer(user)
+            serializer = admin_serializers.AdminUserResponseSerializer(user)
             return serializer.data
         
         return self.handle_service_operation(

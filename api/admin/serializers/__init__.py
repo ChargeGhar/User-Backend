@@ -122,6 +122,7 @@ from .user_serializers import (
     AdminProfileSerializer,
     AdminProfileUpdateSerializer,
     AdminUserListSerializer,
+    AdminUserResponseSerializer,
     TransactionUserSerializer,
     UpdateUserStatusSerializer,
 )
@@ -210,6 +211,7 @@ __all__ = [
     "AdminStationSerializer",
     "AdminStationSlotSerializer",
     "AdminUserListSerializer",
+    "AdminUserResponseSerializer",
     "BroadcastMessageSerializer",
     "BulkCreateCouponSerializer",
     "CouponListSerializer",
