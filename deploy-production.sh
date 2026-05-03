@@ -13,6 +13,7 @@ PROJECT_DIR="${PROJECT_DIR:-/opt/powerbank}"
 REPO_URL="https://github.com/ChargeGhar/User-Backend.git"
 BRANCH="main"
 DOCKER_COMPOSE_FILE="docker-compose.prod.yml"
+BACKEND_IMAGE="ghcr.io/chargeghar/user-backend:latest"
 DEPLOY_NON_INTERACTIVE="${DEPLOY_NON_INTERACTIVE:-0}"
 DEPLOY_GIT_CHOICE="${DEPLOY_GIT_CHOICE:-}"
 DEPLOY_TARGET_BRANCH="${DEPLOY_TARGET_BRANCH:-}"
@@ -208,10 +209,14 @@ fi
 docker system prune -f
 print_status "Cleanup completed"
 
-# Build and start services
-print_step "Building and starting services..."
-docker-compose -f "$DOCKER_COMPOSE_FILE" build --no-cache
-docker-compose -f "$DOCKER_COMPOSE_FILE" up -d
+# Build backend image from local source and start services
+print_step "Building backend image from local source..."
+docker build --no-cache -f Dockerfile.prod -t "$BACKEND_IMAGE" .
+print_status "Backend image built: $BACKEND_IMAGE"
+
+print_step "Starting services with force recreate..."
+docker-compose -f "$DOCKER_COMPOSE_FILE" up -d --force-recreate \
+    api celery celery_beat migrations collectstatic db redis rabbitmq
 print_status "Services started"
 
 # Wait for services to be ready
