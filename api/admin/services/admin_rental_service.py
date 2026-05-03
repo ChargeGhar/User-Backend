@@ -397,6 +397,13 @@ class AdminRentalService(BaseService):
         if not rental:
             raise ServiceException(detail="Rental not found", code="rental_not_found")
 
+        if rental.status == 'COMPLETED':
+            raise ServiceException(
+                detail="Rental is already completed. No changes were applied.",
+                code="rental_already_completed",
+                status_code=409
+            )
+
         normalized_status = str(status or '').strip().upper()
         valid_statuses = [choice[0] for choice in Rental.RENTAL_STATUS_CHOICES]
         if normalized_status not in valid_statuses:
@@ -420,8 +427,10 @@ class AdminRentalService(BaseService):
                 rental.ended_at = timezone.now()
                 update_fields.append('ended_at')
             rental.is_returned_on_time = bool(rental.due_at and rental.ended_at and rental.ended_at <= rental.due_at)
-            rental.payment_status = 'PENDING'
-            update_fields.extend(['is_returned_on_time', 'payment_status'])
+            update_fields.append('is_returned_on_time')
+            if rental.payment_status != 'PAID':
+                rental.payment_status = 'PENDING'
+                update_fields.append('payment_status')
 
             rental.rental_metadata = dict(rental.rental_metadata or {})
             rental.rental_metadata['manual_return_override'] = True
