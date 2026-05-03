@@ -9,10 +9,19 @@ echo "🚀 PowerBank Django Production Deployment"
 echo "=========================================="
 
 # Configuration
-PROJECT_DIR="/opt/User-Backend"
+PROJECT_DIR="${PROJECT_DIR:-/opt/powerbank}"
 REPO_URL="https://github.com/ChargeGhar/User-Backend.git"
 BRANCH="main"
 DOCKER_COMPOSE_FILE="docker-compose.prod.yml"
+DEPLOY_NON_INTERACTIVE="${DEPLOY_NON_INTERACTIVE:-0}"
+DEPLOY_GIT_CHOICE="${DEPLOY_GIT_CHOICE:-}"
+DEPLOY_TARGET_BRANCH="${DEPLOY_TARGET_BRANCH:-}"
+DEPLOY_CONFIRM_RESET="${DEPLOY_CONFIRM_RESET:-NO}"
+
+# Backward compatibility for older server path
+if [[ ! -d "$PROJECT_DIR" && -d "/opt/User-Backend" ]]; then
+    PROJECT_DIR="/opt/User-Backend"
+fi
 
 # Colors for output
 RED='\033[0;31m'
@@ -27,6 +36,10 @@ print_status() {
 
 print_error() {
     echo -e "${RED}[✗]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[! ]${NC} $1"
 }
 
 print_step() {
@@ -69,8 +82,13 @@ if [[ -d ".git" ]]; then
     echo "5. 💾 Stash changes and pull"
     echo "6. ⏭️  Skip git update (use current code)"
     echo ""
-    
-    read -p "Select option (1-6): " git_choice
+
+    if [[ "$DEPLOY_NON_INTERACTIVE" == "1" ]]; then
+        git_choice="${DEPLOY_GIT_CHOICE:-1}"
+        print_step "Non-interactive mode: using git option ${git_choice}"
+    else
+        read -p "Select option (1-6): " git_choice
+    fi
     
     case $git_choice in
         1)
@@ -84,11 +102,14 @@ if [[ -d ".git" ]]; then
             git pull origin "$BRANCH"
             ;;
         3)
-            echo ""
-            echo -e "${YELLOW}Available branches:${NC}"
-            git branch -a | sed 's/remotes\/origin\///' | grep -v HEAD | sort | uniq | nl
-            echo ""
-            read -p "Enter branch name: " custom_branch
+            custom_branch="$DEPLOY_TARGET_BRANCH"
+            if [[ -z "$custom_branch" ]]; then
+                echo ""
+                echo -e "${YELLOW}Available branches:${NC}"
+                git branch -a | sed 's/remotes\/origin\///' | grep -v HEAD | sort | uniq | nl
+                echo ""
+                read -p "Enter branch name: " custom_branch
+            fi
             if [[ -n "$custom_branch" ]]; then
                 print_step "Switching to branch: $custom_branch"
                 git stash push -m "Auto-stash before switching to $custom_branch $(date)" || true
@@ -101,7 +122,12 @@ if [[ -d ".git" ]]; then
             ;;
         4)
             print_step "Hard reset to remote (WARNING: This will discard local changes)..."
-            read -p "Are you sure? Type 'YES' to confirm: " confirm
+            if [[ "$DEPLOY_NON_INTERACTIVE" == "1" ]]; then
+                confirm="$DEPLOY_CONFIRM_RESET"
+                print_warning "Non-interactive hard reset requested; confirm value: ${confirm}"
+            else
+                read -p "Are you sure? Type 'YES' to confirm: " confirm
+            fi
             if [[ "$confirm" == "YES" ]]; then
                 git fetch origin
                 git reset --hard "origin/$(git branch --show-current)"
@@ -244,7 +270,7 @@ if [[ -f "load-fixtures-safe.sh" ]] && [[ -f "load-fixtures.sh" ]]; then
     # Check if database already has data (indicating existing deployment)
     DB_HAS_DATA=$(docker-compose -f "$DOCKER_COMPOSE_FILE" exec -T api python manage.py shell -c "
 from django.contrib.auth import get_user_model
-from api.stations.models import Station
+from api.user.stations.models import Station
 User = get_user_model()
 user_count = User.objects.count()
 station_count = Station.objects.count()

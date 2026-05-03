@@ -24,7 +24,26 @@ class Colors:
 class PowerBankManager:
     def __init__(self):
         self.compose_file = "docker-compose.prod.yml"
-        self.project_dir = "/opt/powerbank"
+        self.project_dir = self._resolve_project_dir()
+
+    def _resolve_project_dir(self):
+        """Resolve project directory from current context or known server paths."""
+        candidates = []
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        cwd = os.getcwd()
+
+        for path in [cwd, script_dir, "/opt/User-Backend", "/opt/powerbank"]:
+            if path and path not in candidates:
+                candidates.append(path)
+
+        for path in candidates:
+            if os.path.isdir(path) and os.path.exists(os.path.join(path, self.compose_file)):
+                return path
+
+        # Fallback to most common production path
+        if os.path.isdir("/opt/User-Backend"):
+            return "/opt/User-Backend"
+        return "/opt/powerbank"
         
     def print_header(self):
         print(f"\n{Colors.CYAN}{'='*60}{Colors.ENDC}")
@@ -98,7 +117,10 @@ class PowerBankManager:
                     self.run_command(f"docker rm {container}", show_output=False)
         
         # Check for processes on port
-        process_check = self.run_command(f'netstat -tlnp 2>/dev/null | grep ":{port} "', show_output=False)
+        process_check = self.run_command(
+            f'(netstat -tlnp 2>/dev/null || ss -ltnp 2>/dev/null || true) | grep ":{port} " || true',
+            show_output=False
+        )
         if process_check:
             print(f"{Colors.YELLOW}Port {port} is still in use, attempting to free it...{Colors.ENDC}")
             # Kill docker-proxy processes if any
@@ -243,7 +265,13 @@ class PowerBankManager:
             # Make sure script is executable
             self.run_command("chmod +x deploy-production.sh", show_output=False)
             
-            success = self.run_command("./deploy-production.sh", "Running full deployment")
+            deploy_cmd = (
+                "DEPLOY_NON_INTERACTIVE=1 "
+                "DEPLOY_GIT_CHOICE=1 "
+                f"PROJECT_DIR={self.project_dir} "
+                "./deploy-production.sh"
+            )
+            success = self.run_command(deploy_cmd, "Running full deployment")
             if success:
                 print(f"{Colors.GREEN}✅ Full redeployment completed!{Colors.ENDC}")
                 time.sleep(3)
@@ -337,14 +365,12 @@ if __name__ == "__main__":
     if os.geteuid() != 0:
         print(f"{Colors.RED}❌ This script must be run as root{Colors.ENDC}")
         sys.exit(1)
-    
-    # Change to project directory
-    project_dir = "/opt/powerbank"
-    if os.path.exists(project_dir):
-        os.chdir(project_dir)
-    else:
-        print(f"{Colors.RED}❌ Project directory {project_dir} not found{Colors.ENDC}")
-        sys.exit(1)
-    
+
     manager = PowerBankManager()
+    if os.path.exists(manager.project_dir):
+        os.chdir(manager.project_dir)
+    else:
+        print(f"{Colors.RED}❌ Project directory {manager.project_dir} not found{Colors.ENDC}")
+        sys.exit(1)
+
     manager.run()
