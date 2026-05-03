@@ -135,23 +135,12 @@ fi
 # Configure environment for production
 print_step "Configuring production environment..."
 cp .env .env.backup 2>/dev/null || true
-sed -i 's|ENVIRONMENT=local|ENVIRONMENT=production|' .env
-sed -i 's|DJANGO_DEBUG=true|DJANGO_DEBUG=false|' .env
-sed -i 's|CELERY_TASK_ALWAYS_EAGER=true|CELERY_TASK_ALWAYS_EAGER=false|' .env
-sed -i 's|CELERY_TASK_EAGER_PROPAGATES=true|CELERY_TASK_EAGER_PROPAGATES=false|' .env
-sed -i 's|CELERY_TASK_IGNORE_RESULT=true|CELERY_TASK_IGNORE_RESULT=false|' .env
-# Update service names to match production docker-compose
-sed -i 's|POSTGRES_HOST=pgbouncer|POSTGRES_HOST=db|' .env
-sed -i 's|POSTGRES_HOST=.*|POSTGRES_HOST=db|' .env
-sed -i 's|REDIS_HOST=.*|REDIS_HOST=redis|' .env
-sed -i 's|RABBITMQ_HOST=.*|RABBITMQ_HOST=rabbitmq|' .env
-sed -i 's|BASE_URL=http://localhost:8010|BASE_URL=https://main.chargeghar.com|' .env
-# Update frontend URL for production redirects
-sed -i 's|FRONTEND_URL=.*|FRONTEND_URL=https://chargeghar.app|' .env
-# Update CORS and CSRF origins for production
-sed -i 's|CORS_ALLOWED_ORIGINS=.*|CORS_ALLOWED_ORIGINS=https://main.chargeghar.com,https://chargeghar.app,https://app.chargeghar.com,http://localhost,http://213.210.21.113:8081|' .env
-sed -i 's|CSRF_TRUSTED_ORIGINS=.*|CSRF_TRUSTED_ORIGINS=https://main.chargeghar.com,https://chargeghar.app,https://app.chargeghar.com,http://localhost,http://213.210.21.113:8081|' .env
-print_status "Environment configured"
+if [[ ! -f ".env.prod" ]]; then
+    print_error ".env.prod not found in $PROJECT_DIR"
+    exit 1
+fi
+cp .env.prod .env
+print_status "Environment configured using .env.prod"
 
 # Create directories
 mkdir -p logs staticfiles backups
