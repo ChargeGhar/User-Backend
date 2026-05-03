@@ -48,6 +48,10 @@ class StationSyncMixin:
             station = self._sync_station(device_data, station_data)
             slots_updated = self._sync_slots(station, slots_data)
             powerbanks_updated = self._sync_powerbanks(station, powerbanks_data)
+            offline_returns_processed = self._reconcile_offline_returns_from_full_sync(
+                device_data=device_data,
+                powerbanks_data=powerbanks_data
+            )
             
             # Track status change
             new_status = self.STATION_STATUS_MAP.get(device_data.get('status', 'OFFLINE'), 'OFFLINE')
@@ -58,6 +62,7 @@ class StationSyncMixin:
                 'station_serial': station.serial_number,
                 'slots_updated': slots_updated,
                 'powerbanks_updated': powerbanks_updated,
+                'offline_returns_processed': offline_returns_processed,
                 'timestamp': timezone.now().isoformat()
             }
             
@@ -244,3 +249,61 @@ class StationSyncMixin:
         except Exception as e:
             self.log_error(f"Error syncing powerbanks for station {station.serial_number}: {str(e)}")
             raise ServiceException(detail=f"Failed to sync powerbanks: {str(e)}", code="powerbanks_sync_error")
+
+    def _reconcile_offline_returns_from_full_sync(self, device_data: Dict[str, Any], powerbanks_data: list) -> int:
+        """
+        Reuse existing return-event logic for powerbanks found in full sync payload.
+        """
+        from api.user.rentals.models import Rental
+
+        if not powerbanks_data:
+            return 0
+
+        candidate_serials = []
+        for pb_info in powerbanks_data:
+            pb_serial = str(pb_info.get('serial_number') or '').strip()
+            slot_number = pb_info.get('current_slot')
+            if pb_serial and slot_number:
+                candidate_serials.append(pb_serial)
+
+        if not candidate_serials:
+            return 0
+
+        active_rented_serials = set(
+            Rental.objects.filter(
+                status__in=['ACTIVE', 'OVERDUE'],
+                power_bank__serial_number__in=candidate_serials
+            ).values_list('power_bank__serial_number', flat=True)
+        )
+
+        if not active_rented_serials:
+            return 0
+
+        processed = 0
+        already_processed = set()
+
+        for pb_info in powerbanks_data:
+            pb_serial = str(pb_info.get('serial_number') or '').strip()
+            slot_number = pb_info.get('current_slot')
+
+            if not pb_serial or not slot_number:
+                continue
+            if pb_serial not in active_rented_serials:
+                continue
+            if pb_serial in already_processed:
+                continue
+
+            return_payload = {
+                'device': device_data,
+                'return_event': {
+                    'power_bank_serial': pb_serial,
+                    'slot_number': slot_number,
+                    'battery_level': pb_info.get('battery_level', 0),
+                }
+            }
+
+            self.process_return_event(return_payload)
+            processed += 1
+            already_processed.add(pb_serial)
+
+        return processed

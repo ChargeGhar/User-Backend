@@ -5,6 +5,7 @@ import logging
 
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
+from rest_framework import serializers as drf_serializers
 from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -19,6 +20,17 @@ from api.user.auth.permissions import IsStaffPermission
 
 rental_router = CustomViewRouter()
 logger = logging.getLogger(__name__)
+
+
+class AdminRentalManualUpdateSerializer(drf_serializers.Serializer):
+    amount = drf_serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        min_value=0,
+        required=False,
+        allow_null=True
+    )
+    status = drf_serializers.CharField(max_length=50)
 
 
 @rental_router.register(r"admin/rentals", name="admin-rentals")
@@ -205,6 +217,43 @@ class AdminRentalIssueDetailView(GenericAPIView, BaseAPIView):
             operation,
             "Rental issue deleted successfully",
             "Failed to delete rental issue"
+        )
+
+
+@rental_router.register(r"admin/rentals/<str:rental_id>/force-complete", name="admin-rental-force-complete")
+@extend_schema(
+    tags=["Admin - Rentals"],
+    summary="Manual Rental Update",
+    description="Update rental status and amount manually (Staff only)",
+    request=AdminRentalManualUpdateSerializer,
+    responses={200: BaseResponseSerializer}
+)
+class AdminRentalForceCompleteView(GenericAPIView, BaseAPIView):
+    permission_classes = [IsStaffPermission]
+    serializer_class = AdminRentalManualUpdateSerializer
+
+    @log_api_call(include_request_data=True)
+    def post(self, request: Request, rental_id: str) -> Response:
+        """Manually update rental status and amount"""
+        def operation():
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+
+            service = AdminRentalService()
+            rental = service.update_rental_manual_completion(
+                rental_id=rental_id,
+                amount=serializer.validated_data.get('amount'),
+                status=serializer.validated_data['status'],
+                admin_user=request.user,
+                request=request
+            )
+
+            return serializers.AdminRentalDetailSerializer(rental).data
+
+        return self.handle_service_operation(
+            operation,
+            "Rental updated successfully",
+            "Failed to update rental"
         )
 
 

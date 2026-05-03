@@ -13,7 +13,7 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 
 from api.common.services.base import BaseService, ServiceException
-from api.user.rentals.models import RentalIssue
+from api.user.rentals.models import Rental, RentalIssue
 
 User = get_user_model()
 
@@ -379,6 +379,77 @@ class AdminRentalService(BaseService):
                 detail="Rental not found",
                 code="rental_not_found"
             )
+
+    @transaction.atomic
+    def update_rental_manual_completion(
+        self,
+        rental_id: str,
+        status: str,
+        admin_user: User,
+        amount=None,
+        request=None
+    ) -> Rental:
+        """
+        Simple admin override to adjust amount and status.
+        Keeps payment as due when rental is completed manually.
+        """
+        rental = Rental.objects.select_for_update().filter(id=rental_id).first()
+        if not rental:
+            raise ServiceException(detail="Rental not found", code="rental_not_found")
+
+        normalized_status = str(status or '').strip().upper()
+        valid_statuses = [choice[0] for choice in Rental.RENTAL_STATUS_CHOICES]
+        if normalized_status not in valid_statuses:
+            raise ServiceException(
+                detail=f"Invalid rental status. Must be one of: {', '.join(valid_statuses)}",
+                code="invalid_rental_status"
+            )
+
+        old_status = rental.status
+        old_payment_status = rental.payment_status
+        old_overdue_amount = rental.overdue_amount
+
+        rental.status = normalized_status
+        update_fields = ['status', 'updated_at']
+        if amount is not None:
+            rental.overdue_amount = amount
+            update_fields.append('overdue_amount')
+
+        if normalized_status == 'COMPLETED':
+            if not rental.ended_at:
+                rental.ended_at = timezone.now()
+                update_fields.append('ended_at')
+            rental.is_returned_on_time = bool(rental.due_at and rental.ended_at and rental.ended_at <= rental.due_at)
+            rental.payment_status = 'PENDING'
+            update_fields.extend(['is_returned_on_time', 'payment_status'])
+
+            rental.rental_metadata = dict(rental.rental_metadata or {})
+            rental.rental_metadata['manual_return_override'] = True
+            rental.rental_metadata['manual_return_override_at'] = timezone.now().isoformat()
+            rental.rental_metadata['manual_return_override_by_admin'] = str(admin_user.id)
+            update_fields.append('rental_metadata')
+
+        rental.save(update_fields=list(dict.fromkeys(update_fields)))
+
+        self._log_admin_action(
+            admin_user=admin_user,
+            action_type='UPDATE_RENTAL_MANUAL_COMPLETION',
+            target_model='Rental',
+            target_id=str(rental.id),
+            changes={
+                'rental_code': rental.rental_code,
+                'old_status': old_status,
+                'new_status': rental.status,
+                'old_payment_status': old_payment_status,
+                'new_payment_status': rental.payment_status,
+                'old_amount': str(old_overdue_amount),
+                'new_amount': str(rental.overdue_amount),
+            },
+            description=f"Manual rental update: {rental.rental_code} -> {rental.status}",
+            request=request
+        )
+
+        return rental
     
     def _get_base_rental_queryset(self):
         """Get base queryset with all necessary relationships"""
