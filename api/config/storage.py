@@ -14,10 +14,10 @@ USE_S3_FOR_MEDIA = getenv("USE_S3_FOR_MEDIA", default="false").lower() == "true"
 USE_S3_FOR_STATIC = getenv("USE_S3_FOR_STATIC", default="false").lower() == "true"
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 
 MEDIA_ROOT = BASE_DIR / "media"
-MEDIA_URL = "media/"
+MEDIA_URL = "/media/"
 
 AWS_STORAGE_BUCKET_NAME = getenv("AWS_STORAGE_BUCKET_NAME", "bucket")
 AWS_S3_CUSTOM_DOMAIN = getenv(
