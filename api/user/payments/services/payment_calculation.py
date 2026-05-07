@@ -167,10 +167,7 @@ class PaymentCalculationService(BaseService):
         
         # Add late fee if overdue
         if rental.ended_at > rental.due_at:
-            from api.common.utils.helpers import calculate_late_fee_amount, calculate_overdue_minutes
-            overdue_minutes = calculate_overdue_minutes(rental)
-            if overdue_minutes > 0:
-                amount += calculate_late_fee_amount(rate_per_minute, overdue_minutes)
+            amount += rental.current_overdue_amount
         
         return amount
 

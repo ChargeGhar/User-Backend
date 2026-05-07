@@ -1,33 +1,21 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from django.core.cache import cache
 
 
 def get_late_fee_configuration():
     """Get the currently active late fee configuration"""
-    from api.user.rentals.models.late_fee import LateFeeConfiguration
-    try:
-        return LateFeeConfiguration.objects.filter(is_active=True).first()
-    except Exception:
-        return None
+    from api.user.rentals.services.late_fee_service import LateFeeService
+    return LateFeeService.get_active_configuration()
 
 
 def calculate_late_fee_amount(normal_rate_per_minute: Decimal, overdue_minutes: int,
                              package_type: str = None) -> Decimal:
-    """Calculate late fee amount using active configuration"""
-    cache_key = f"late_fee_config_{package_type or 'default'}"
-    config = cache.get(cache_key)
-
-    if config is None:
-        config = get_late_fee_configuration()
-
-        if config is None:
-            return normal_rate_per_minute * Decimal('2') * Decimal(str(overdue_minutes))
-
-        cache.set(cache_key, config, timeout=3600)
-
-    return config.calculate_late_fee(normal_rate_per_minute, overdue_minutes)
+    """Calculate late fee amount using active configuration."""
+    # package_type kept for backward compatibility of function signature.
+    from api.user.rentals.services.late_fee_service import LateFeeService
+    config = LateFeeService.get_active_configuration()
+    return LateFeeService.calculate_late_fee(config, normal_rate_per_minute, overdue_minutes)
 
 
 def calculate_overdue_minutes(rental) -> int:

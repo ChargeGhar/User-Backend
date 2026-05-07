@@ -103,13 +103,18 @@ class RentalReturnMixin:
         if rental.is_returned_on_time or not rental.ended_at:
             return
         
-        from api.common.utils.helpers import (
-            calculate_overdue_minutes, calculate_late_fee_amount, get_package_rate_per_minute
-        )
+        from api.user.rentals.services.late_fee_service import LateFeeService
         
-        overdue_minutes = calculate_overdue_minutes(rental)
-        package_rate_per_minute = get_package_rate_per_minute(rental.package)
-        rental.overdue_amount = calculate_late_fee_amount(package_rate_per_minute, overdue_minutes)
+        overdue_duration = rental.ended_at - rental.due_at
+        overdue_minutes = int(overdue_duration.total_seconds() / 60)
+        
+        if overdue_minutes <= 0:
+            return
+            
+        config = LateFeeService.get_active_configuration()
+        normal_rate = rental.package.price / (rental.package.duration_minutes or 1)
+        
+        rental.overdue_amount = LateFeeService.calculate_late_fee(config, normal_rate, overdue_minutes)
         
         if rental.overdue_amount > 0:
             rental.payment_status = 'PENDING'

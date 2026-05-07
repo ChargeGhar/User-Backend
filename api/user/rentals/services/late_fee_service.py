@@ -1,28 +1,39 @@
 from decimal import Decimal
-from typing import Optional
 from django.core.cache import cache
 import logging
 
 logger = logging.getLogger(__name__)
 
+
 class LateFeeService:
     """
     Service to handle late fee calculations and configuration management
     """
-    
+
+    CACHE_KEY = "active_late_fee_config"
+    CACHE_TIMEOUT_SECONDS = 3600
+
     @staticmethod
     def get_active_configuration():
         """Get the currently active late fee configuration with caching"""
-        cache_key = "active_late_fee_config"
-        config = cache.get(cache_key)
-        
+        config = cache.get(LateFeeService.CACHE_KEY)
+
         if config is None:
             from api.user.rentals.models.late_fee import LateFeeConfiguration
             config = LateFeeConfiguration.objects.filter(is_active=True).first()
             if config:
-                cache.set(cache_key, config, timeout=3600)
-        
+                cache.set(
+                    LateFeeService.CACHE_KEY,
+                    config,
+                    timeout=LateFeeService.CACHE_TIMEOUT_SECONDS
+                )
+
         return config
+
+    @staticmethod
+    def invalidate_cached_configuration():
+        """Clear active configuration cache so changes apply immediately"""
+        cache.delete(LateFeeService.CACHE_KEY)
 
     @staticmethod
     def calculate_late_fee(config, normal_rate_per_minute: Decimal, overdue_minutes: int) -> Decimal:
@@ -44,18 +55,22 @@ class LateFeeService:
         if config.fee_type == 'MULTIPLIER':
             fee = normal_rate_per_minute * config.multiplier * Decimal(str(effective_overdue_minutes))
         elif config.fee_type == 'FLAT_RATE':
-            overdue_hours = effective_overdue_minutes / 60
-            fee = config.flat_rate_per_hour * Decimal(str(overdue_hours))
+            overdue_hours = Decimal(str(effective_overdue_minutes)) / Decimal('60')
+            fee = config.flat_rate_per_hour * overdue_hours
         elif config.fee_type == 'COMPOUND':
             multiplier_fee = normal_rate_per_minute * config.multiplier * Decimal(str(effective_overdue_minutes))
-            flat_fee = config.flat_rate_per_hour * Decimal(str(effective_overdue_minutes / 60))
+            flat_hours = Decimal(str(effective_overdue_minutes)) / Decimal('60')
+            flat_fee = config.flat_rate_per_hour * flat_hours
             fee = multiplier_fee + flat_fee
+        else:
+            logger.warning("Unknown late fee type: %s", config.fee_type)
+            return Decimal('0')
 
-        # Apply daily cap if specified
+        # Apply per-day cap if specified
         if config.max_daily_rate:
-            max_per_day = config.max_daily_rate / Decimal('24')
-            hours_overdue = Decimal(str(effective_overdue_minutes / 60))
-            max_fee = max_per_day * hours_overdue
+            minutes_per_day = 24 * 60
+            days_overdue = max(1, (effective_overdue_minutes + minutes_per_day - 1) // minutes_per_day)
+            max_fee = config.max_daily_rate * Decimal(str(days_overdue))
             fee = min(fee, max_fee)
 
         return fee
@@ -65,7 +80,7 @@ class LateFeeService:
         """Human-readable description of the fee structure"""
         if not config:
             return "No configuration active"
-            
+
         if config.fee_type == 'MULTIPLIER':
             return f"{config.multiplier:.1f}x normal rate after {config.grace_period_minutes} minute grace period"
         elif config.fee_type == 'FLAT_RATE':

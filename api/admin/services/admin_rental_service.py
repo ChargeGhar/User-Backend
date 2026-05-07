@@ -7,6 +7,7 @@ This module contains service classes for admin rental issue management operation
 Created: 2025-11-06
 """
 
+from decimal import Decimal
 from typing import Dict, Any
 from django.db import transaction
 from django.utils import timezone
@@ -355,7 +356,10 @@ class AdminRentalService(BaseService):
         page = filters.get('page', 1) if filters else 1
         page_size = filters.get('page_size', 20) if filters else 20
         
-        return paginate_queryset(queryset, page, page_size)
+        paginated_data = paginate_queryset(queryset, page, page_size)
+        for rental in paginated_data.get('results', []):
+            self._sync_realtime_rental_state(rental)
+        return paginated_data
     
     def get_rental_detail(self, rental_id: str):
         """
@@ -373,7 +377,9 @@ class AdminRentalService(BaseService):
         from api.user.rentals.models import Rental
         
         try:
-            return self._get_base_rental_queryset().get(id=rental_id)
+            rental = self._get_base_rental_queryset().get(id=rental_id)
+            self._sync_realtime_rental_state(rental)
+            return rental
         except Rental.DoesNotExist:
             raise ServiceException(
                 detail="Rental not found",
@@ -475,3 +481,33 @@ class AdminRentalService(BaseService):
             'extensions',
             'issues'
         )
+
+    def _sync_realtime_rental_state(self, rental: Rental) -> None:
+        """
+        Keep ACTIVE/OVERDUE rentals aligned with realtime due state.
+        Mirrors user active-rental behavior so admin UI sees live values.
+        """
+        if not rental:
+            return
+
+        now = timezone.now()
+        update_fields = []
+
+        if rental.status == 'ACTIVE' and rental.due_at and now > rental.due_at:
+            rental.status = 'OVERDUE'
+            update_fields.append('status')
+
+        if rental.status == 'OVERDUE' and rental.ended_at is None:
+            current_overdue = Decimal(str(rental.current_overdue_amount or Decimal('0'))).quantize(
+                Decimal('0.01')
+            )
+            if current_overdue != rental.overdue_amount:
+                rental.overdue_amount = current_overdue
+                update_fields.append('overdue_amount')
+
+            if current_overdue > Decimal('0.00') and rental.payment_status != 'PENDING':
+                rental.payment_status = 'PENDING'
+                update_fields.append('payment_status')
+
+        if update_fields:
+            rental.save(update_fields=update_fields + ['updated_at'])

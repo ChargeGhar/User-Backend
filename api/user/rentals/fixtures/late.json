@@ -3,20 +3,20 @@
       "model": "rentals.latefeeconfiguration",
     "pk": "0191e624-d6f8-75f7-9c8e-f3c3a2a1b0d9",
     "fields": {
-      "name": "Standard Double Rate (Active)",
+      "name": "Hourly 2x After 2m Grace (Cap 100/Day) - Active",
       "fee_type": "MULTIPLIER",
       "multiplier": "2.0000",
       "flat_rate_per_hour": "0.0000",
-      "grace_period_minutes": 15,
-      "max_daily_rate": "1000.0000",
+      "grace_period_minutes": 2,
+      "max_daily_rate": "100.0000",
       "is_active": true,
-      "applicable_package_types": [],
+      "applicable_package_types": ["HOURLY"],
       "metadata": {
-        "description": "Current active configuration: 2x normal rate for late returns, 15-minute grace period, max NPR 1,000/day",
+        "description": "Requested config: after 2-minute grace, hourly packages are charged at 2x normal per-minute rate with a max of NPR 100 per 24-hour window.",
         "examples": [
-          "Hourly rental at NPR 2/minute becomes NPR 4/minute when late",
-          "15-minute grace period - first 15 minutes late are free",
-          "Maximum charge of NPR 1,000 even if very late"
+          "30-minute package and 60-minute package both switch to 2x late rate after 2-minute grace",
+          "Grace period is free: first 2 minutes late have no late fee",
+          "Late fee keeps increasing by config rate and stops at NPR 100 within each 24-hour window"
         ],
         "created_by_system": true,
         "last_reviewed": "2025-01-01"

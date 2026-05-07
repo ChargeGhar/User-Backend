@@ -6,6 +6,7 @@ from django.db import transaction
 
 from api.common.services.base import CRUDService, ServiceException
 from api.user.rentals.models.late_fee import LateFeeConfiguration
+from api.user.rentals.services.late_fee_service import LateFeeService
 from api.common.utils.helpers import paginate_queryset
 
 
@@ -143,7 +144,8 @@ class LateFeeConfigurationService(CRUDService):
                         'is_active': is_active
                     }
                 )
-            
+
+            self._invalidate_late_fee_cache()
             return config
             
         except Exception as e:
@@ -198,7 +200,8 @@ class LateFeeConfigurationService(CRUDService):
                         'changes': changes
                     }
                 )
-            
+
+            self._invalidate_late_fee_cache()
             return config
             
         except Exception as e:
@@ -243,7 +246,8 @@ class LateFeeConfigurationService(CRUDService):
                         'config_name': config.name
                     }
                 )
-            
+
+            self._invalidate_late_fee_cache()
             return config
             
         except Exception as e:
@@ -283,7 +287,8 @@ class LateFeeConfigurationService(CRUDService):
                         'config_name': config.name
                     }
                 )
-            
+
+            self._invalidate_late_fee_cache()
             return config
             
         except Exception as e:
@@ -326,7 +331,8 @@ class LateFeeConfigurationService(CRUDService):
                         'config_name': config_name
                     }
                 )
-            
+
+            self._invalidate_late_fee_cache()
             return config_name
             
         except Exception as e:
@@ -425,3 +431,10 @@ class LateFeeConfigurationService(CRUDService):
             pass
         except Exception as e:
             self.log_error(f"Failed to log admin action: {str(e)}")
+
+    def _invalidate_late_fee_cache(self) -> None:
+        """Ensure config changes are reflected immediately in realtime calculations."""
+        try:
+            LateFeeService.invalidate_cached_configuration()
+        except Exception as e:
+            self.log_warning(f"Failed to invalidate late fee cache: {str(e)}")
